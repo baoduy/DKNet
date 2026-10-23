@@ -316,12 +316,12 @@ This package is a consumer of two other EF Core building blocks, not a standalon
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – supplies the `GlobalQueryFilter` base and the
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) – supplies the `GlobalQueryFilter` base and the
   `UseAutoConfigModel` wiring this package's filter depends on. Reach for it directly to write a global filter of your
   own.
-- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) – the `SaveChanges` pipeline `DataOwnerHook` runs in. Reach for it
+- [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) – the `SaveChanges` pipeline `DataOwnerHook` runs in. Reach for it
   when you need a custom before/after-save hook.
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `IAuditedProperties` contract the hook also
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) – the `IAuditedProperties` contract the hook also
   stamps. Reach for it for entity base classes and the audit/event attributes.
 - [DKNet.EfCore.Specifications](./DKNet.EfCore.Specifications.md) – the query surface application code uses on top of
   the filter. Reach for it for reusable filter/include/order-by objects; note its `IsIgnoreQueryFilters` flag cannot

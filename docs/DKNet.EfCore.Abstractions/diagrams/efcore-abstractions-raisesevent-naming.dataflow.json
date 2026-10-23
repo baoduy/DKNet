@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "How a [RaisesEvent] declaration becomes a payload record",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Name that reaches the payload"
+        },
+        "default": {
+          "label": "Filters carried along"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [
+      1069,
+      640
+    ],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Abstractions/efcore-abstractions-raisesevent-naming.html"
+  },
+  "stages": [
+    {
+      "label": "Declared on the entity"
+    },
+    {
+      "label": "Name resolution"
+    },
+    {
+      "label": "Payload record"
+    },
+    {
+      "label": "After a successful save"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "typeform",
+      "type": "external",
+      "label": "Type-naming form",
+      "sublabel": "[RaisesEvent(typeof(X), ops)]",
+      "stage": 0,
+      "row": 0,
+      "width": 150,
+      "tag": "you own the record",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs",
+          "line": 63,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "labelform",
+      "type": "external",
+      "label": "Label form",
+      "sublabel": "[RaisesEvent(\"Touched\", ops)]",
+      "stage": 0,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs",
+          "line": 80,
+          "end_line": 85
+        }
+      ]
+    },
+    {
+      "id": "plainform",
+      "type": "external",
+      "label": "Label-less form",
+      "sublabel": "[RaisesEvent(ops)]",
+      "stage": 0,
+      "row": 3,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs",
+          "line": 96,
+          "end_line": 100
+        }
+      ]
+    },
+    {
+      "id": "composer",
+      "type": "backend",
+      "label": "EventNameComposer",
+      "sublabel": "Compose(entity, label, props, ops)",
+      "stage": 1,
+      "row": 2,
+      "width": 150,
+      "tag": "one file, build and runtime",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/EventNameComposer.cs",
+          "line": 32,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "dto",
+      "type": "backend",
+      "label": "Your [GenerateDto] record",
+      "sublabel": "you declare it, generator fills it",
+      "stage": 2,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/RaisesEventValidator.cs",
+          "line": 269,
+          "end_line": 304
+        }
+      ]
+    },
+    {
+      "id": "composed",
+      "type": "backend",
+      "label": "Generated record",
+      "sublabel": "public partial record ...Event",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "tag": "entity's own namespace",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/RaisesEventValidator.cs",
+          "line": 269,
+          "end_line": 304
+        }
+      ]
+    },
+    {
+      "id": "hook",
+      "type": "messagebus",
+      "label": "EventHook",
+      "sublabel": "maps entity to payload, publishes",
+      "stage": 3,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 91,
+          "end_line": 139
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "typeform",
+      "to": "dto",
+      "label": "EventType names it",
+      "classification": "same entity, build-checked",
+      "variant": "emphasis",
+      "route": "straight"
+    },
+    {
+      "from": "labelform",
+      "to": "composer",
+      "label": "label + props + ops",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "plainform",
+      "to": "composer",
+      "label": "props + ops",
+      "variant": "default"
+    },
+    {
+      "from": "composer",
+      "to": "composed",
+      "label": "composed name",
+      "classification": "DtoGenerator emits it",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "dto",
+      "to": "hook",
+      "label": "raised as declared",
+      "variant": "emphasis"
+    },
+    {
+      "from": "composed",
+      "to": "hook",
+      "label": "re-composed at save",
+      "classification": "same source, cannot drift",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Composition order is fixed",
+      "items": [
+        "Entity name, then the label when one is given",
+        "Then narrowing properties, de-duplicated and ordinal-sorted",
+        "Then operations in the order Created, Updated, Deleted",
+        "Then the literal suffix Event"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "What the build rejects",
+      "items": [
+        "A composed name that is not a valid C# identifier (DKRAISEVT005)",
+        "Two declarations composing to the same name (DKRAISEVT006 / DKRAISEVT008)",
+        "Exclude or Include on the type-naming form (DKRAISEVT011)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Domain contracts and their host consumers",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Abstractions/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer application"
+        },
+        "backend": {
+          "label": "Package and framework types"
+        },
+        "database": {
+          "label": "Relational store"
+        },
+        "messagebus": {
+          "label": "Publisher adapter"
+        },
+        "security": {
+          "label": "Caller identity"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Domain application",
+      "sublabel": "derives concrete entities",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/Entity.cs",
+          "line": 19,
+          "end_line": 57
+        }
+      ]
+    },
+    {
+      "id": "entity",
+      "label": "Entity<TKey>",
+      "sublabel": "identity and event queues",
+      "pos": [
+        430,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/Entity.cs",
+          "line": 19,
+          "end_line": 83
+        }
+      ]
+    },
+    {
+      "id": "events",
+      "label": "IEventEntity",
+      "sublabel": "queue consumer contract",
+      "pos": [
+        810,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/IEventEntity.cs",
+          "line": 10,
+          "end_line": 50
+        }
+      ]
+    },
+    {
+      "id": "audit",
+      "label": "AuditedEntity<TKey>",
+      "sublabel": "audit identity and timestamps",
+      "pos": [
+        430,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/AuditedEntity.cs",
+          "line": 23,
+          "end_line": 114
+        }
+      ]
+    },
+    {
+      "id": "policies",
+      "label": "Policy attributes",
+      "sublabel": "RaisesEvent / audit / sequences",
+      "pos": [
+        50,
+        540
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs",
+          "line": 52,
+          "end_line": 99
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Attributes/SequenceAttribute.cs",
+          "line": 16,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "runtime",
+      "label": "Runtime consumers",
+      "sublabel": "Events / Extensions / AuditLogs",
+      "pos": [
+        810,
+        540
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventContext.cs",
+          "line": 26,
+          "end_line": 64
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Configurations/DefaultEntityTypeConfiguration.cs",
+          "line": 55,
+          "end_line": 77
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "entity",
+      "label": "inherits"
+    },
+    {
+      "from": "entity",
+      "to": "events",
+      "label": "implements"
+    },
+    {
+      "from": "audit",
+      "to": "entity",
+      "label": "inherits"
+    },
+    {
+      "from": "host",
+      "to": "policies",
+      "label": "declares"
+    },
+    {
+      "from": "events",
+      "to": "runtime",
+      "label": "read by"
+    },
+    {
+      "from": "policies",
+      "to": "runtime",
+      "label": "read by"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime ownership",
+      "items": [
+        "Contracts execute in the domain process; no service is registered here.",
+        "Direct references are EF Core Abstractions, annotations and FluentResults; the EF Core runtime is supplied by consumers."
+      ]
+    }
+  ]
+}

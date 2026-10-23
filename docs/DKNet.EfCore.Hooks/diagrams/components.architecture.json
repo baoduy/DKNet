@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Async save hook components inside the host",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Hooks/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer application"
+        },
+        "backend": {
+          "label": "Package and framework types"
+        },
+        "database": {
+          "label": "Relational store"
+        },
+        "messagebus": {
+          "label": "Publisher adapter"
+        },
+        "security": {
+          "label": "Caller identity"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Host DI scope",
+      "sublabel": "AddDbContextWithHook / AddHook",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 48,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "label": "DbContext",
+      "sublabel": "SaveChangesAsync",
+      "pos": [
+        430,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 48,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "runner",
+      "label": "HookRunnerInterceptor",
+      "sublabel": "keyed singleton",
+      "pos": [
+        810,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 122,
+          "end_line": 135
+        }
+      ]
+    },
+    {
+      "id": "factory",
+      "label": "HookFactory",
+      "sublabel": "resolve keyed scoped hooks",
+      "pos": [
+        50,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookFactory.cs",
+          "line": 47,
+          "end_line": 57
+        }
+      ]
+    },
+    {
+      "id": "hook",
+      "label": "IHookAsync implementations",
+      "sublabel": "before / after callbacks",
+      "pos": [
+        430,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/IHook.cs",
+          "line": 22,
+          "end_line": 81
+        }
+      ]
+    },
+    {
+      "id": "snapshot",
+      "label": "SnapshotContext",
+      "sublabel": "one capture per save",
+      "pos": [
+        810,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookContext.cs",
+          "line": 11,
+          "end_line": 18
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 155,
+          "end_line": 171
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "db",
+      "label": "registers"
+    },
+    {
+      "from": "db",
+      "to": "runner",
+      "label": "intercepts"
+    },
+    {
+      "from": "runner",
+      "to": "snapshot",
+      "label": "captures"
+    },
+    {
+      "from": "snapshot",
+      "to": "hook",
+      "label": "passed to"
+    },
+    {
+      "from": "factory",
+      "to": "hook",
+      "label": "resolves"
+    },
+    {
+      "from": "host",
+      "to": "factory",
+      "label": "scoped provider"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime ownership",
+      "items": [
+        "Hook contexts use a per-DbContext weak-keyed stack, preserving outer save state for nested saves.",
+        "Hooks resolve from the same application scope as the DbContext. The package has no independent store."
+      ]
+    }
+  ]
+}

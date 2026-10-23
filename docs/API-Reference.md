@@ -14,16 +14,16 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 🗄️ Entity Framework Core
 
-- [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md) — entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
-- [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md) — convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, `SnapshotContext`
+- [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md) — entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
+- [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) — convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, `SnapshotContext`
 - [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) — filter/includes/order-by as one reusable object, the non-generic `IRepositorySpec`, and the runtime Dynamic Predicate Builder. The current, supported way to query and persist
-- [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md) — before/after-`SaveChanges` interceptor pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`)
-- [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) — dispatches domain events raised by entities during `SaveChanges`
+- [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) — before/after-`SaveChanges` interceptor pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`)
+- [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) — dispatches domain events raised by entities during `SaveChanges`
 - [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) — structured, field-level change records handed to publishers you register
 - [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) — global query filter on reads plus `SaveChanges`-time owner stamping on writes
 - [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF Core `ValueConverter`
 - [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) — Roslyn incremental source generator that emits DTO properties from an entity type. See also the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md)
-- [DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers.md) — table creation, connection access, table-name resolution, and table-existence checks
+- [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) — table creation, connection access, table-name resolution, and table-existence checks
 
 ## 📨 Messaging & CQRS
 

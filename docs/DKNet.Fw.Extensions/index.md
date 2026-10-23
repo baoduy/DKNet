@@ -62,5 +62,5 @@ All helpers run synchronously in the caller's process. Assembly type arrays and 
 ## 🔗 Related packages
 
 - [DKNet.RandomCreator](../DKNet.RandomCreator/index.md) — reach for it when you need random strings or character buffers.
-- [DKNet.EfCore.Extensions](../EfCore/DKNet.EfCore.Extensions.md) — reach for it when assembly discovery should configure an EF Core model.
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — reach for it when assembly discovery should configure an EF Core model.
 - [DKNet.Svc.Transformation](../Services/DKNet.Svc.Transformation.md) — reach for it when values must be resolved into a text template.

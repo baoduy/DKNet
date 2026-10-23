@@ -44,11 +44,11 @@ and no package exists only to aggregate others.
 
 | Concern | Owner | Attaches via |
 |---|---|---|
-| Entity identity, audit fields, domain-event queue | [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) | base classes you derive from |
-| Model build: configuration discovery, global filters, seeding, GUID v7 keys, sequences | [`DKNet.EfCore.Extensions`](./EfCore/DKNet.EfCore.Extensions.md) | `UseAutoConfigModel<TContext>()` on `DbContextOptionsBuilder` |
+| Entity identity, audit fields, domain-event queue | [`DKNet.EfCore.Abstractions`](DKNet.EfCore.Abstractions/index.md) | base classes you derive from |
+| Model build: configuration discovery, global filters, seeding, GUID v7 keys, sequences | [`DKNet.EfCore.Extensions`](DKNet.EfCore.Extensions/index.md) | `UseAutoConfigModel<TContext>()` on `DbContextOptionsBuilder` |
 | Querying and persistence | [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo<TDbContext>()` |
-| Running code around `SaveChanges` | [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) | `AddDbContextWithHook<TDbContext>()` |
-| Dispatching domain events | [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md) | a hook, registered by `AddEventPublisher<TDbContext, TImpl>()` |
+| Running code around `SaveChanges` | [`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md) | `AddDbContextWithHook<TDbContext>()` |
+| Dispatching domain events | [`DKNet.EfCore.Events`](DKNet.EfCore.Events/index.md) | a hook, registered by `AddEventPublisher<TDbContext, TImpl>()` |
 | Field-level change history | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) | a hook, registered by `AddEfCoreAuditLogs<TDbContext, TPublisher>()` |
 | Row-level ownership | [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) | a global query filter plus a hook, registered by `AddDataOwnerProvider<TDbContext, TProvider>()` |
 | Filling `CreatedBy`/`UpdatedBy` on a save | [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md) from the signed-in user, else [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md) from the ownership key | `AddCurrentUserProvider<TDbContext, TProvider>()`; with no current-user value for the save, the ownership-key hook fills them instead |
@@ -83,7 +83,7 @@ value converter rather than through the hook pipeline.
 ## Domain-Driven Design (DDD)
 
 DDD focuses modeling on the core business domain. DKNet supports this with rich, event-raising entities rather than
-anemic data bags — see [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) for the full contract
+anemic data bags — see [`DKNet.EfCore.Abstractions`](DKNet.EfCore.Abstractions/index.md) for the full contract
 surface.
 
 ### Ubiquitous language and rich behavior
@@ -145,13 +145,13 @@ Dependencies always flow inward toward the domain. DKNet expresses this at the p
 application project:
 
 1. **Domain layer (core)** — entities, value objects, and domain logic with no infrastructure dependencies. Anchored
-   by [`DKNet.EfCore.Abstractions`](./EfCore/DKNet.EfCore.Abstractions.md) (`Entity`, `AuditedEntity`, `IEventEntity`).
+   by [`DKNet.EfCore.Abstractions`](DKNet.EfCore.Abstractions/index.md) (`Entity`, `AuditedEntity`, `IEventEntity`).
 2. **Application layer** — orchestrates the domain through command/query handlers. Realized by
    [`DKNet.SlimBus.Extensions`](./Messaging/DKNet.SlimBus.Extensions.md) and the `DKNet.Svc.*` service adapters.
 3. **Infrastructure layer** — implements interfaces declared by inner layers:
    [`DKNet.EfCore.Specifications`](./EfCore/DKNet.EfCore.Specifications.md) for persistence, plus the SaveChanges
-   interceptor pipeline ([`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md),
-   [`DKNet.EfCore.Events`](./EfCore/DKNet.EfCore.Events.md),
+   interceptor pipeline ([`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md),
+   [`DKNet.EfCore.Events`](DKNet.EfCore.Events/index.md),
    [`DKNet.EfCore.AuditLogs`](./EfCore/DKNet.EfCore.AuditLogs.md),
    [`DKNet.EfCore.DataAuthorization`](./EfCore/DKNet.EfCore.DataAuthorization.md)).
 4. **Presentation layer** — [`DKNet.AspCore.*`](./AspNetCore/README.md) minimal-API endpoints that depend only on
@@ -317,7 +317,7 @@ into domain or application code:
 - [`DKNet.EfCore.Encryption`](./EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF
   Core value converter (independent of the hook pipeline).
 
-The first two register against the same [`DKNet.EfCore.Hooks`](./EfCore/DKNet.EfCore.Hooks.md) pipeline
+The first two register against the same [`DKNet.EfCore.Hooks`](DKNet.EfCore.Hooks/index.md) pipeline
 (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that `DKNet.EfCore.Events` uses, and each is wired in independently
 via its own DI extension — there is no single "cross-cutting concerns" package to opt into.
 

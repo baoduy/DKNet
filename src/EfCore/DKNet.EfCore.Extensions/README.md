@@ -1,95 +1,70 @@
 # DKNet.EfCore.Extensions
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.EfCore.Extensions)](https://www.nuget.org/packages/DKNet.EfCore.Extensions/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+Model configuration, seeding, change-tracker helpers and sensitive JSON filtering for .NET developers using EF Core.
 
-The registration/glue package for the DKNet EF Core stack: automatic entity configuration discovery, global
-query filters, data seeding, GUID v7 keys, SQL sequences and the `SnapshotContext` type shared by
-`DKNet.EfCore.Hooks`, `DKNet.EfCore.Events`, `DKNet.EfCore.AuditLogs` and `DKNet.EfCore.DataAuthorization`.
+## ✨ Why use it?
 
-## Features
+- Apply configuration classes and shared entity conventions without repeating assembly scans per context.
+- Reuse named filters, primary-key-aware seeders and sequence metadata across a relational model.
+- Inspect save snapshots and opt individual JSON serializers into sensitive-property filtering.
 
-- **Auto entity configuration** — `UseAutoConfigModel<TContext>()` applies every `IEntityTypeConfiguration<T>`
-  found in one or more assemblies without manual `ApplyConfigurationsFromAssembly` calls.
-- **`DefaultEntityTypeConfiguration<T>`** — base configuration that wires primary keys (GUID v7 for `Guid`
-  ids), audit columns, and row-version concurrency by convention.
-- **Global query filters** — `IGlobalModelBuilder` / `GlobalQueryFilter` for cross-cutting filters (soft
-  delete, tenant/ownership isolation) applied automatically at model build time.
-- **Data seeding** — `IDataSeedingConfiguration` / `DataSeedingConfiguration<T>`, wired into EF Core's native
-  seeding pipeline via `UseAutoDataSeeding`.
-- **GUID v7 keys** — `GuidV7ValueGenerator` produces time-ordered GUIDs instead of random ones.
-- **SQL sequences** — declare sequences on an enum with `[SqlSequence]`/`[Sequence]`, read them with
-  `DbContext.NextSeqValue(...)` (SQL Server and Npgsql).
-- **Navigation & change-tracking helpers** — `IsNewEntity()`, `AddNewEntitiesFromNavigations()`, and related
-  `EntityEntry`/`DbContext` extensions.
-- **Concurrency-aware `SaveChanges`** — `IEfCoreExceptionHandler` + `SaveChangesWithConcurrencyHandlingAsync`.
-- **Role-gated sensitive properties** — `JsonSerializerOptions.UseRoleAwareSensitiveData(accessor)` omits a
-  `[SensitiveData(...)]` property from the JSON payload unless the caller is authenticated and holds one of the
-  declared roles. Opt-in per options instance, fail-closed, and the property is *absent* rather than null.
+## 🚀 Quick Start
 
-## Installation
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
 dotnet add package DKNet.EfCore.Extensions
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 10.0.12
 ```
-
-## Quick Start
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using DKNet.EfCore.Extensions.Configurations;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
-{
-    public DbSet<Product> Products => Set<Product>();
-}
+using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+connection.Open();
+var o = new DbContextOptionsBuilder<DemoDb>();
+o.UseSqlite(connection).UseAutoConfigModel<DemoDb>();
+await using var db = new DemoDb(o.Options);
+await db.Database.EnsureCreatedAsync();
+var item = new Item { Name = "Coffee" };
+db.Add(item);
+await db.SaveChangesAsync();
+Console.WriteLine(item.Id != Guid.Empty); // True
 
-public class ProductConfiguration : DefaultEntityTypeConfiguration<Product>
+public sealed class DemoDb(DbContextOptions<DemoDb> options) : DbContext(options)
 {
-    public override void Configure(EntityTypeBuilder<Product> builder)
+    public DbSet<Item> Items => Set<Item>();
+}
+public sealed class Item : DKNet.EfCore.Abstractions.Entities.Entity
+{
+    public string Name { get; set; } = "";
+}
+public sealed class ItemConfiguration : DefaultEntityTypeConfiguration<Item>
+{
+    public override void Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder<Item> b)
     {
-        base.Configure(builder); // Id (GuidV7 if Guid), audit columns, concurrency token
-        builder.Property(p => p.Name).HasMaxLength(255).IsRequired();
+        base.Configure(b);
+        b.Property(x => x.Name).HasMaxLength(80);
     }
 }
-
-// Registration
-services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(connectionString)
-           .UseAutoConfigModel<AppDbContext>()          // scan + apply configurations
-           .UseAutoDataSeeding([typeof(AppDbContext).Assembly])); // optional: run seed data
 ```
 
-## Customisation reference
+Run with `dotnet run`.
 
-There is no options class — everything is a registration argument, an attribute, or a virtual member you override.
+## Documentation
 
-| Knob | Where | Default | Effect |
-|---|---|---|---|
-| `UseAutoConfigModel<TContext>(params Assembly[]?)` | `DbContextOptionsBuilder` | `[typeof(TContext).Assembly]` when no assemblies are passed | Assemblies scanned for `IEntityTypeConfiguration<T>`, `IGlobalModelBuilder`, and `[SqlSequence]` enums. |
-| `UseAutoDataSeeding(Assembly[])` | `DbContextOptionsBuilder` | not wired | Separate opt-in; attaches discovered `IDataSeedingConfiguration` types to EF Core's `UseSeeding`/`UseAsyncSeeding`. |
-| `AddGlobalModelBuilder<TImplementation>()` | `IServiceCollection` | none | Adds a model builder that assembly scanning would not find. Merged and de-duplicated with the scanned ones. |
-| `AddEfCoreExceptionHandler<TDbContext, THandler>()` | `IServiceCollection` | none | Registers a keyed `IEfCoreExceptionHandler` for that `DbContext`. Idempotent. |
-| `IEfCoreExceptionHandler.MaxRetryCount` | interface default | `3` | Retry cap for `SaveChangesWithConcurrencyHandlingAsync`; past it the method returns `0` instead of throwing. |
-| `EfConcurrencyResolution` | handler return value | — | `IgnoreChanges`, `RetrySaveChanges`, or `RethrowException`. |
-| `GlobalQueryFilter.FilterKey` | your override | required | Named EF Core query-filter key. |
-| `GlobalQueryFilter.IsIgnorable` | your override | `true` | Whether a specification's `IgnoreQueryFilters()` may bypass this filter. Override to `false` for isolation filters. |
-| `IDataSeedingConfiguration.Order` | your override | `0` | **Declared but never read** — seeders run in assembly-scan order. |
-| `DefaultEntityTypeConfiguration<T>.Configure` | your override | applies key, audit and concurrency conventions | Call `base.Configure(builder)` first, then add your own mapping. |
-| `[Sequence]` / `[SqlSequence]` | `DKNet.EfCore.Abstractions` | see that package | Registered only when the provider is SQL Server or Npgsql. |
-| `JsonSerializerOptions.UseRoleAwareSensitiveData(ISensitiveDataPrincipalAccessor)` | `DKNet.EfCore.Extensions.Serialization` | off | Opts that one options instance into role-gated `[SensitiveData]` filtering. Call it at startup, before the options are first used. |
-| `ISensitiveDataPrincipalAccessor.Current` | your implementation | — | Supplies the `ClaimsPrincipal?` each serialization is judged against. `null` or unauthenticated ⇒ the property is withheld. |
-
-This package takes **no** `Microsoft.AspNetCore.*` dependency by design, so you write the accessor — typically a
-one-liner over `IHttpContextAccessor`. Full wiring example, the decision table, and the before/after payloads:
-https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers
-
-`DefaultEntityTypeConfiguration<T>` applies, by reflection: `Id` as the key (`ValueGeneratedOnAdd`, plus
-`GuidV7ValueGenerator` for `Guid`), `IAuditedProperties` columns (`CreatedBy`/`CreatedOn` required, max length
-255, insert-only; `UpdatedBy` max length 255), and `IConcurrencyEntity<T>.RowVersion` as a row-version
-concurrency token.
-
-Full feature guide, composition with Hooks/Events/AuditLogs/DataAuthorization, and gotchas:
-https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/index.md) | Start with architecture and the end-to-end flow. |
+| [Apply model configurations and entity conventions](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/configure-model.md) | Discover `IEntityTypeConfiguration<T>` implementations and apply DKNet identity, audit and concurrency conventions through a configuration base. |
+| [Apply named filters across matching entities](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/apply-global-filters.md) | Use `IGlobalModelBuilder` for model-wide changes and `GlobalQueryFilter` for per-entity named query filters. |
+| [Seed missing rows through EF Core callbacks](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/seed-data.md) | Discover `IDataSeedingConfiguration` implementations and run them through EF Core native seeding callbacks. |
+| [Read and format a database sequence value](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/read-sequences.md) | Use the enum sequence metadata to register a model sequence and fetch its next value on SQL Server or Npgsql. |
+| [Read keys and tracked property values](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/inspect-entries.md) | Inspect model keys and original/current entry values without repeating metadata lookups. |
+| [Stage new entities found in collection navigations](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/discover-navigation-entities.md) | Walk collection navigations from possible updating roots and add discovered new children in one batch. |
+| [Retry a save after a concurrency conflict](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/handle-concurrency.md) | Wrap an async save in a bounded retry loop using `IEfCoreExceptionHandler`. |
+| [Capture a save-time snapshot for hooks](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/capture-save-snapshot.md) | Keep the entries and their pre-save states available after EF Core has changed tracking state. |
+| [Withhold sensitive properties from unauthorised callers](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Extensions/filter-sensitive-responses.md) | Opt a `JsonSerializerOptions` instance into role-aware omission for properties declared `[SensitiveData]`. |

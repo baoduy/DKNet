@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Capture a save-time snapshot for hooks",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Extensions/capture-save-snapshot.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Initialize()",
+      "sublabel": "DetectChanges",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Snapshots/SnapshotContext.cs",
+          "line": 87,
+          "end_line": 101
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Select entries",
+      "sublabel": "Added / Modified / Deleted",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Snapshots/SnapshotContext.cs",
+          "line": 87,
+          "end_line": 101
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "SnapshotEntityEntry",
+      "sublabel": "live entry plus copied state",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Snapshots/SnapshotEntityEntry.cs",
+          "line": 22,
+          "end_line": 45
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Dispose()",
+      "sublabel": "clear capture only",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Snapshots/SnapshotContext.cs",
+          "line": 66,
+          "end_line": 79
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "SnapshotContext does not change AutoDetectChangesEnabled."
+      ]
+    }
+  ]
+}

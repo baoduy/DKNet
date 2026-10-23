@@ -1,0 +1,163 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Publish queued events after a successful save",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Events/publish-domain-events.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    },
+    {
+      "id": "exit",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "EventContext.GetEvents",
+      "sublabel": "objects plus mapped types",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventContext.cs",
+          "line": 37,
+          "end_line": 64
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "EventHook batch",
+      "sublabel": "merge declared events",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 130,
+          "end_line": 140
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Each IEventPublisher",
+      "sublabel": "try each publisher",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 142,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "ClearEvents",
+      "sublabel": "after publisher loop",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 142,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "exit",
+      "lane": "exit",
+      "col": 2,
+      "type": "security",
+      "label": "Log failure",
+      "sublabel": "continue remaining publishers",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/Internals/EventHook.cs",
+          "line": 142,
+          "end_line": 156
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternative",
+      "from": "s2",
+      "to": "exit",
+      "label": "publisher throws",
+      "role": "branch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "A publisher failure cannot undo an already completed EF save.",
+        "Use an application-designed transactional outbox when durable delivery is required."
+      ]
+    }
+  ]
+}

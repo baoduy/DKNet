@@ -760,7 +760,7 @@ handler, and writes at most three files per entity:
 
 ![Workflow diagram: the generator scans the compiling assembly and its non-framework references for CRUD-attributed members, looks up GenerateDto DTOs in the compiling assembly only, and scans that assembly's syntax for IHandler base lists matched by request name; it resolves each entity's IEntity key and single DTO into an entity model, reporting DKCRUDGEN001-008 and skipping the entity when resolution fails, then emits the requests file, the handlers file, and the endpoints file when DKNet.AspCore.Extensions is referenced.](../diagrams/slimbus-generators-compile-flow.svg)
 
-- **[DKNet.EfCore.Abstractions](../EfCore/DKNet.EfCore.Abstractions.md)** — home of the CRUD attributes and
+- **[DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md)** — home of the CRUD attributes and
   `IEntity<TKey>`, which every attributed entity must implement.
 - **[DKNet.EfCore.DtoGenerator](../EfCore/DKNet.EfCore.DtoGenerator.md)** — supplies the `[GenerateDto]` DTOs this
   generator resolves against.

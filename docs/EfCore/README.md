@@ -7,11 +7,11 @@ Architecture. Each package below is independent and opt-in — pull in only what
 
 ## Foundation
 
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) — entity base classes
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) — entity base classes
   (`Entity`, `AuditedEntity`), domain-event contracts (`IEventEntity`), and the attributes
   (`[AuditLog]`, `[SensitiveData]`, `[RaisesEvent]`, `[Sequence]`, …) that every other package
   in this list reads. Start here.
-- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) — the DI/wiring layer: automatic
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — the DI/wiring layer: automatic
   entity configuration discovery, global query filters, data seeding, GUIDv7 keys, sequences,
   and the `SnapshotContext` shared by the hook-based packages below.
 
@@ -26,10 +26,10 @@ Architecture. Each package below is independent and opt-in — pull in only what
 
 ## SaveChanges pipeline
 
-- [DKNet.EfCore.Hooks](./DKNet.EfCore.Hooks.md) — the before/after-SaveChanges interceptor
+- [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) — the before/after-SaveChanges interceptor
   pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`) that Events, AuditLogs, and
   DataAuthorization all register against.
-- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) — dispatches domain events raised by
+- [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) — dispatches domain events raised by
   entities (`AddEvent`) as part of that pipeline.
 - [DKNet.EfCore.AuditLogs](./DKNet.EfCore.AuditLogs.md) — captures an audit trail of entity
   changes, with `[SensitiveData]`-aware redaction.
@@ -46,7 +46,7 @@ Architecture. Each package below is independent and opt-in — pull in only what
 
 ## Utilities
 
-- [DKNet.EfCore.Relational.Helpers](./DKNet.EfCore.Relational.Helpers.md) — small
+- [DKNet.EfCore.Relational.Helpers](../DKNet.EfCore.Relational.Helpers/index.md) — small
   provider-aware `DbContext` helpers (table existence/creation, table name resolution).
 
 ## How the pieces fit together

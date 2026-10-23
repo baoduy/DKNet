@@ -11,7 +11,7 @@ mapping boilerplate, no runtime reflection.
   `DtoGeneratorExclusions` MSBuild property mean an entity's internal field cannot reach a DTO because someone forgot
   an exclusion list.
 - **Event payloads that cannot mismatch their entity** — payload records for `[RaisesEvent]` (see
-  [DKNet.EfCore.Events](./DKNet.EfCore.Events.md)) are generated from the same entity, and the generator validates the
+  [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md)) are generated from the same entity, and the generator validates the
   declarations at compile time with `DKRAISEVT*` diagnostics.
 - **Zero runtime footprint** — the generator is a `netstandard2.0` analyzer (`DevelopmentDependency`,
   `PrivateAssets="all"`) that runs inside the compiler. A generated DTO is a plain `record`/`class` with `init`-only
@@ -173,13 +173,13 @@ generated source compiles either way.
 You never re-declare `[SensitiveData]` on the DTO: declare it once on the entity, and every generated response
 model that includes the property carries it. What the attribute then *does* depends on the consumer — audit-log
 redaction in `DKNet.EfCore.AuditLogs`, and role-gated response filtering if the host opted in via
-[`UseRoleAwareSensitiveData`](./DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
+[`UseRoleAwareSensitiveData`](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers).
 Excluding the property (`Exclude`, the global exclusions list, or `IgnoreComplexType`) removes it from the DTO
 entirely, attribute and all — that is the blunter way to keep a value out of a response.
 
 ### `[RaisesEvent]` validation (`RaisesEventValidator`)
 
-`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+`RaisesEventValidator` is a second `IIncrementalGenerator` in this same package. It does not shape DTOs itself; it validates every `DKNet.EfCore.Abstractions.Events.RaisesEventAttribute` declaration on an entity at build time, and — for the attribute's convention forms only — generates the payload record, named by fixed convention. See [`RaisesEventAttribute`](https://github.com/baoduy/DKNet/blob/main/src/EfCore/DKNet.EfCore.Abstractions/Events/RaisesEventAttribute.cs) for the attribute itself; `DKNet.EfCore.Events` is what actually raises the event at runtime (via reflection, after `SaveChanges`) — see [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md).
 
 Declaring a domain event is two separate steps:
 
@@ -294,7 +294,7 @@ The one rule worth memorising is the filter precedence — `Include` short-circu
 - **Depends on nothing at runtime.** The generator assembly targets `netstandard2.0`, is packed as an `analyzer` with `DevelopmentDependency=true` and `IncludeBuildOutput=false` — it runs inside the compiler process only. A project referencing it needs no other DKNet package to compile DTOs — unless an entity declares `[SensitiveData]`, which is carried onto the DTO and so needs `DKNet.EfCore.Abstractions` referenced. The generator itself still has no reference to that package: it matches the attribute by namespace and name in the compilation, never by loading the type.
 - **Generated DTOs are plain data types.** No base class and no interface — a generated DTO has no coupling to this generator once compiled. Project it, serialize it, return it from an API — it's an ordinary `record`/`class`. The only things carried onto it are the property-level attributes listed in [Attributes carried onto the generated property](#attributes-carried-onto-the-generated-property); a DTO whose entity declares `[SensitiveData]` therefore does reference `DKNet.EfCore.Abstractions`.
 - **Cross-reference with `DKNet.EfCore.Abstractions`:** `RaisesEventValidator` validates against `RaisesEventAttribute` (declared in `DKNet.EfCore.Abstractions.Events`) purely by attribute *name* and constant shape — it does not reference the `DKNet.EfCore.Abstractions` assembly at all (it even mirrors `EventOperations.Updated`'s numeric value as a local constant rather than referencing the real enum). The one exception is the naming algorithm itself: `EventNameComposer.cs` lives in `DKNet.EfCore.Abstractions` and is `<Compile Include>`-linked (not project-referenced) into this generator, so the build-time composed name and the `DKNet.EfCore.Events` runtime-composed name are produced by the exact same source and can never disagree. A domain project can declare `[RaisesEvent]` rules and reference only `DKNet.EfCore.Abstractions` + this generator, and it builds and packs cleanly — the rules simply never raise until `DKNet.EfCore.Events` is wired up.
-- **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](./DKNet.EfCore.Events.md).
+- **`DKNet.EfCore.Events`** is the runtime counterpart: it reads `[RaisesEvent]` via reflection after a successful `SaveChanges` and raises the named payload, mapping the entity onto it through a registered `IMapper` (e.g. Mapster). See [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md).
 - **No built-in Mapster/AutoMapper integration.** Unlike some earlier iterations of this generator, no mapping helper methods are emitted — you choose your own mapping approach (e.g. Mapster's `Adapt`/`ProjectToType`, or manual assignment) for entity ↔ DTO conversion.
 
 ## ⚠️ Gotchas & limits
@@ -312,9 +312,9 @@ The one rule worth memorising is the filter precedence — `Include` short-circu
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Events](./DKNet.EfCore.Events.md) – the runtime counterpart. Reach for it to actually raise the
+- [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) – the runtime counterpart. Reach for it to actually raise the
   `[RaisesEvent]` payloads this generator emits and validates.
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – declares `[RaisesEvent]`, `EventOperations`, and the
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) – declares `[RaisesEvent]`, `EventOperations`, and the
   entity base classes the generated DTOs are derived from. Reach for it when modelling the entity itself.
 - [Global Exclusions Guide](./GLOBAL_EXCLUSIONS_GUIDE.md) – the full behaviour of the project-wide
   `DtoGeneratorExclusions` / `DtoGeneratorIgnoreComplexType` MSBuild properties. Reach for it when tuning exclusions

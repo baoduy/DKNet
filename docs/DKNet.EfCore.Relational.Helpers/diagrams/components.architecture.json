@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Relational metadata and provisioning helpers",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Relational.Helpers/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer application"
+        },
+        "backend": {
+          "label": "Package and framework types"
+        },
+        "database": {
+          "label": "Relational store"
+        },
+        "messagebus": {
+          "label": "Publisher adapter"
+        },
+        "security": {
+          "label": "Caller identity"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Infrastructure caller",
+      "sublabel": "four DbContext helpers",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 15,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "helper",
+      "label": "DbContextHelpers",
+      "sublabel": "names / exists / create / open",
+      "pos": [
+        430,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 35,
+          "end_line": 121
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "label": "EF Core DbContext",
+      "sublabel": "model and DatabaseFacade",
+      "pos": [
+        810,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "id": "creator",
+      "label": "RelationalDatabaseCreator",
+      "sublabel": "ensure database; create schema",
+      "pos": [
+        430,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 40,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "label": "SQL Server / PostgreSQL",
+      "sublabel": "catalog, model tables, connection",
+      "pos": [
+        810,
+        310
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 60,
+          "end_line": 70
+        },
+        {
+          "path": "src/EfCore/DKNet.EfCore.Relational.Helpers/DbContextHelpers.cs",
+          "line": 107,
+          "end_line": 121
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "helper",
+      "label": "calls"
+    },
+    {
+      "from": "helper",
+      "to": "context",
+      "label": "reads metadata"
+    },
+    {
+      "from": "helper",
+      "to": "creator",
+      "label": "create path"
+    },
+    {
+      "from": "context",
+      "to": "database",
+      "label": "catalog query / connection"
+    },
+    {
+      "from": "creator",
+      "to": "database",
+      "label": "whole-model DDL"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime ownership",
+      "items": [
+        "Plain extension calls use the caller context and provider; no helper-specific DI registration exists.",
+        "The project references Extensions, EF Core and EF Core Relational; INFORMATION_SCHEMA checks require a compatible provider."
+      ]
+    }
+  ]
+}

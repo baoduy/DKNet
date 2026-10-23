@@ -393,9 +393,9 @@ filters, then includes, then ordering, then the tracking/window flags:
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Abstractions](./DKNet.EfCore.Abstractions.md) – the `Entity`/`AuditedEntity` aggregates
+- [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) – the `Entity`/`AuditedEntity` aggregates
   specifications are usually written against. Reach for it when modelling the entities themselves.
-- [DKNet.EfCore.Extensions](./DKNet.EfCore.Extensions.md) – owns `GlobalQueryFilter`, the mechanism
+- [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) – owns `GlobalQueryFilter`, the mechanism
   `IgnoreQueryFilters()` interacts with, plus the concurrency-handling save extension `RepositorySpec` calls. Reach
   for it to register a global filter or configure the model.
 - [Migrating-Repos-To-Specifications](./Migrating-Repos-To-Specifications.md) – the per-call mapping from the removed
