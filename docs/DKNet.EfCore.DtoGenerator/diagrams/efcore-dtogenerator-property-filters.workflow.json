@@ -16,6 +16,11 @@
           "label": "Dropped"
         }
       }
+    },
+    "output": ".task-validation/DtoGenerator/efcore-dtogenerator-property-filters.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
     }
   },
   "lanes": [
@@ -70,7 +75,14 @@
       "label": "Entity properties",
       "sublabel": "public instance, public getter",
       "width": 168,
-      "tag": "base chain, de-duplicated"
+      "tag": "base chain, de-duplicated",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "include",
@@ -79,7 +91,14 @@
       "type": "backend",
       "label": "Include",
       "sublabel": "non-empty wins outright",
-      "width": 152
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "exclude",
@@ -87,8 +106,15 @@
       "col": 2,
       "type": "backend",
       "label": "Exclude + global list",
-      "sublabel": "attribute list plus DtoGeneratorExclusions",
-      "width": 176
+      "sublabel": "local + DtoGeneratorExclusions",
+      "width": 176,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "complex",
@@ -97,7 +123,14 @@
       "type": "backend",
       "label": "IgnoreComplexType",
       "sublabel": "per-DTO, then MSBuild, then true",
-      "width": 176
+      "width": 176,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "dto",
@@ -106,7 +139,14 @@
       "type": "backend",
       "label": "DTO property",
       "sublabel": "member of your partial record",
-      "width": 168
+      "width": 168,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "byname",
@@ -115,7 +155,14 @@
       "type": "security",
       "label": "Dropped by name",
       "sublabel": "listed in Exclude or the global list",
-      "width": 176
+      "width": 176,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     },
     {
       "id": "bynav",
@@ -124,7 +171,14 @@
       "type": "security",
       "label": "Dropped as navigation",
       "sublabel": "class, not string, not [Owned]",
-      "width": 176
+      "width": 176,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 820,
+          "end_line": 863
+        }
+      ]
     }
   ],
   "edges": [
@@ -148,7 +202,10 @@
       "to": "dto",
       "label": "Include set, every other filter bypassed",
       "variant": "dashed",
-      "role": "branch"
+      "role": "branch",
+      "route": "up-channel",
+      "fromSide": "top",
+      "toSide": "top"
     },
     {
       "id": "exclude-complex",
@@ -185,7 +242,7 @@
       "items": [
         "DtoGenerator emits the DTO members for [GenerateDto]",
         "RaisesEventValidator validates [RaisesEvent] and emits convention-form payloads",
-        "Convention-form payloads always omit navigation properties"
+        "Convention-form payloads omit recognised navigation properties"
       ]
     },
     {

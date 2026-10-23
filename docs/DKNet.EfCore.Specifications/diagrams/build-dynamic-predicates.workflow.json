@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Validate runtime filter input explicitly",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Specifications/build-dynamic-predicates.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Execution path"
+    },
+    {
+      "id": "alternative",
+      "label": "Alternative path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "TryBuildPredicate",
+      "sublabel": "field + Ops + value",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 145,
+          "end_line": 151
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Normalize field path",
+      "sublabel": "safe names + resolved type",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 52,
+          "end_line": 59
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Coerce and parse",
+      "sublabel": "parameterized typed condition",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 86,
+          "end_line": 133
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Return predicate",
+      "sublabel": "caller decides acceptance",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 148,
+          "end_line": 150
+        }
+      ]
+    },
+    {
+      "id": "alternative",
+      "lane": "alternative",
+      "col": 2,
+      "type": "security",
+      "label": "False / unchanged",
+      "sublabel": "unusable value or parse failure",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Dynamics/DynamicPredicateExtensions.cs",
+          "line": 69,
+          "end_line": 76
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternate",
+      "from": "s2",
+      "to": "alternative",
+      "label": "invalid condition",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior boundary",
+      "items": [
+        "DynamicAnd and DynamicOr skip unusable typed conditions. At a request boundary reject false explicitly instead of returning widened data."
+      ]
+    }
+  ]
+}

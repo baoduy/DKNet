@@ -6,7 +6,7 @@ hashing, and Base64/Base64URL helpers, all string-in/string-out.
 > [!NOTE]
 > Looking for **transparent EF Core column encryption** instead — where an attribute on an entity property does the work
 > automatically on save/load? That's a different package:
-> [`DKNet.EfCore.Encryption`](../EfCore/DKNet.EfCore.Encryption.md). Use `DKNet.Svc.Encryption` when you want to call
+> [`DKNet.EfCore.Encryption`](../DKNet.EfCore.Encryption/index.md). Use `DKNet.Svc.Encryption` when you want to call
 > `Encrypt`/`Decrypt` yourself; use `DKNet.EfCore.Encryption` when you want a column encrypted without touching the code
 > that reads and writes the entity. The two don't share implementation — `DKNet.EfCore.Encryption`'s AES-GCM provider has
 > its own key-provider abstraction.
@@ -239,7 +239,7 @@ take a key:
 
 ![Architecture diagram: AddEncryptionServices registers the transient IShaHashing and IHmacHashing services with no key; AddAesGcmEncryption and AddRsaEncryption each register one key-bearing singleton cipher inside a boundary labelled "you supply and persist the key"; Base64StringExtensions is static and never registered.](../diagrams/svc-encryption-registration-map.svg)
 
-- **[DKNet.EfCore.Encryption](../EfCore/DKNet.EfCore.Encryption.md)** — the transparent counterpart: encrypt a column
+- **[DKNet.EfCore.Encryption](../DKNet.EfCore.Encryption/index.md)** — the transparent counterpart: encrypt a column
   without the calling code knowing. Use this package when the call site should decide; use that one when the storage
   layer should.
 - **[DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md)** — encrypt a payload here before
@@ -270,7 +270,7 @@ take a key:
 
 ## 🔗 Related packages
 
-- [DKNet.EfCore.Encryption](../EfCore/DKNet.EfCore.Encryption.md) – reach for it when a column should be encrypted
+- [DKNet.EfCore.Encryption](../DKNet.EfCore.Encryption/index.md) – reach for it when a column should be encrypted
   transparently on save and decrypted on load.
 - [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions.md) – reach for it when the values being
   protected are files rather than fields.

@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Install converters for marked string columns",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Encryption/encrypt-columns.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Execution path"
+    },
+    {
+      "id": "alternative",
+      "label": "Alternative path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Mapped string properties",
+      "sublabel": "inspect EncryptedAttribute",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 42,
+          "end_line": 54
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Check PK and FK",
+      "sublabel": "keys are unsupported",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 54,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "GetKey(declaringType)",
+      "sublabel": "capture valid AES key bytes",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 60,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "SetValueConverter",
+      "sublabel": "encrypt writes / decrypt reads",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Converters/ColumnEncryptionConverter.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ]
+    },
+    {
+      "id": "alternative",
+      "lane": "alternative",
+      "col": 1,
+      "type": "security",
+      "label": "Model build throws",
+      "sublabel": "InvalidOperationException",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 56,
+          "end_line": 58
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternate",
+      "from": "s1",
+      "to": "alternative",
+      "label": "marked PK or FK",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior boundary",
+      "items": [
+        "Unmarked, non-string and shadow-only properties are skipped. Apply after model properties exist."
+      ]
+    }
+  ]
+}

@@ -231,7 +231,7 @@ registers that filter in `EfCoreSetup.GlobalModelBuilders`, which is **static**:
 reporting `DbContext`, say — whose model contains `IOwnedBy` entities and that does not implement
 `IDataOwnerDbContext` therefore starts throwing at model-build time after this upgrade, with no compile error
 pointing at it. Implement `IDataOwnerDbContext` on that context too, or keep `IOwnedBy` entities out of its model.
-Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
+Details: [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md).
 
 ### Behaviour changes that fail silently
 

@@ -1,72 +1,79 @@
 # DKNet.EfCore.Encryption
 
-Transparent, column-level encryption for EF Core `string` properties. Mark a property `[Encrypted]`, register a key provider, and EF Core encrypts values with AES-GCM before they hit the database and decrypts them on read — application code always sees plaintext.
+Encrypt and decrypt EF Core string columns through value converters for .NET developers.
+
+## ✨ Why use it?
+
+- Keep selected database columns unreadable as plaintext while entities expose normal strings.
+- Detect ciphertext tampering through AES-GCM authentication.
+- Supply your own key source without adopting the Hooks pipeline.
+
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the packages, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
 dotnet add package DKNet.EfCore.Encryption
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 10.0.12
 ```
 
-## Features
-
-- `[Encrypted]` attribute — opt-in marker for any `string` property.
-- `AesGcmColumnEncryptionProvider` — default AES-128/192/256-GCM implementation (random IV per value, authenticated encryption).
-- `IColumnEncryptionProvider` — swappable encryption algorithm abstraction.
-- `IEncryptionKeyProvider` — bring your own key source (config, env var, Key Vault, etc.), one key per entity type.
-- `ModelBuilder.UseColumnEncryption(...)` — one call in `OnModelCreating` wires up every `[Encrypted]` property automatically; rejects primary/foreign key columns.
-- `services.AddEfCoreEncryption<TKeyProvider>()` — registers your key provider in DI.
-
-## Quick start
-
 ```csharp
-public sealed class AppEncryptionKeyProvider : IEncryptionKeyProvider
-{
-    private readonly byte[] _key = Convert.FromBase64String(
-        Environment.GetEnvironmentVariable("APP_ENCRYPTION_KEY")!); // 16, 24, or 32 bytes
+using System.Security.Cryptography;
+using DKNet.EfCore.Encryption;
+using DKNet.EfCore.Encryption.Attributes;
+using DKNet.EfCore.Encryption.Encryption;
+using DKNet.EfCore.Encryption.Extensions;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
+using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+connection.Open();
+var services = new ServiceCollection();
+services.AddEfCoreEncryption<DemoKey>();
+services.AddDbContext<DemoDb>(o => o.UseSqlite(connection));
+using var provider = services.BuildServiceProvider();
+using var scope = provider.CreateScope();
+await using var db = scope.ServiceProvider.GetRequiredService<DemoDb>();
+await db.Database.EnsureCreatedAsync();
+db.Add(new Customer { Secret = "demo-value" });
+await db.SaveChangesAsync();
+db.ChangeTracker.Clear();
+Console.WriteLine((await db.Customers.SingleAsync()).Secret); // demo-value
+using var command = connection.CreateCommand();
+command.CommandText = "SELECT Secret FROM Customers";
+Console.WriteLine((string)command.ExecuteScalar()! != "demo-value"); // True
+
+public sealed class DemoKey : IEncryptionKeyProvider
+{
+    private readonly byte[] _key = RandomNumberGenerator.GetBytes(32);
     public byte[] GetKey(Type entityType) => _key;
 }
-
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddEfCoreEncryption<AppEncryptionKeyProvider>();
-
-public class Customer
-{
-    public int Id { get; set; }
-
-    [Encrypted]
-    public string? Ssn { get; set; }
-}
-
-public class AppDbContext(DbContextOptions<AppDbContext> options, IEncryptionKeyProvider keyProvider)
-    : DbContext(options)
+public sealed class DemoDb(DbContextOptions<DemoDb> options, IEncryptionKeyProvider keys) : DbContext(options)
 {
     public DbSet<Customer> Customers => Set<Customer>();
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.UseColumnEncryption(keyProvider);
+        modelBuilder.UseColumnEncryption(keys);
     }
+}
+public sealed class Customer
+{
+    public int Id { get; set; }
+    [Encrypted]
+    public string? Secret { get; set; }
 }
 ```
 
-## Customisation reference
+Run with `dotnet run`.
 
-There is no options class and nothing is bound from `appsettings.json` — the customisation surface is the key
-provider you write plus two wiring calls.
+## Documentation
 
-| Knob | Type | Default | Effect |
-|---|---|---|---|
-| `[Encrypted]` | property attribute | — | Opts a `string` property in. `AttributeTargets.Property`; nothing else is scanned. |
-| `IEncryptionKeyProvider.GetKey(Type entityType)` | `byte[]` | none — you implement it | The AES key for every `[Encrypted]` property on that entity type. Evaluated once per property, at model-build time. |
-| `AesGcmColumnEncryptionProvider(byte[] key)` | `byte[]` | required | Key material. Exactly 16, 24 or 32 bytes; anything else throws `ArgumentException`, `null` throws `ArgumentNullException`. |
-| `IColumnEncryptionProvider` | interface | `AesGcmColumnEncryptionProvider` | Implement it to swap the algorithm; `ColumnEncryptionConverter` takes any implementation. |
-| `AddEfCoreEncryption<TKeyProvider>()` | `IServiceCollection` extension | — | Registers `TKeyProvider` as the singleton `IEncryptionKeyProvider`, and only when one is not already registered. |
-| `ModelBuilder.UseColumnEncryption(keyProvider)` | `ModelBuilder` extension | — | Must be called from `OnModelCreating`. Without it `[Encrypted]` has no effect at all. |
-
-Ciphertext layout is fixed: Base64 of a 12-byte random IV, a 16-byte GCM tag, and the ciphertext, in that order.
-`null` and empty strings pass through unchanged. Marking a primary or foreign key `[Encrypted]` throws
-`InvalidOperationException` while the model is being built. There is no key rotation, versioned ciphertext, or
-per-property key support.
-
-Full documentation, configuration notes, and gotchas (query limitations on encrypted columns, key rotation, ciphertext sizing): https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Encryption.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/index.md) | Start with architecture and the end-to-end flow. |
+| [Encrypt mapped columns](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/encrypt-columns.md) | Attach converters and understand ciphertext and query limits. |
+| [Supply encryption keys](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/supply-encryption-keys.md) | Register stable keys and plan model and data changes. |
+| [Use a custom encryption provider](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/use-custom-provider.md) | Apply an explicit converter for another algorithm. |

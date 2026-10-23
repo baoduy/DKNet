@@ -86,5 +86,5 @@ Use SaveChangesAsync; synchronous saves fail unless hooks are disabled. Empty sn
 
 - [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/index.md) — reach for it to inspect the shared snapshot and model helpers.
 - [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) — reach for it to publish domain events using an existing hook.
-- [DKNet.EfCore.AuditLogs](../EfCore/DKNet.EfCore.AuditLogs.md) — reach for it for field-level audit capture.
-- [DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — reach for it for the existing ownership filter and stamping hook.
+- [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — reach for it for field-level audit capture.
+- [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — reach for it for the existing ownership filter and stamping hook.

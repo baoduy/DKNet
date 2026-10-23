@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Explicit column conversion components",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Encryption/provider-components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Host model configuration",
+      "sublabel": "chooses one property",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 62,
+          "end_line": 63
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "converter",
+      "label": "ColumnEncryptionConverter",
+      "sublabel": "ValueConverter<string?, string?>",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Converters/ColumnEncryptionConverter.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "provider",
+      "label": "IColumnEncryptionProvider",
+      "sublabel": "Encrypt + Decrypt",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Interfaces/IColumnEncryptionProvider.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ],
+      "type": "security",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "host",
+      "to": "converter",
+      "label": "HasConversion"
+    },
+    {
+      "id": "c1",
+      "from": "converter",
+      "to": "provider",
+      "label": "value conversion"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "The host attaches an explicit converter; registering an algorithm service alone does not change automatic attribute scanning."
+      ]
+    }
+  ]
+}

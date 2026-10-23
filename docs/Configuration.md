@@ -269,11 +269,11 @@ Each page below owns the exhaustive table for its own package. This page does no
 | [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
 | [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
 | [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
-| [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
-| [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
-| [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
-| [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
-| [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
+| [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
+| [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
+| [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
+| [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
+| [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
 | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator` |
 | [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
 | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |

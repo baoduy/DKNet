@@ -63,4 +63,4 @@ There is no ordering guarantee or automatic retry. The host’s stopping token r
 
 - [Extensions](../DKNet.AspCore.Extensions/index.md) — use its endpoint and host helpers.
 - [Idempotency](../DKNet.AspCore.Idempotency/index.md) — protect per-request retries.
-- [EF Core Specifications](../EfCore/DKNet.EfCore.Specifications.md) — use repositories inside task-owned scopes.
+- [EF Core Specifications](../DKNet.EfCore.Specifications/index.md) — use repositories inside task-owned scopes.

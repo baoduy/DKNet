@@ -39,7 +39,7 @@ public sealed class Customer : Entity
 | `Properties` | `IReadOnlyList<string>` | empty | Any direct change qualifies for Updated; a list narrows it. |
 | `Include` / `Exclude` | `string[]` | `[]` | Shape composed payloads; never change their names. |
 
-A nonempty `Include` overrides global `DtoGeneratorExclusions`; navigations are still omitted. Without Include, global exclusions also apply to composed payloads. See [DtoGenerator](../EfCore/DKNet.EfCore.DtoGenerator.md) for build diagnostics and payload generation.
+A nonempty `Include` overrides global `DtoGeneratorExclusions`; navigations are still omitted. Without Include, global exclusions also apply to composed payloads. See [DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) for build diagnostics and payload generation.
 
 ## 🧱 Where it fits
 

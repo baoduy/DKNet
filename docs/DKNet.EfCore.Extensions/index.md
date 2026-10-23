@@ -83,5 +83,5 @@ The default assembly is the context assembly. Configuration classes introduce th
 - [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md) — reach for it to define entities and policy metadata.
 - [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) — reach for it to run work around async saves.
 - [DKNet.EfCore.Relational.Helpers](../DKNet.EfCore.Relational.Helpers/index.md) — reach for it to inspect or provision relational tables.
-- [DKNet.EfCore.AuditLogs](../EfCore/DKNet.EfCore.AuditLogs.md) — reach for it for field-level audit capture.
-- [DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — reach for it for the existing ownership filter and stamping hook.
+- [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) — reach for it for field-level audit capture.
+- [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — reach for it for the existing ownership filter and stamping hook.

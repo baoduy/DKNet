@@ -1,0 +1,168 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Fill audit identity before capture",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/AuditLogs/stamp-current-user.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Execution path"
+    },
+    {
+      "id": "alternative",
+      "label": "Alternative path",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "GetCurrentUser",
+      "sublabel": "read scoped provider once",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 66,
+          "end_line": 73
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Original save state",
+      "sublabel": "Added or Modified",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 71,
+          "end_line": 83
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "AuditPropertyStamper",
+      "sublabel": "preserve explicit values",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/AuditPropertyStamper.cs",
+          "line": 32,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Build audit entries",
+      "sublabel": "read stamped entity metadata",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 39,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "alternative",
+      "lane": "alternative",
+      "col": 0,
+      "type": "security",
+      "label": "Skip user stamping",
+      "sublabel": "provider missing or empty user",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 69,
+          "end_line": 71
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternate",
+      "from": "s0",
+      "to": "alternative",
+      "label": "empty user",
+      "variant": "security",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior boundary",
+      "items": [
+        "Deleted entries are not stamped. DataOwnerHook supplies an ownership-key fallback when no non-empty user is available."
+      ]
+    }
+  ]
+}

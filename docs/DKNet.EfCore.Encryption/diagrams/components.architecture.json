@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Column encryption at the EF conversion boundary",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Encryption/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "model",
+      "label": "OnModelCreating",
+      "sublabel": "UseColumnEncryption",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "converter",
+      "label": "ColumnEncryptionConverter",
+      "sublabel": "string value conversion",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Converters/ColumnEncryptionConverter.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "ef",
+      "label": "EF mapped string column",
+      "sublabel": "write ciphertext / read bytes",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 61,
+          "end_line": 64
+        }
+      ],
+      "type": "database",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "keys",
+      "label": "IEncryptionKeyProvider",
+      "sublabel": "host singleton key source",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/EfCoreEncryptionSetup.cs",
+          "line": 25,
+          "end_line": 33
+        }
+      ],
+      "type": "security",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "aes",
+      "label": "AES-GCM provider",
+      "sublabel": "retains key bytes",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Encryption/AesGcmColumnEncryptionProvider.cs",
+          "line": 32,
+          "end_line": 44
+        }
+      ],
+      "type": "security",
+      "pos": [
+        450,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "model",
+      "to": "converter",
+      "label": "attach per property"
+    },
+    {
+      "id": "c1",
+      "from": "converter",
+      "to": "ef",
+      "label": "converted values"
+    },
+    {
+      "id": "c2",
+      "from": "keys",
+      "to": "model",
+      "label": "GetKey at model build"
+    },
+    {
+      "id": "c3",
+      "from": "converter",
+      "to": "aes",
+      "label": "Encrypt / Decrypt"
+    },
+    {
+      "id": "c4",
+      "from": "keys",
+      "to": "aes",
+      "label": "captured key"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "The package depends only on EF Core. Its converter executes in the application process; no Hooks interceptor or remote key source is supplied."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Specification repository inside an EF application",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/Specifications/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Application scope",
+      "sublabel": "AddSpecRepo",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/SpecSetup.cs",
+          "line": 30,
+          "end_line": 40
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "repo",
+      "label": "IRepositorySpec",
+      "sublabel": "scoped RepositorySpec",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 155,
+          "end_line": 163
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "db",
+      "label": "Configured DbContext",
+      "sublabel": "query and save",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 198,
+          "end_line": 235
+        }
+      ],
+      "type": "database",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "spec",
+      "label": "Specification<TEntity>",
+      "sublabel": "filter / include / order",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Definitions/Specification.cs",
+          "line": 50,
+          "end_line": 66
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "mapper",
+      "label": "Mapster IMapper",
+      "sublabel": "optional for model queries",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 202,
+          "end_line": 213
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "factory",
+      "label": "IRepositorySpecFactory",
+      "sublabel": "owns provider scopes",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpecProvider.cs",
+          "line": 30,
+          "end_line": 36
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "host",
+      "to": "repo",
+      "label": "resolve"
+    },
+    {
+      "id": "c1",
+      "from": "repo",
+      "to": "db",
+      "label": "query / save"
+    },
+    {
+      "id": "c2",
+      "from": "spec",
+      "to": "repo",
+      "label": "query declarations"
+    },
+    {
+      "id": "c3",
+      "from": "repo",
+      "to": "mapper",
+      "label": "ProjectToType"
+    },
+    {
+      "id": "c4",
+      "from": "factory",
+      "to": "db",
+      "label": "factory context"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "The first repository registration wins. Providers from the singleton factory own a new scope and factory-created context; they must be disposed."
+      ]
+    }
+  ]
+}

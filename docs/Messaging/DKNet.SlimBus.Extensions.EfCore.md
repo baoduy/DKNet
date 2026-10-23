@@ -186,7 +186,7 @@ The auto-save interceptor (`EfAutoSavePostInterceptor<,>`) and its `DbContext` r
   `AddSlimBusEventPublisher<TDbContext>()` is the bridge between its hook and the bus.
 - **[DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md)** — supplies the `IEventItem` / `IEventPublisher`
   contracts `SlimBusEventPublisher` implements.
-- **[DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md)** — the recommended query/mutation surface
+- **[DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md)** — the recommended query/mutation surface
   inside handlers; auto-save doesn't care how entities were changed, only that the change tracker has changes.
 - **[DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators.md)** — generated `[CrudAction]` slices rely on auto-save, so
   their hosts reference this package.
@@ -217,5 +217,5 @@ The auto-save interceptor (`EfAutoSavePostInterceptor<,>`) and its `DbContext` r
   endpoints instead of hand-writing the repetitive slices.
 - [DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) – reach for it to raise domain events from aggregates in the
   first place.
-- [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) – reach for it to express handler queries as
+- [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) – reach for it to express handler queries as
   reusable specifications.

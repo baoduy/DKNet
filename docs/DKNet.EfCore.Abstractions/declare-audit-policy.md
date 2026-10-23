@@ -31,7 +31,7 @@ public sealed class Product
 | `[SensitiveData]` | empty `IReadOnlyList<string>` Roles | Any authenticated principal may receive the property after JSON opt-in. |
 | `[SensitiveData("pricing", "audit")]` | supplied Roles | An authenticated principal needs at least one named role. |
 
-A null role array is normalized to an empty list. Read [AuditLogs](../EfCore/DKNet.EfCore.AuditLogs.md) for capture policies and [Encryption](../EfCore/DKNet.EfCore.Encryption.md) for protection at rest.
+A null role array is normalized to an empty list. Read [AuditLogs](../DKNet.EfCore.AuditLogs/index.md) for capture policies and [Encryption](../DKNet.EfCore.Encryption/index.md) for protection at rest.
 
 ## 🧱 Where it fits
 

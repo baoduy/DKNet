@@ -59,7 +59,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   [Migration Guide](Migration-Guide.md#dknetsvcencryption--aes-ciphers-are-now-opt-in).
 - **`DKNet.EfCore.Encryption` fails closed.** It needs an `IEncryptionKeyProvider` registered through
   `AddEfCoreEncryption<TKeyProvider>()`; without usable key material the model build fails rather than storing
-  plaintext. See [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md).
+  plaintext. See [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md).
 - **`IAesEncryption` (AES-CBC) has been removed, not just deprecated.** It used a fixed IV embedded in the key, so
   identical plaintexts always produced identical ciphertext — a real information leak, not a theoretical one. Use
   `IAesGcmEncryption`, which authenticates the ciphertext and uses a fresh random nonce per call. See
@@ -79,7 +79,7 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   Register an `ICurrentUserProvider` (see *Audit trails* below) when `CreatedBy`/`UpdatedBy` must answer the second
   question; without one they are filled from the ownership key, which answers only the first.
 - **Dropping `UseAutoConfigModel<TContext>()` removes the filter.** This matters most in tests: without it a
-  query returns rows it never would in production. See [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md).
+  query returns rows it never would in production. See [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md).
 
 ### Audit trails
 
@@ -89,12 +89,12 @@ Each of these is a decision the packages make on your behalf. Read the ones you 
   `"***REDACTED***"` — the field still shows that it changed, never its value.
 - **`[AuditLog]` on a property forces plaintext capture.** Do not put it on a secret. `[SensitiveData]` always
   redacts and cannot be overridden by `[AuditLog]`; `[IgnoreAuditLog]` removes the property from the trail
-  entirely. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+  entirely. See [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md).
 - **A column encrypted via `DKNet.EfCore.Encryption` is redacted in audit entries.** `[Encrypted]` uses a
   `ColumnEncryptionConverter`, a `ValueConverter` — so the change tracker holds the **decrypted** model value, and
   without this redaction that plaintext would reach every registered `IAuditLogPublisher`. `DKNet.EfCore.AuditLogs`
   treats `[Encrypted]` as unconditionally sensitive, the same as `[SensitiveData]`. See
-  [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md).
+  [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md).
 - **The audit identity can be a person, and it is published unmasked.** Registering an `ICurrentUserProvider` via
   `AddCurrentUserProvider<TDbContext, TProvider>()` fills `CreatedBy`/`UpdatedBy` from
   `ICurrentUserProvider.GetCurrentUser()` instead of from the tenant ownership key. Whatever that method returns
