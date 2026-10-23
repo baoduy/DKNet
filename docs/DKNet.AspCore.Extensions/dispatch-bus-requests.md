@@ -32,7 +32,7 @@ By-ID forms assign the route value to `request.Id` before sending. Parameterless
 
 ## 🧱 Where it fits
 
-Use [SlimBus Extensions](../Messaging/DKNet.SlimBus.Extensions.md) to register the bus/handler pipeline. Entity-only reads and deletes can instead use [repository mappers](map-entity-endpoints.md). The overview’s component diagram shows these alternative dispatch paths.
+Use [SlimBus Extensions](../DKNet.SlimBus.Extensions/index.md) to register the bus/handler pipeline. Entity-only reads and deletes can instead use [repository mappers](map-entity-endpoints.md). The overview’s component diagram shows these alternative dispatch paths.
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
 

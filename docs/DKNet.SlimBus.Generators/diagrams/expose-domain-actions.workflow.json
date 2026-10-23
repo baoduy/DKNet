@@ -1,0 +1,134 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "[CrudAction]: a named route, chosen by its parameter count",
+    "output": ".task-validation/DKNet.SlimBus.Generators/expose-domain-actions.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "lanes": [
+    {
+      "id": "declare",
+      "label": "Declared"
+    },
+    {
+      "id": "resolve",
+      "label": "Resolved"
+    },
+    {
+      "id": "route",
+      "label": "Registered"
+    }
+  ],
+  "mainPath": [
+    "action",
+    "segment",
+    "params",
+    "withbody"
+  ],
+  "nodes": [
+    {
+      "id": "action",
+      "lane": "declare",
+      "col": 0,
+      "type": "backend",
+      "label": "[CrudAction(Route?, Verb)]",
+      "sublabel": "public instance method",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 446,
+          "label": "BuildMemberModel action branch"
+        }
+      ]
+    },
+    {
+      "id": "segment",
+      "lane": "resolve",
+      "col": 1,
+      "type": "backend",
+      "label": "Route segment",
+      "sublabel": "explicit, or kebab-cased method name",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 1069,
+          "label": "Emitter.ToKebabCase"
+        }
+      ]
+    },
+    {
+      "id": "params",
+      "lane": "resolve",
+      "col": 2,
+      "type": "backend",
+      "label": "Parameter count",
+      "sublabel": "compile-time, from the method",
+      "width": 180
+    },
+    {
+      "id": "withbody",
+      "lane": "route",
+      "col": 3,
+      "type": "frontend",
+      "label": "MapActionById",
+      "sublabel": "{id}/{segment}, body carries arguments",
+      "width": 220
+    },
+    {
+      "id": "nobody",
+      "lane": "route",
+      "col": 4,
+      "type": "frontend",
+      "label": "MapParameterlessActionById",
+      "sublabel": "{id}/{segment}, no body, no Content-Type",
+      "width": 250
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "action",
+      "to": "segment",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "segment",
+      "to": "params",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "params",
+      "to": "withbody",
+      "label": "1 or more",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "params",
+      "to": "nobody",
+      "label": "zero",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Never positional",
+      "items": [
+        "An action never claims the plain {id} route, whatever its verb",
+        "Verb defaults to Post; Put and Patch are the other two options",
+        "Marking one member [CrudUpdate] and [CrudAction] is DKCRUDGEN007"
+      ]
+    }
+  ]
+}

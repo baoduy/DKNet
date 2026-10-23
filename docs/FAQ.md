@@ -177,7 +177,7 @@ services.AddSlimBusForEfCore<AppDbContext>(typeof(Program).Assembly);
 
 The core package has no EF Core dependency, so it fits a project without a database. For a real transport (Azure
 Service Bus, Kafka), configure `AddSlimMessageBus` yourself — see
-[DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md#need-a-real-transport).
+[DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md#-quick-start).
 
 ### How do I validate a command?
 

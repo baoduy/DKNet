@@ -48,9 +48,9 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) |
 | Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) |
 | Check for or create a table at runtime, whatever the relational provider | [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) |
-| Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) |
-| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) |
-| Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) |
+| Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) |
+| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) |
+| Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators/index.md) |
 | Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) |
 | Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
 | Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) |
@@ -60,7 +60,7 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Fill bracketed tokens in a template string from an object or a dictionary | [DKNet.Svc.Transformation](./Services/DKNet.Svc.Transformation.md) |
 | Generate a password, token, or other secret | [DKNet.RandomCreator](./DKNet.RandomCreator/index.md) |
 | Scan assemblies for types, or reach for a string/enum/`DateTime`/reflection helper | [DKNet.Fw.Extensions](./DKNet.Fw.Extensions/index.md) |
-| Give a local Aspire AppHost its own Azure Service Bus emulator | [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) (source-only) |
+| Give a local Aspire AppHost its own Azure Service Bus emulator | [Aspire.Hosting.ServiceBus](./Aspire.Hosting.ServiceBus/index.md) (source-only) |
 
 ## Component Documentation
 
@@ -87,9 +87,9 @@ Entity base classes, the specification pattern, and the `SaveChanges` intercepto
 ### [Messaging & CQRS](./Messaging/README.md)
 SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source generator.
 
-- [DKNet.SlimBus.Extensions](./Messaging/DKNet.SlimBus.Extensions.md) — EF-free fluent command/query/event interfaces and a one-call MediatR-replacement setup
-- [DKNet.SlimBus.Extensions.EfCore](./Messaging/DKNet.SlimBus.Extensions.EfCore.md) — automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
-- [DKNet.SlimBus.Generators](./Messaging/DKNet.SlimBus.Generators.md) — emits a whole CRUD vertical slice (request records, handlers, endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
+- [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) — EF-free fluent command/query/event interfaces and a one-call MediatR-replacement setup
+- [DKNet.SlimBus.Extensions.EfCore](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) — automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
+- [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators/index.md) — emits a whole CRUD vertical slice (request records, handlers, endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
 ### [Service Layer](./Services/README.md)
 Application-level services with no dependency on the EF Core packages.
@@ -116,7 +116,7 @@ Start-up orchestration, minimal-API glue, and idempotency for web and API worklo
 ### [Aspire Integrations](./Aspire/README.md)
 Infrastructure orchestration helpers for .NET Aspire AppHost projects.
 
-- [Aspire.Hosting.ServiceBus](./Aspire/Aspire.Hosting.ServiceBus.md) — adds the Azure Service Bus emulator as a resource inside an Aspire AppHost, so local work needs no shared cloud namespace. **Source-only**: it sets `<IsPackable>false</IsPackable>`, so reference the project from your AppHost rather than a NuGet package
+- [Aspire.Hosting.ServiceBus](./Aspire.Hosting.ServiceBus/index.md) — adds the Azure Service Bus emulator as a resource inside an Aspire AppHost, so local work needs no shared cloud namespace. **Source-only**: it sets `<IsPackable>false</IsPackable>`, so reference the project from your AppHost rather than a NuGet package
 
 ## Architecture Overview
 

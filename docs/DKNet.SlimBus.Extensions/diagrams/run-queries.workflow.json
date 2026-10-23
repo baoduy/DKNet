@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Running a read query through Fluents.Queries",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/run-queries.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package contract or your handler"
+        },
+        "external": {
+          "label": "Caller and outcome"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Read query call path"
+    }
+  ],
+  "mainPath": ["n0", "n1", "n2", "n3"],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "backend",
+      "label": "Declare the query",
+      "sublabel": "IWitResponse<T> or IWitPageResponse<T>",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 53,
+          "end_line": 63
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "external",
+      "label": "bus.Send(query)",
+      "sublabel": "IMessageBus",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 37,
+          "end_line": 57
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "IHandler / IPageHandler runs",
+      "sublabel": "no FluentResults wrapper",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 37,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "external",
+      "label": "Caller gets T? / IPagedList<T>",
+      "sublabel": "null means not found",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 59,
+          "end_line": 63
+        }
+      ]
+    },
+    {
+      "id": "n4",
+      "lane": "main",
+      "col": 2,
+      "yOffset": 130,
+      "type": "backend",
+      "label": "Never auto-saved",
+      "sublabel": "Queries skip the EfAutoSavePostInterceptor",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/EfAutoSavePostInterceptor.cs",
+          "line": 19,
+          "end_line": 23
+        }
+      ]
+    }
+  ],
+  "edges": [
+    { "id": "e0", "from": "n0", "to": "n1", "variant": "emphasis" },
+    { "id": "e1", "from": "n1", "to": "n2", "variant": "emphasis", "label": "dispatched to your handler" },
+    { "id": "e2", "from": "n2", "to": "n3", "variant": "emphasis", "label": "T? or IPagedList<T>" },
+    { "id": "e3", "from": "n2", "to": "n4", "variant": "dashed", "label": "even if it changed the DbContext" }
+  ]
+}

@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Handler emission: generated unless a hand-written one already exists",
+    "output": ".task-validation/DKNet.SlimBus.Generators/generate-handlers.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "lanes": [
+    {
+      "id": "scan",
+      "label": "Per request"
+    },
+    {
+      "id": "decide",
+      "label": "Decide"
+    },
+    {
+      "id": "result",
+      "label": "Result"
+    }
+  ],
+  "mainPath": [
+    "request",
+    "lookup",
+    "generated"
+  ],
+  "nodes": [
+    {
+      "id": "request",
+      "lane": "scan",
+      "col": 0,
+      "type": "frontend",
+      "label": "Generated request",
+      "sublabel": "Create/Update/Action",
+      "width": 170
+    },
+    {
+      "id": "lookup",
+      "lane": "decide",
+      "col": 1,
+      "type": "backend",
+      "label": "IHandler<TRequest,...> found?",
+      "sublabel": "matched by request type name",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 482,
+          "label": "FindHandWrittenHandlerOverrides"
+        }
+      ]
+    },
+    {
+      "id": "handwritten",
+      "lane": "result",
+      "col": 2,
+      "type": "security",
+      "label": "DKCRUDGEN005 (Info)",
+      "sublabel": "hand-written handler wins",
+      "width": 190
+    },
+    {
+      "id": "generated",
+      "lane": "result",
+      "col": 3,
+      "type": "backend",
+      "label": "Generated handler",
+      "sublabel": "create: ctor + AddAsync; update/action: fetch-by-id",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 912,
+          "label": "AppendCreateHandler / AppendUpdateHandler"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "request",
+      "to": "lookup",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "lookup",
+      "to": "handwritten",
+      "label": "found",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "lookup",
+      "to": "generated",
+      "label": "not found",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "What the generated handler returns",
+      "items": [
+        "mapper.ResultOf<TDto>(entity) \u2014 mapped lazily, after auto-save persists",
+        "Update/action: NotFoundError on a missing id, mapped to 404",
+        "Neither handler calls SaveChangesAsync itself"
+      ]
+    }
+  ]
+}

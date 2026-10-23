@@ -64,7 +64,7 @@ public class Product : AuditedEntity
 ### Commands and queries
 
 Handlers talk to the `DbContext` directly and let `AddSlimBusForEfCore<AppDbContext>(...)` save on success —
-see [DKNet.SlimBus.Extensions.EfCore](../Messaging/DKNet.SlimBus.Extensions.EfCore.md).
+see [DKNet.SlimBus.Extensions.EfCore](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md).
 
 ```csharp
 using DKNet.SlimBus.Extensions;

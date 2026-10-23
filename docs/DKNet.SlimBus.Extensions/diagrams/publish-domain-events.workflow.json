@@ -1,0 +1,152 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Wiring EF Core domain events onto the bus",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/publish-domain-events.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Registration or hook step"
+        },
+        "database": {
+          "label": "DbContext save"
+        },
+        "messagebus": {
+          "label": "SlimMessageBus"
+        },
+        "security": {
+          "label": "Required host wiring"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Domain event publish path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "security",
+      "label": "AddDbContextWithHook<T>()",
+      "sublabel": "DKNet.EfCore.Hooks, not plain AddDbContext",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 48,
+          "end_line": 65
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "AddSlimBusEventPublisher<T>()",
+      "sublabel": "publisher + EventHook",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/SlimBusEfCoreSetup.cs",
+          "line": 32,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "database",
+      "label": "SaveChangesAsync succeeds",
+      "sublabel": "EventHook collects raised events",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Events/EventSetup.cs",
+          "line": 23,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "messagebus",
+      "label": "SlimBusEventPublisher.PublishAsync",
+      "sublabel": "sequential; headers from AdditionalData",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Handlers/SlimBusEventPublisher.cs",
+          "line": 34,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "n4",
+      "lane": "main",
+      "col": 0,
+      "yOffset": 140,
+      "type": "security",
+      "label": "Plain AddDbContext<T>",
+      "sublabel": "hook never installed, no events publish",
+      "width": 230,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 98,
+          "end_line": 116
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis",
+      "label": "one event at a time, in order"
+    },
+    {
+      "id": "e3",
+      "from": "n0",
+      "to": "n4",
+      "variant": "dashed",
+      "label": "common mistake"
+    }
+  ]
+}

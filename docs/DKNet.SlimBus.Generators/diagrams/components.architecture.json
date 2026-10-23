@@ -1,0 +1,240 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.SlimBus.Generators: compile-time analyzer, runtime-shaped output",
+    "output": ".task-validation/DKNet.SlimBus.Generators/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "components": [
+    {
+      "id": "domain",
+      "type": "backend",
+      "label": "Domain project",
+      "sublabel": "entity + [CrudCreate]/[CrudUpdate]/[CrudAction]",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        210,
+        80
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API project",
+      "sublabel": "compiling project + [GenerateDto]",
+      "pos": [
+        330,
+        40
+      ],
+      "size": [
+        210,
+        80
+      ]
+    },
+    {
+      "id": "generator",
+      "type": "external",
+      "label": "CrudGenerator",
+      "sublabel": "IIncrementalGenerator, netstandard2.0",
+      "pos": [
+        620,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "tag": "Roslyn analyzer",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 25,
+          "label": "CrudGenerator"
+        }
+      ]
+    },
+    {
+      "id": "generated",
+      "type": "frontend",
+      "label": "Generated .g.cs",
+      "sublabel": "requests, handlers, endpoints",
+      "pos": [
+        920,
+        40
+      ],
+      "size": [
+        200,
+        80
+      ]
+    },
+    {
+      "id": "slimbus",
+      "type": "backend",
+      "label": "DKNet.SlimBus.Extensions",
+      "sublabel": "IHandler, IWitResponse, IWithKey, LazyMapper",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "specs",
+      "type": "database",
+      "label": "DKNet.EfCore.Specifications",
+      "sublabel": "IRepositorySpec, Specification<T>",
+      "pos": [
+        280,
+        300
+      ],
+      "size": [
+        220,
+        80
+      ]
+    },
+    {
+      "id": "mapster",
+      "type": "external",
+      "label": "Mapster",
+      "sublabel": "IMapper (MapsterMapper)",
+      "pos": [
+        520,
+        300
+      ],
+      "size": [
+        180,
+        80
+      ]
+    },
+    {
+      "id": "aspcore",
+      "type": "cloud",
+      "label": "DKNet.AspCore.Extensions",
+      "sublabel": "Map{Op} mappers, CrudMapOptions",
+      "pos": [
+        720,
+        300
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "tag": "opt-in"
+    },
+    {
+      "id": "host",
+      "type": "frontend",
+      "label": "Minimal API host",
+      "sublabel": "app.MapGroup(...).Map{Entity}Crud()",
+      "pos": [
+        980,
+        300
+      ],
+      "size": [
+        200,
+        80
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Compile time (inside the C# compiler)",
+      "wraps": [
+        "domain",
+        "api",
+        "generator",
+        "generated"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Runtime (inside the host process)",
+      "wraps": [
+        "slimbus",
+        "specs",
+        "mapster",
+        "aspcore",
+        "host"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "domain",
+      "to": "generator",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c2",
+      "from": "api",
+      "to": "generator",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c3",
+      "from": "generator",
+      "to": "generated",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c4",
+      "from": "generated",
+      "to": "slimbus",
+      "variant": "default"
+    },
+    {
+      "id": "c5",
+      "from": "generated",
+      "to": "specs",
+      "variant": "default"
+    },
+    {
+      "id": "c6",
+      "from": "generated",
+      "to": "mapster",
+      "variant": "default"
+    },
+    {
+      "id": "c7",
+      "from": "generated",
+      "to": "aspcore",
+      "variant": "dashed"
+    },
+    {
+      "id": "c8",
+      "from": "aspcore",
+      "to": "host",
+      "variant": "default"
+    },
+    {
+      "id": "c9",
+      "from": "host",
+      "to": "generated",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What runs where",
+      "items": [
+        "CrudGenerator runs once per compilation, inside the compiler \u2014 it never executes in the host process",
+        "Generated requests/handlers inject Mapster's IMapper (MapsterMapper) like any other service",
+        "DKNet.AspCore.Extensions is referenced only when the generated endpoint file is wanted"
+      ]
+    }
+  ]
+}

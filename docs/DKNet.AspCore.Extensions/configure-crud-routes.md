@@ -16,7 +16,7 @@ Console.WriteLine(options.IsExcluded("UpdateName")); // True
 
 The generator checks operation and name exclusions, validates names before mapping, and calls `Apply` with kind and name. `Apply` runs operation settings first and name settings second, each in registration order. Names are ordinal and case-sensitive: fixed operation names plus each marked update/action method’s C# name, not its kebab-case URL segment. Unknown configured/excluded names throw `ArgumentException` from `ValidateRouteNames`.
 
-The generator owns route production and the `[CrudCreate]`, `[CrudUpdate]` and `[CrudAction]` conventions. Read [generator naming and routing](../Messaging/DKNet.SlimBus.Generators.md#naming-and-routing-conventions) for those rules.
+The generator owns route production and the `[CrudCreate]`, `[CrudUpdate]` and `[CrudAction]` conventions. Read [generator naming and routing](../DKNet.SlimBus.Generators/name-requests-and-routes.md) for those rules.
 
 ## ⚠️ Gotchas & limits
 

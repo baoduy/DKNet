@@ -23,7 +23,7 @@ public sealed class Order
 
 ![CrudCreate marks a creation member while CrudUpdate and CrudAction mark methods that the SlimBus generator translates into generated requests and routes.](diagrams/mark-crud-members.svg)
 
-These declarations are inert without [SlimBus.Generators](../Messaging/DKNet.SlimBus.Generators.md). Keep domain methods as the source of business behavior; the generator owns the transport adapter.
+These declarations are inert without [SlimBus.Generators](../DKNet.SlimBus.Generators/index.md). Keep domain methods as the source of business behavior; the generator owns the transport adapter.
 
 ## ⚙️ Configuration reference
 

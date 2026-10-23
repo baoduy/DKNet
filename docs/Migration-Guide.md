@@ -676,8 +676,8 @@ public class ProductService
 ```
 
 **After (CQRS via `DKNet.SlimBus.Extensions`)** — see
-[DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) for the full contract set, and
-[DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) for the auto-save the handler relies on:
+[DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) for the full contract set, and
+[DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) for the auto-save the handler relies on:
 ```csharp
 using DKNet.SlimBus.Extensions;
 using FluentResults;

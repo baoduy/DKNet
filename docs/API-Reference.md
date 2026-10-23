@@ -27,9 +27,9 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 📨 Messaging & CQRS
 
-- [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) — EF-free `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts and `AddSlimBusForMediator`, a one-call MediatR replacement
-- [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) — auto-save after a successful write and domain events forwarded onto the bus; `AddSlimBusForEfCore<TDbContext>`
-- [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md) — emits request records, handlers, and endpoint registration from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
+- [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) — EF-free `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts and `AddSlimBusForMediator`, a one-call MediatR replacement
+- [DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) — auto-save after a successful write and domain events forwarded onto the bus; `AddSlimBusForEfCore<TDbContext>`
+- [DKNet.SlimBus.Generators](DKNet.SlimBus.Generators/index.md) — emits request records, handlers, and endpoint registration from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
 ## 🗃️ Blob Storage Services
 
@@ -59,7 +59,7 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## ☁️ Aspire Integrations
 
-- [Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus.md) — adds the Azure Service Bus emulator as a resource inside a .NET Aspire AppHost. **Source-only** (`<IsPackable>false</IsPackable>`) — reference the project, not a package
+- [Aspire.Hosting.ServiceBus](Aspire.Hosting.ServiceBus/index.md) — adds the Azure Service Bus emulator as a resource inside a .NET Aspire AppHost. **Source-only** (`<IsPackable>false</IsPackable>`) — reference the project, not a package
 
 ## ⚙️ Configuration
 
