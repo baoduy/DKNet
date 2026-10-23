@@ -26,7 +26,7 @@ public sealed class Work
 
 ![Task.WhenAll invokes per-task wrappers that catch RunAsync exceptions and let the other tasks finish.](diagrams/task-isolation.svg)
 
-Each `RunAsync` exception is caught and logged as `{TaskFullTypeName} job failed`; other tasks continue. The scope is disposed after the batch. Dependency construction and enumeration happen outside that per-task catch.
+Each `RunAsync` exception is caught and logged with the exception attached. Its message is plain text: the task's full type name followed by ` job failed`, assembled through string interpolation before logging, rather than a structured placeholder. Other tasks continue. The scope is disposed after the batch. Dependency construction and enumeration happen outside that per-task catch.
 
 ## ⚙️ Configuration reference
 

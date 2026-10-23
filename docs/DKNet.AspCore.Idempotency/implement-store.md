@@ -1,6 +1,6 @@
 # Implement a custom reservation store
 
-Part of [DKNet.AspCore.Idempotency](index.md). Implement `IIdempotencyKeyStore` directly; the shared relational classes are internal. These are the two methods your implementation must supply:
+Part of [DKNet.AspCore.Idempotency](index.md). Implement `IIdempotencyKeyStore` directly; the shared relational classes are internal. This example inspects the contract and constructs the identity your store receives:
 
 ```csharp
 using DKNet.AspCore.Idempotency.Filtering;
@@ -15,10 +15,10 @@ Console.WriteLine(info.CompositeKey); // :POST:/ORDERS:order-1
 
 ![A custom store must reserve atomically before reporting a new key, then replace that reservation with completion data.](diagrams/custom-reservation.svg)
 
-| Method | Required behavior |
-|---|---|
-| `IsKeyProcessedAsync(IdempotentKeyInfo)` | Atomically reserve before returning `(false, null)`. Return `(true, null)` while in flight, or `(true, response)` after completion. |
-| `MarkKeyAsProcessedAsync(IdempotentKeyInfo, CachedResponse)` | Replace the reservation with completion data and honor the intended retention window. |
+| Method | Return type | Required behavior |
+|---|---|---|
+| `IsKeyProcessedAsync(IdempotentKeyInfo)` | `ValueTask<(bool processed, CachedResponse? response)>` | Atomically reserve before returning `(false, null)`. Return `(true, null)` while in flight, or `(true, response)` after completion. |
+| `MarkKeyAsProcessedAsync(IdempotentKeyInfo, CachedResponse)` | `ValueTask` | Replace the reservation with completion data and honor the intended retention window. |
 
 Use a bounded in-flight reservation, and make reclaim atomic. All shipped stores use status 102 as the reservation sentinel and SHA-256 over `CompositeKey`. A separate read followed by an unconditional write admits two winners.
 

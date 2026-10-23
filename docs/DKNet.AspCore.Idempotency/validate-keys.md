@@ -21,7 +21,7 @@ services.AddIdempotentKey(o => o.MaxIdempotencyKeyLength = 500);
 | `MaxIdempotencyKeyLength` | `int` | 255 | Accepted length, capped at 500 regardless of this value. |
 | `IdempotencyKeyPattern` | `string` | `^[a-zA-Z0-9\-_]+$` | Compiled on assignment with a 100 ms match timeout. |
 
-`AddIdempotentKey` validates a nonblank header and pattern, and a length of at least 1, on host start. Invalid regex syntax throws when assigned.
+`AddIdempotentKey` validates a nonblank header and pattern, and a length of at least 1, on host start through `ValidateOnStart()`. A failed startup validation throws `OptionsValidationException`. Invalid regex syntax throws when assigned.
 
 ## ⚠️ Gotchas & limits
 

@@ -22,7 +22,7 @@ await app.RunAsync();
 | `IResultBase` success | false / true | Empty 200 / 201. |
 | Either failure | either | Problem response, normally 400; 404 if any error is `NotFoundError`. |
 
-Failure output resolves optional host `ErrorResponseOptions` when the result executes. The standard body has `title: Error`, status name in `type`, trace ID and an `ErrorItem[]` under `errors`. The internal problem builder is not a public bypass. See [one error-response setting](shape-error-responses.md#one-error-response-setting).
+Failure output resolves optional host `ErrorResponseOptions` when the result executes. The standard body has `title: Error`, status name in `type`, trace ID and a list of `ErrorItem` under `errors`. The internal problem builder is not a public bypass. See [one error-response setting](shape-error-responses.md#one-error-response-setting).
 
 ## ⚠️ Gotchas & limits
 

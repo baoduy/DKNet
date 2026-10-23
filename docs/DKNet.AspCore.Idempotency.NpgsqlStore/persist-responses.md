@@ -27,6 +27,8 @@ Migrations run during host startup through `IdempotencyMigrationHostedService<TC
 | Design-time environment variable | `IDEMPOTENCY_NPGSQL_CONNECTION` | Required by the internal EF design-time factory. |
 | Migrations assembly | This provider assembly | Keeps migrations with the provider. |
 | Migrations history | `migrate.IdempotencyDbContext` | Records applied provider migrations. |
+| Retry policy | 3 retries, maximum 5-second delay | PostgreSQL transient retry configuration. |
+| Query splitting | `SplitQuery` | PostgreSQL EF query option. |
 
 ## 🧱 Where it fits
 

@@ -2,7 +2,7 @@
 
 Part of [DKNet.AspCore.Extensions](index.md). `AddRateLimitConfig` chains a fixed-window limiter and a concurrency limiter as the global limiter, with 429 rejection and no queue. The partition key is `user:` plus `User.Identity.Name` if nonempty, else `ip:` plus remote address, else `shared`.
 
-The default singleton `IRateLimitOptionsProvider` reads `IOptions<RateLimitOptions>` and supplies both limiter configurations. Register your own provider before this helper to replace its `TryAddSingleton` default. The interface receives `HttpContext` and exposes `GetRateLimiterOptions` and `GetConcurrencyLimiterOptions`.
+The default singleton `IRateLimitOptionsProvider` reads `IOptions<RateLimitOptions>` and supplies both limiter configurations. Register your own provider with `AddSingleton<IRateLimitOptionsProvider, TProvider>()` before or after this helper; either order works. An earlier registration prevents the helper's `TryAddSingleton` default, while a later one is selected when resolving the single provider. The interface receives `HttpContext` and exposes `GetRateLimiterOptions` and `GetConcurrencyLimiterOptions`.
 
 ```csharp
 using DKNet.AspCore.Extensions.RateLimits;
