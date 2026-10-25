@@ -441,40 +441,36 @@ rect.c-bg-rect { fill: var(--bg); }
 
         <!-- Connection paths (before components for correct z-order) -->
         <g data-graph-role="automatic-crossover" style="--step:0">
-          <path data-graph-role="automatic-crossover-underlay" d="M 170 172 L 170 193 Q 170 201 178 201 L 452 201 Q 460 201 460 209 L 460 230" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="aspcoreExt" data-edge-to="slimbus" data-edge-label="sends requests" data-edge-key="0" data-edge-id="endpointToHandler" data-composition-points="170,172;170,201;460,201;460,230" data-composition-crossover="halo" data-composition-independent="true" d="M 170 172 L 170 193 Q 170 201 178 201 L 452 201 Q 460 201 460 209 L 460 230" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 170 172 L 170 230" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="aspcoreExt" data-edge-to="slimbus" data-edge-label="sends requests" data-edge-key="0" data-edge-id="endpointToHandler" data-composition-points="170,172;170,230" data-composition-crossover="halo" data-composition-independent="true" d="M 170 172 L 170 230" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:1">
-          <path data-graph-role="automatic-crossover-underlay" d="M 280 266 L 350 266" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="slimbusEf" data-edge-to="slimbus" data-edge-label="references" data-edge-key="1" data-edge-id="efToCore" data-composition-points="280,266;350,266" data-composition-crossover="halo" data-composition-independent="true" d="M 280 266 L 350 266" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 170 302 L 170 360" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="slimbus" data-edge-to="events" data-edge-label="forwards domain events" data-edge-key="1" data-edge-id="handlerToEvents" data-composition-points="170,302;170,360" data-composition-crossover="halo" data-composition-independent="true" d="M 170 302 L 170 360" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:2">
-          <path data-graph-role="automatic-crossover-underlay" d="M 170 302 L 170 360" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="slimbusEf" data-edge-to="events" data-edge-label="forwards domain events" data-edge-key="2" data-edge-id="handlerToEvents" data-composition-points="170,302;170,360" data-composition-crossover="halo" data-composition-independent="true" d="M 170 302 L 170 360" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 170 432 L 170 610" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="events" data-edge-to="abstractions" data-edge-label="reads AddEvent queue" data-edge-key="2" data-edge-id="eventsToAbstractions" data-composition-points="170,432;170,610" data-composition-crossover="halo" data-composition-independent="true" d="M 170 432 L 170 610" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:3">
-          <path data-graph-role="automatic-crossover-underlay" d="M 170 432 L 170 610" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="events" data-edge-to="abstractions" data-edge-label="reads AddEvent queue" data-edge-key="3" data-edge-id="eventsToAbstractions" data-composition-points="170,432;170,610" data-composition-crossover="halo" data-composition-independent="true" d="M 170 432 L 170 610" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 280 396 L 350 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="events" data-edge-to="hooks" data-edge-label="registers a hook" data-edge-key="3" data-edge-id="eventsHook" data-composition-points="280,396;350,396" data-composition-crossover="halo" data-composition-independent="true" d="M 280 396 L 350 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:4">
-          <path data-graph-role="automatic-crossover-underlay" d="M 280 396 L 350 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="events" data-edge-to="hooks" data-edge-label="registers a hook" data-edge-key="4" data-edge-id="eventsHook" data-composition-points="280,396;350,396" data-composition-crossover="halo" data-composition-independent="true" d="M 280 396 L 350 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 460 480 L 460 432" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="crosscut" data-edge-to="hooks" data-edge-label="register hooks" data-edge-key="4" data-edge-id="crosscutHook" data-composition-points="460,480;460,432" data-composition-crossover="halo" data-composition-independent="true" d="M 460 480 L 460 432" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:5">
-          <path data-graph-role="automatic-crossover-underlay" d="M 460 480 L 460 432" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="crosscut" data-edge-to="hooks" data-edge-label="register hooks" data-edge-key="5" data-edge-id="crosscutHook" data-composition-points="460,480;460,432" data-composition-crossover="halo" data-composition-independent="true" d="M 460 480 L 460 432" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 570 396 L 640 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="hooks" data-edge-to="extensions" data-edge-label="shares SnapshotContext" data-edge-key="5" data-edge-id="hooksModel" data-composition-points="570,396;640,396" data-composition-crossover="halo" data-composition-independent="true" d="M 570 396 L 640 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:6">
-          <path data-graph-role="automatic-crossover-underlay" d="M 570 396 L 640 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="hooks" data-edge-to="extensions" data-edge-label="shares SnapshotContext" data-edge-key="6" data-edge-id="hooksModel" data-composition-points="570,396;640,396" data-composition-crossover="halo" data-composition-independent="true" d="M 570 396 L 640 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 930 396 L 860 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="specs" data-edge-to="extensions" data-edge-label="applies query filters" data-edge-key="6" data-edge-id="specsModel" data-composition-points="930,396;860,396" data-composition-crossover="halo" data-composition-independent="true" d="M 930 396 L 860 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:7">
-          <path data-graph-role="automatic-crossover-underlay" d="M 930 396 L 860 396" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="specs" data-edge-to="extensions" data-edge-label="applies query filters" data-edge-key="7" data-edge-id="specsModel" data-composition-points="930,396;860,396" data-composition-crossover="halo" data-composition-independent="true" d="M 930 396 L 860 396" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        </g>
-        <g data-graph-role="automatic-crossover" style="--step:8">
           <path data-graph-role="automatic-crossover-underlay" d="M 750 432 L 750 513 Q 750 521 758 521 L 797 521 Q 805 521 805 529 L 805 610" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="extensions" data-edge-to="fw" data-edge-label="type scanning" data-edge-key="8" data-edge-id="modelToFoundation" data-composition-points="750,432;750,521;805,521;805,610" data-composition-crossover="halo" data-composition-independent="true" d="M 750 432 L 750 513 Q 750 521 758 521 L 797 521 Q 805 521 805 529 L 805 610" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-edge-from="extensions" data-edge-to="fw" data-edge-label="type scanning" data-edge-key="7" data-edge-id="modelToFoundation" data-composition-points="750,432;750,521;805,521;805,610" data-composition-crossover="halo" data-composition-independent="true" d="M 750 432 L 750 513 Q 750 521 758 521 L 797 521 Q 805 521 805 529 L 805 610" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
 
         <!-- Components -->
@@ -521,26 +517,15 @@ rect.c-bg-rect { fill: var(--bg); }
         <text x="750" y="150" class="t-muted" font-size="9" text-anchor="middle">start-up background jobs</text>
         </g>
 
-        <g id="node-slimbus" data-node-id="slimbus" data-node-label="DKNet.SlimBus.Extensions" tabindex="0" role="button" aria-label="Focus DKNet.SlimBus.Extensions, CQRS contracts, no EF Core, Application ring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CQRS contracts, no EF Core" data-node-context="Application ring">
-          <title>DKNet.SlimBus.Extensions · CQRS contracts, no EF Core · Application ring</title>
-          <rect x="350" y="230" width="220" height="72" rx="6" class="c-mask"/>
-          <rect x="350" y="230" width="220" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(356 236) scale(0.6875)">
-            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
-          </g>
-          <text data-node-label="" x="460" y="264" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">DKNet.SlimBus.Extensions</text>
-        <text x="460" y="280" class="t-muted" font-size="9" text-anchor="middle">CQRS contracts, no EF Core</text>
-        </g>
-
-        <g id="node-slimbusEf" data-node-id="slimbusEf" data-node-label="DKNet.SlimBus.Extensions.EfCore" tabindex="0" role="button" aria-label="Focus DKNet.SlimBus.Extensions.EfCore, auto-save, domain events onto the bus, Application ring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="auto-save, domain events onto the bus" data-node-tag="Application" data-node-context="Application ring">
-          <title>DKNet.SlimBus.Extensions.EfCore · auto-save, domain events onto the bus · Application ring · Application</title>
+        <g id="node-slimbus" data-node-id="slimbus" data-node-label="DKNet.SlimBus.Extensions" tabindex="0" role="button" aria-label="Focus DKNet.SlimBus.Extensions, CQRS, auto-save, events onto the bus, Application ring" aria-pressed="false" data-node-kind="backend" data-node-sublabel="CQRS, auto-save, events onto the bus" data-node-tag="Application" data-node-context="Application ring">
+          <title>DKNet.SlimBus.Extensions · CQRS, auto-save, events onto the bus · Application ring · Application</title>
           <rect x="60" y="230" width="220" height="72" rx="6" class="c-mask"/>
           <rect x="60" y="230" width="220" height="72" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(66 236) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" x="170" y="264" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">DKNet.SlimBus.Extensions.EfCore</text>
-        <text x="170" y="280" class="t-muted" font-size="9" text-anchor="middle">auto-save, domain events onto the bus</text>
+          <text data-node-label="" x="170" y="264" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">DKNet.SlimBus.Extensions</text>
+        <text x="170" y="280" class="t-muted" font-size="9" text-anchor="middle">CQRS, auto-save, events onto the bus</text>
         <text x="170" y="294" class="t-backend" font-size="7" text-anchor="middle">Application</text>
         </g>
 
@@ -643,38 +628,34 @@ rect.c-bg-rect { fill: var(--bg); }
 
         <!-- Connection labels -->
         <g data-edge-from="aspcoreExt" data-edge-to="slimbus" data-edge-label="sends requests" data-edge-key="0" data-edge-id="endpointToHandler">
-          <rect x="276.4" y="205" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="315" y="215" class="t-edge-emphasis" font-size="8" text-anchor="middle">sends requests</text>
+          <rect x="131.4" y="176" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="170" y="186" class="t-edge-emphasis" font-size="8" text-anchor="middle">sends requests</text>
         </g>
-        <g data-edge-from="slimbusEf" data-edge-to="slimbus" data-edge-label="references" data-edge-key="1" data-edge-id="efToCore">
-          <rect x="286" y="246" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="315" y="256" class="t-edge-default" font-size="8" text-anchor="middle">references</text>
-        </g>
-        <g data-edge-from="slimbusEf" data-edge-to="events" data-edge-label="forwards domain events" data-edge-key="2" data-edge-id="handlerToEvents">
+        <g data-edge-from="slimbus" data-edge-to="events" data-edge-label="forwards domain events" data-edge-key="1" data-edge-id="handlerToEvents">
           <rect x="112.2" y="306" width="115.6" height="14" rx="3" class="c-mask"/>
           <text x="170" y="316" class="t-edge-emphasis" font-size="8" text-anchor="middle">forwards domain events</text>
         </g>
-        <g data-edge-from="events" data-edge-to="abstractions" data-edge-label="reads AddEvent queue" data-edge-key="3" data-edge-id="eventsToAbstractions">
+        <g data-edge-from="events" data-edge-to="abstractions" data-edge-label="reads AddEvent queue" data-edge-key="2" data-edge-id="eventsToAbstractions">
           <rect x="117" y="436" width="106" height="14" rx="3" class="c-mask"/>
           <text x="170" y="446" class="t-edge-emphasis" font-size="8" text-anchor="middle">reads AddEvent queue</text>
         </g>
-        <g data-edge-from="events" data-edge-to="hooks" data-edge-label="registers a hook" data-edge-key="4" data-edge-id="eventsHook">
+        <g data-edge-from="events" data-edge-to="hooks" data-edge-label="registers a hook" data-edge-key="3" data-edge-id="eventsHook">
           <rect x="271.6" y="436" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="315" y="446" class="t-edge-default" font-size="8" text-anchor="middle">registers a hook</text>
         </g>
-        <g data-edge-from="crosscut" data-edge-to="hooks" data-edge-label="register hooks" data-edge-key="5" data-edge-id="crosscutHook">
+        <g data-edge-from="crosscut" data-edge-to="hooks" data-edge-label="register hooks" data-edge-key="4" data-edge-id="crosscutHook">
           <rect x="421.4" y="460" width="77.2" height="14" rx="3" class="c-mask"/>
           <text x="460" y="470" class="t-edge-default" font-size="8" text-anchor="middle">register hooks</text>
         </g>
-        <g data-edge-from="hooks" data-edge-to="extensions" data-edge-label="shares SnapshotContext" data-edge-key="6" data-edge-id="hooksModel">
+        <g data-edge-from="hooks" data-edge-to="extensions" data-edge-label="shares SnapshotContext" data-edge-key="5" data-edge-id="hooksModel">
           <rect x="547.2" y="436" width="115.6" height="14" rx="3" class="c-mask"/>
           <text x="605" y="446" class="t-edge-default" font-size="8" text-anchor="middle">shares SnapshotContext</text>
         </g>
-        <g data-edge-from="specs" data-edge-to="extensions" data-edge-label="applies query filters" data-edge-key="7" data-edge-id="specsModel">
+        <g data-edge-from="specs" data-edge-to="extensions" data-edge-label="applies query filters" data-edge-key="6" data-edge-id="specsModel">
           <rect x="839.6" y="436" width="110.8" height="14" rx="3" class="c-mask"/>
           <text x="895" y="446" class="t-edge-default" font-size="8" text-anchor="middle">applies query filters</text>
         </g>
-        <g data-edge-from="extensions" data-edge-to="fw" data-edge-label="type scanning" data-edge-key="8" data-edge-id="modelToFoundation">
+        <g data-edge-from="extensions" data-edge-to="fw" data-edge-label="type scanning" data-edge-key="7" data-edge-id="modelToFoundation">
           <rect x="741.3" y="501" width="72.4" height="14" rx="3" class="c-mask"/>
           <text x="777.5" y="511" class="t-edge-default" font-size="8" text-anchor="middle">type scanning</text>
         </g>

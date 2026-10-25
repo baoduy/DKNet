@@ -1,51 +1,63 @@
 # Package Documentation Template
 
-The canonical structure for every `docs/<Area>/<Package>.md` page. Copy the skeleton, keep the
-section order and emoji headers exactly — readers navigate the whole doc set by them — and follow
-the per-section rules. Every page is written **from the source, not from memory**: read the
-package's public surface first and document only what the code actually does.
+The canonical structure for every package's documentation. Each package gets **one folder**,
+`docs/<Package>/`, named exactly as its NuGet `PackageId`, plus a package `README.md` next to its
+project. Copy the skeletons, keep the section order and emoji headers exactly — readers navigate
+the whole doc set by them — and follow the per-section rules. Every page is written **from the
+source, not from memory**: read the package's public surface first and document only what the
+code actually does.
 
-## Ground rules (apply to every section)
+## The folder
+
+```text
+docs/<Package>/
+├── index.md              the package: what, why, Quick Start, architecture, how it works, feature list
+├── <feature>.md          one page per capability, kebab-case of what it does (send-commands.md)
+└── diagrams/             every diagram's archify JSON IR + rendered .svg
+
+src/<Area>/<Package>/README.md   the package README, packed into the NuGet package
+```
+
+- One capability per feature page. A package with a single capability still gets `index.md`
+  plus one feature page.
+- Every `docs/<Package>/index.md` is listed in the package index, [`docs/README.md`](README.md).
+- `docs/diagrams/` holds only the four diagrams shared by the cross-cutting guides; a package's
+  own diagrams live in `docs/<Package>/diagrams/`.
+
+## Ground rules (apply to every page)
 
 1. **Verify against source.** Every API name, default value, exception type, and behavioural claim
    must be checked against the package's current code. Never document a parameter or option that
    does not exist.
 2. **Full public surface.** Every public type and extension method a consumer can touch appears
-   somewhere on the page. Internal machinery is mentioned only when knowing it explains observable
-   behaviour ("why didn't my hook fire").
+   on some page in the folder. Internal machinery is mentioned only when knowing it explains
+   observable behaviour ("why didn't my hook fire").
 3. **`nameof`-safe examples.** Code samples must compile as written: declare every member an
    example references, include the `using` lines, and prefer `nameof(...)` over string literals.
-4. **One concept per `###` block.** A feature section explains one thing, shows one runnable
-   example, then states its edge cases — not a tour.
+   A Quick Start is run, or copied verbatim from a passing test.
+4. **Point at code by name, never by line.** Name the type (`IRepositorySpec`) or its folder; a
+   file path only when the file itself is the subject. Never a line number or range — every edit
+   moves lines and the page goes stale.
 5. **Tables for enumerable facts** (options, enum members, diagnostics, DI registrations);
    prose for behaviour and reasoning. Never bury a default value in a paragraph.
-6. **Link siblings relatively** (`./Other-Package.md`, `../Services/...`) so links work on
-   GitHub and GitHub Pages alike.
-7. **Diagram every feature that has a shape.** If a feature can be drawn — a flow, a state
-   machine, a sequence, a decision — draw it. See **Diagrams** below for the type picker and
-   authoring pipeline.
+6. **Link siblings relatively** (`../DKNet.EfCore.Hooks/index.md`, `send-commands.md`) so links
+   work on GitHub and GitHub Pages alike.
+7. **Diagram every page.** Each `index.md` carries a component diagram and a flow diagram; each
+   feature page carries its own diagram. See **Diagrams** below.
 
 ---
 
-## Skeleton
+## `index.md` skeleton
 
-```markdown
+````markdown
 # DKNet.<Area>.<PackageName>
 
-One or two sentences: what the package does and the mechanism it uses — concrete, not marketing.
-("A pluggable before/after-SaveChanges interceptor pipeline for EF Core — one shared interceptor
-per DbContext type plus a small pair of interfaces you implement.")
-
-> [!IMPORTANT]
-> Optional. Only for something that changes whether/how the reader should use the package at all
-> (retirement, hard prerequisite, security caveat). At most one.
+One sentence: what the package does and for whom — concrete, not marketing.
 
 ## ✨ Why use it?
 
-- **Bold claim, then justification** — 4–6 bullets. Each names the problem you'd otherwise solve
+- **Bold claim, then justification** — 2–5 bullets. Each names the problem you'd otherwise solve
   by hand and how this package removes it. First bullet = the strongest reason.
-- **State what it is NOT** as the final line when the name invites misuse
-  ("It is not a test-data generator: no seeding, no repeatable sequence.").
 
 ## 🚀 Quick Start
 
@@ -55,35 +67,42 @@ dotnet add package DKNet.<Area>.<PackageName>
 
 ```csharp
 // The smallest end-to-end working snippet: DI registration + one real use.
-// A reader should be able to paste this and see the package do its job.
+// A reader should be able to paste this and see a visible result.
 ```
+
+## 🏗️ Architecture
+
+The component diagram: the package's real types as they run inside the host app — what the
+reader registers or calls, the stores, handlers and background parts behind them, and every
+external dependency. Then 2–3 sentences on what it cannot show (lifetimes, what is shared, what
+runs where).
+
+## 🔄 How it works
+
+The flow diagram of the Quick Start call, from that call to the result the reader sees: every
+step in order, the branch they hit most and the failure path. Then 2–4 sentences on defaults,
+ordering and timing the diagram cannot show.
 
 ## 🧩 Features
 
-### <Feature or type name — e.g. "`IBeforeSaveHookAsync` — mutate before the write">
+- [Capability, phrased as what it does](<feature>.md) — one line: what it does for the reader
 
-What it does, when it runs, what guarantees it gives. Then one focused example:
+## 🔗 Related packages
 
-```csharp
-// runnable, minimal, compiles as written
-```
+- [DKNet.<Sibling>](../DKNet.<Sibling>/index.md) — what it adds, phrased as a routing rule:
+  "Reach for it when/instead of ...". Cover every package this one composes with.
+````
 
-If the feature has a shape — a lifecycle, a pipeline, a branch — add its diagram right after
-the example (see **Diagrams** below). End with the edge cases of THIS feature (what happens on
-failure, what the default is, what it deliberately does not do).
+## Feature page skeleton
 
-### <Next feature>
+```markdown
+# Capability, phrased as what it does
 
-Repeat. Order sections by the reader's journey: the type they write first, then the
-supporting pieces, then "how it runs" internals (only as far as they explain behaviour).
-
-When one feature has multiple declaration forms or modes, open with a **form-picker table**
-(Form | Looks like | Use when) before diving into each form as a `####` subsection.
+Part of [DKNet.<Area>.<PackageName>](index.md). What it is, the smallest code showing it, then the
+behaviour worth knowing (defaults, order, what happens on the unhappy path). Then this
+capability's diagram, right after its example, with 1–2 sentences on what it cannot show.
 
 ## ⚙️ Configuration reference
-
-Every knob in one place, as a table. If there is no options object, say so explicitly and
-table the DI registrations instead:
 
 | Option / Registration | Type / Lifetime | Default | Effect |
 |---|---|---|---|
@@ -91,73 +110,71 @@ table the DI registrations instead:
 
 ## 🧱 Where it fits
 
-Where the package sits in the DDD/Onion layering, which packages sit above/below it, and the
-one diagram if the flow deserves it. Name its dependencies (or state "zero dependencies").
+How this capability sits against the other packages and the runtime around it — with an
+architecture diagram when it spans more than one.
 
 ## ⚠️ Gotchas & limits
 
 - **Bold one-line trap statement.** Then the consequence and the workaround. These come from
   the source and the test suite — real footguns (thread-safety scope, silent no-ops, ordering
-  requirements, things that throw), never restatements of the feature list.
-- 4–8 bullets. If you can't find any, you haven't read the source closely enough.
-
-## 🔗 Related packages
-
-- [DKNet.<Sibling>](./DKNet.<Sibling>.md) – what it adds, phrased as a routing rule:
-  "Reach for it when/instead of ...". Cover every package this one composes with.
+  requirements, things that throw), never restatements of the happy path.
 ```
+
+## Package `README.md` skeleton
+
+The README next to the project is what nuget.org shows. It carries the title and one-liner,
+**✨ Why use it?** and **🚀 Quick Start** (the same as `index.md`), then a **Documentation** table
+linking into the folder — no Features section, which would drift from the pages that own it:
+
+```markdown
+## Documentation
+
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/<Package>/index.md) | Start with architecture and the end-to-end flow. |
+| [<Capability>](https://github.com/baoduy/DKNet/blob/main/docs/<Package>/<feature>.md) | One line: when to read it. |
+```
+
+Links are absolute because the README is packed into the NuGet package, where relative links do
+not resolve.
 
 ---
 
 ## Diagrams
 
-Add a diagram whenever a feature has a drawable shape — don't reserve them for the
-architecture overview. Pick the type from what the feature *is*:
+Every diagram is authored with **[archify](https://github.com/tt-a1i/archify)** — the required
+diagram tool for this repo (full conventions in [`docs/diagrams/README.md`](diagrams/README.md)).
+Diagrams are typed JSON intermediate representation, not drawn by hand: to add a node, rename an
+edge, or restyle the whole set, edit the JSON and re-render, and a reviewer can diff the change
+like code.
+
+| Where | Diagram | Type |
+|---|---|---|
+| `index.md` 🏗️ Architecture | the package's components inside the host app | **architecture** |
+| `index.md` 🔄 How it works | what the Quick Start call runs, in order | **workflow** or **sequence** |
+| each feature page | that capability's own shape | pick from the table below |
 
 | Feature shape | Diagram type | Example |
 |---|---|---|
-| Multi-step processing, "what happens on X" | **workflow / flow** | what one `SaveChangesAsync` runs, in order |
+| Multi-step processing, "what happens on X" | **workflow** | what one `SaveChangesAsync` runs, in order |
 | Two+ components exchanging calls over time | **sequence** | interceptor → hook → publisher during a save |
 | A value or entity moving through transforms | **dataflow** | token text → extractor → resolver → formatted output |
-| Distinct states + transitions | **lifecycle / state** | entity `Added → Modified → Deleted`; disabled/enabled hook scopes |
+| Distinct states + transitions | **lifecycle** | entity `Added → Modified → Deleted`; disabled/enabled hook scopes |
 | Static structure, layers, wiring | **architecture** | which package owns which interface; DI graph |
-| Branching decision ("which form/overload do I use?") | **flow (decision)** | type-naming vs labelled vs label-less `[RaisesEvent]` |
+| Branching decision ("which form/overload do I use?") | **workflow** (decision) | type-naming vs labelled vs label-less `[RaisesEvent]` |
 
-**Tool: [archify](https://github.com/tt-a1i/archify)** — the required diagram tool for this repo
-(full conventions in `docs/diagrams/README.md`). Diagrams are authored as archify's typed JSON
-intermediate representation, not drawn by hand. That IR is what makes every diagram
-**enhanceable later**: to add a node, rename an edge, or restyle the whole set, edit the JSON
-and re-render — no diagram ever has to be redrawn from scratch, and a reviewer can diff the
-change like code.
-
-1. Author the typed JSON IR: `docs/diagrams/<name>.<type>.json`
+1. Author the typed JSON IR: `docs/<Package>/diagrams/<name>.<type>.json`
    (`<type>` ∈ `architecture | workflow | sequence | dataflow | lifecycle` — the type selects
    the schema and renderer). The JSON is the source of truth — edit it, never the SVG.
-2. Validate, then render (both must pass at `showcase` quality):
-
-   ```bash
-   archify validate <type> docs/diagrams/<name>.<type>.json --quality showcase
-   archify render   <type> docs/diagrams/<name>.<type>.json /tmp/<name>.html --quality showcase
-   ```
-
-   The committed `.svg` is the `<svg>` element extracted from that HTML with the theme
-   `<style>` inlined — standalone, renders on GitHub and GitHub Pages without external CSS.
-3. Commit **both** files — `<name>.<type>.json` (source) and `<name>.svg` (rendered) — and set
-   `meta.quality_profile: "showcase"` plus a populated `meta.legend.entries` (generic swatch
-   labels are a review reject).
+2. Validate, then render at `showcase` quality, as `docs/diagrams/README.md` describes.
+3. Commit **both** files — `<name>.<type>.json` (source) and `<name>.svg` (rendered) — side by
+   side in `docs/<Package>/diagrams/`, with `meta.quality_profile: "showcase"` and a populated
+   `meta.legend.entries` (generic swatch labels are a review reject).
 4. Embed with a **long descriptive alt text** that works as the text-only fallback — a full
    sentence narrating the diagram, not a caption:
-   `![Sequence diagram of one SaveChangesAsync call: the interceptor runs BeforeSaveAsync to capture declared events before the write, then AfterSaveAsync to map and publish them only once the write has succeeded.](../diagrams/<name>.svg)`
+   `![Sequence diagram of one SaveChangesAsync call: the interceptor runs BeforeSaveAsync to capture declared events before the write, then AfterSaveAsync to map and publish them only once the write has succeeded.](diagrams/<name>.svg)`
 
-**ASCII fallback** — for a trivial linear flow (≤ 5 nodes, no branching), an ASCII diagram in a
-fenced code block is acceptable inline and needs no `docs/diagrams/` asset:
-
-```text
-request ──▶ [key extracted] ──▶ store.TryAdd ──▶ hit? ──▶ cached response
-                                             └─ miss ──▶ endpoint runs ──▶ response cached
-```
-
-Rules either way:
+Rules:
 
 - The diagram shows the **real mechanism** (actual type/method names from the source), never
   generic boxes ("Service → Database").
@@ -171,26 +188,32 @@ Rules either way:
 
 ## Section-by-section rules
 
-| Section | Must contain | Must NOT contain |
-|---|---|---|
-| Title + lede | Mechanism in one breath | Feature list, superlatives |
-| ✨ Why use it? | Problems removed, strongest first; a "not for" line when needed | API details, code |
-| 🚀 Quick Start | Install + smallest working end-to-end snippet | Every option, edge cases |
-| 🧩 Features | One `###` per concern; runnable example each; a diagram when the feature has a shape; diagnostics codes (`DK*`) inline where the mistake happens | Marketing prose, untested snippets, mermaid fences |
-| ⚙️ Configuration | Exhaustive table of every knob with defaults | Behaviour explanations (link back to the feature section) |
-| 🧱 Where it fits | Layer, dependencies, composition with sibling packages, optional diagram | Restating features |
-| ⚠️ Gotchas & limits | Source-verified footguns with workarounds | Generic advice ("remember to test") |
-| 🔗 Related packages | Every sibling it composes with + routing rule | Bare links without the "reach for it when" |
+| Page | Section | Must contain | Must NOT contain |
+|---|---|---|---|
+| `index.md` | Title + one-liner | What it does, for whom, in one sentence | Feature list, superlatives |
+| `index.md` | ✨ Why use it? | Problems removed, strongest first | API details, code |
+| `index.md` | 🚀 Quick Start | Install + smallest working end-to-end snippet | Every option, edge cases |
+| `index.md` | 🏗️ Architecture | Component diagram of the real types, plus what it cannot show | Generic boxes |
+| `index.md` | 🔄 How it works | Flow diagram of the Quick Start call, including its failure path | Invented steps |
+| `index.md` | 🧩 Features | Every feature page in the folder, one line each | Method signatures restated |
+| `index.md` | 🔗 Related packages | Every sibling it composes with + routing rule | Bare links without the "reach for it when" |
+| feature page | Title + body | Back-link to `index.md`, one capability, a runnable example, its diagram | A second capability, mermaid fences |
+| feature page | ⚙️ Configuration reference | Exhaustive table of every knob this capability reads, with defaults | Behaviour explanations |
+| feature page | 🧱 Where it fits | Composition with sibling packages, a diagram when it spans several | Restating the feature |
+| feature page | ⚠️ Gotchas & limits | Source-verified footguns with workarounds | Generic advice ("remember to test") |
 
-## Checklist before committing a page
+## Checklist before committing a package's docs
 
-- [ ] Every public type/extension method of the package is mentioned at least once.
+- [ ] Every public type/extension method of the package is mentioned on at least one page.
 - [ ] Every code sample compiles: members declared, `using` lines present, current API names.
 - [ ] Every default value and diagnostic code cross-checked against source.
 - [ ] Options/enums/diagnostics rendered as tables, each row verified.
 - [ ] Gotchas traced to actual source behaviour (cite the mechanism, e.g. "keyed by `Type.FullName`").
-- [ ] Every feature with a drawable shape has its diagram (archify JSON IR + rendered SVG both
-      committed, or inline ASCII for trivial linear flows); `archify validate` passes at
-      `showcase`; alt text narrates the diagram; no mermaid fences; no hand-edited SVGs.
-- [ ] Linked from the area `README.md` index.
-- [ ] Related-packages section links resolve and carry a routing rule each.
+- [ ] `index.md` has its 🏗️ Architecture and 🔄 How it works diagrams, every feature page has its
+      own, each with archify JSON IR + rendered SVG committed in `docs/<Package>/diagrams/`;
+      `archify validate` passes at `showcase`; alt text narrates the diagram; no mermaid fences;
+      no hand-edited SVGs.
+- [ ] Every feature page is listed in `index.md` 🧩 Features and links back to it.
+- [ ] `docs/<Package>/index.md` is linked from the package index, [`docs/README.md`](README.md).
+- [ ] The package `README.md` Documentation table links every page in the folder.
+- [ ] Related-packages links resolve and carry a routing rule each.

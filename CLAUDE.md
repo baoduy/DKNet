@@ -33,8 +33,8 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 │   ├── stylecop.json              StyleCop rules + file-header copyright text
 │   └── coverage.runsettings       Coverage collection settings
 ├── docs/              GitHub Pages site AND the reference knowledge base:
-│                      one page per package under Core/, EfCore/, AspNetCore/,
-│                      Services/, Messaging/, Aspire/
+│                      one folder per package, docs/<Package>/ (index.md,
+│                      feature pages, diagrams/); README.md is the package index
 ├── .claude-plugin/    marketplace.json — Claude Code marketplace "dknet"
 ├── plugins/           dknet-skills/ — the DKNet agent-skills plugin, also the npm package @drunkcoding/dknet-skills (see Repo Skills)
 ├── specs/             Spec-Kit feature specifications (historical)
@@ -55,8 +55,8 @@ Treat these as primary sources — read the relevant ones before generating non-
 | File | Why it matters |
 |---|---|
 | `src/AGENTS.md` | DKNet-only coding/testing/PR conventions (commit format, test patterns). |
-| `docs/<Area>/<Package>.md` | **Per-package reference — the single best source for any package's API, DI setup and options.** e.g. `docs/EfCore/DKNet.EfCore.Specifications.md`, `docs/Messaging/DKNet.SlimBus.Generators.md`. |
-| `docs/<Area>/README.md` | Index of the packages in that area. |
+| `docs/<Package>/index.md` | **Per-package reference — the single best source for any package's API, DI setup and options.** Starts at `index.md`, with one page per feature beside it. e.g. `docs/DKNet.EfCore.Specifications/index.md`, `docs/DKNet.SlimBus.Generators/index.md`. |
+| `docs/README.md` | Package index: every package, grouped by area, linking its `docs/<Package>/index.md`. |
 | `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | Cross-cutting reference. |
 | `.github/copilot-instructions.md` | Condensed Copilot-facing version of AGENTS.md; kept in sync with it. |
 
@@ -137,7 +137,7 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
   ```
   `.AsExpandable()` is mandatory on a raw `DbSet`/`IQueryable` — LinqKit cannot translate the predicate without it. `IRepositorySpec.Query` applies it for you, so specifications executed through the repository need nothing extra. `DynamicAnd`/`DynamicOr` already null-handle internally; do not reintroduce manual null checks.
 - **CQRS via SlimBus** — handlers (`IRequestHandler<TCommand, TResult>`) receive commands, fetch via repos, mutate aggregates, and persist; domain events emit automatically from the aggregate.
-- **Source generators** are a first-class surface. `DKNet.SlimBus.Generators` reads `[CrudAction]` on aggregate methods and emits the request + handler + minimal-API endpoint vertical slice; `DKNet.EfCore.DtoGenerator` reads `[GenerateDto]` and emits DTOs. CRUD attributes live in `DKNet.EfCore.Abstractions.Attributes`; `[GenerateDto]` lives in `DKNet.EfCore.DtoGenerator`. **Never hand-write what a generator emits** — see the `dknet-codegen` skill and `docs/Messaging/DKNet.SlimBus.Generators.md`.
+- **Source generators** are a first-class surface. `DKNet.SlimBus.Generators` reads `[CrudAction]` on aggregate methods and emits the request + handler + minimal-API endpoint vertical slice; `DKNet.EfCore.DtoGenerator` reads `[GenerateDto]` and emits DTOs. CRUD attributes live in `DKNet.EfCore.Abstractions.Attributes`; `[GenerateDto]` lives in `DKNet.EfCore.DtoGenerator`. **Never hand-write what a generator emits** — see the `dknet-codegen` skill and `docs/DKNet.SlimBus.Generators/index.md`.
 - **Hooks + AuditLogs + Encryption + DataAuthorization** are EF Core SaveChanges interceptors layered on the same `DbContext`. Independent and opt-in via DI extensions on the consuming app. `DataAuthorization` **fails closed**: a `DbContext` that does not implement `IDataOwnerDbContext` throws rather than silently skipping the filter.
 - **Idempotency** (`DKNet.AspCore.Idempotency`) is endpoint middleware over a pluggable store. Four store packages ship: `Relational` (shared base), `MsSqlStore`, `NpgsqlStore`, `RedisStore`. Idempotency keys are attacker-controlled — they are sanitized before logging and before appearing in 409 bodies; keep that sanitization when touching the cache path.
 
@@ -168,9 +168,10 @@ DKNet expresses DDD + Onion Architecture at the package boundaries:
 - `dev` is the integration branch and the default PR base. Recent history shows many small `up` / fix commits — squash where it makes sense.
 - Diagrams are tracked: `Diagram.drawio` / `Diagram.png` at the repo root and `src/EfCore/Diagrams/`. If you change an architectural relationship, update the relevant diagram or call it out in the PR.
 - **A public-API or behaviour change updates `docs/` in the same PR.** Whenever a change alters a package's public
-  API surface or its documented behaviour, update that package's `docs/<Area>/<Package>.md` page **and** every
-  cross-cutting page that describes the behaviour (`docs/Architecture.md`, `docs/Configuration.md`,
-  `docs/Security.md`, `docs/FAQ.md`, `docs/CHANGELOG.md`, and the affected `docs/diagrams/` source plus its
+  API surface or its documented behaviour, update that package's pages in `docs/<Package>/` (its `index.md` and
+  the feature pages it affects, plus the diagrams in `docs/<Package>/diagrams/` — JSON source and rendered
+  `.svg`) **and** every cross-cutting page that describes the behaviour (`docs/Architecture.md`, `docs/Configuration.md`,
+  `docs/Security.md`, `docs/FAQ.md`, `docs/CHANGELOG.md`, and the affected shared `docs/diagrams/` source plus its
   rendered asset) in the same pull request. Updating the package's `README.md` alone is **not** enough: `docs/` is
   the reference knowledge base agents read before generating code, so a stale page there produces wrong code long
   after the source is right.

@@ -134,7 +134,7 @@ dotnet test --configuration Release
 
 ### General Guidelines
 
-Follow the [DKNet Coding Guidelines](.github/copilot-instructions.md) and Microsoft .NET guidelines:
+Follow the [DKNet Coding Guidelines](../src/.github/copilot-instructions.md) and Microsoft .NET guidelines:
 
 - Use C# 14.0 language features appropriately
 - Follow `.editorconfig` rules

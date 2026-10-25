@@ -2,12 +2,12 @@
 
 Repo-wide context, architecture and pitfalls live in the repo-root **`CLAUDE.md`** (symlinked here as `src/CLAUDE.md`). That file is authoritative for the folder-and-namespace convention, the package map, and the common-pitfall list. This file adds only the conventions specific to writing DKNet code.
 
-> **`src/memory-bank/` no longer exists.** It was removed; `docs/` is the reference knowledge base. Read `docs/<Area>/<Package>.md` for any package you touch — e.g. `docs/EfCore/DKNet.EfCore.Specifications.md`, `docs/AspNetCore/DKNet.AspCore.Idempotency.md`. Ignore lingering `memory-bank` pointers in older files.
+> **`src/memory-bank/` no longer exists.** It was removed; `docs/` is the reference knowledge base. Read `docs/<Package>/index.md` for any package you touch — e.g. `docs/DKNet.EfCore.Specifications/index.md`, `docs/DKNet.AspCore.Idempotency/index.md`. Ignore lingering `memory-bank` pointers in older files.
 
 ## Before You Start
 
-1. **`docs/<Area>/README.md`** — index of packages in the area you're touching.
-2. **`docs/<Area>/<Package>.md`** — the package's API, DI setup, options and examples.
+1. **`docs/README.md`** — the package index: every package, grouped by area.
+2. **`docs/<Package>/index.md`** — the package's overview, Quick Start and feature list; each feature page beside it covers that capability's API, options and examples.
 3. **`plugins/dknet-skills/skills/`** — the `dknet-skills` plugin: `dknet-packages` (scenario → package routing, start here), one skill per package family (`dknet-efcore-*`, `dknet-slimbus-cqrs`, `dknet-aspcore-api`, `dknet-idempotency`, `dknet-blob-storage`, `dknet-services`, `dknet-core-utilities`), `dknet-codegen` (`[CrudAction]` / `[GenerateDto]`), `dknet-testing` (TestContainers, SQL assertions). Load with `claude --plugin-dir plugins/dknet-skills`; the table in `CLAUDE.md` maps needs to skills.
 4. **`docs/Architecture.md`**, **`docs/Testing-Strategy.md`** — cross-cutting reference.
 
@@ -103,7 +103,7 @@ BREAKING CHANGE: invalid enum filters now no-op instead of throwing
 - [ ] `dotnet test DKNet.FW.sln` — all green
 - [ ] `dotnet format` clean
 - [ ] XML docs on every new public API
-- [ ] `docs/<Area>/<Package>.md` updated if the public surface changed
+- [ ] `docs/<Package>/` pages (and their `diagrams/`) updated if the public surface changed
 - [ ] Diagram updated (`Diagram.drawio`, `src/EfCore/Diagrams/`) if an architectural relationship changed
 - [ ] Coverage held or improved; breaking changes called out in the PR body
 - [ ] No generated artefacts committed (`nupkgs/`, `TestResults/`, `coverage-report*/`)

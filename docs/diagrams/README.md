@@ -1,6 +1,8 @@
 # Diagram sources
 
-Every diagram referenced from the pages under `docs/` is committed twice:
+This folder holds only the four diagrams shared by the cross-cutting guides (listed below). Each package's own
+diagrams live in its folder, `docs/<Package>/diagrams/`, next to the pages that embed them. Wherever it lives, every
+diagram is committed twice:
 
 - **`<name>.<type>.json`** — the typed [archify](https://github.com/tt-a1i/archify) intermediate representation.
   This is the source of truth; edit it, never the SVG.
@@ -14,6 +16,7 @@ Every diagram referenced from the pages under `docs/` is committed twice:
 
 ```bash
 # 1. Validate the IR at showcase quality — this must pass before rendering.
+#    For a package diagram, use docs/<Package>/diagrams/ instead of docs/diagrams/.
 archify validate <type> docs/diagrams/<name>.<type>.json --quality showcase
 
 # 2. Render to HTML.
@@ -40,10 +43,10 @@ subset, so a 3.x export is larger than the older assets. `dknet-layers`, `dknet-
 - **One idea per diagram.** Prefer a second diagram over a denser one.
 - **Static by default** — `meta.animation` is left unset.
 
-## Cross-cutting diagrams
+## Shared diagrams
 
-Four diagrams describe the suite rather than a single package, and are embedded from the hub and architecture
-pages:
+These four describe the suite rather than a single package, and are embedded from the repo-root README, the package
+index, the Getting Started guide and the Architecture guide:
 
 | Diagram | Answers |
 |---|---|
@@ -52,4 +55,4 @@ pages:
 | `dknet-request-lifecycle.sequence.json` | what one HTTP write request touches, in order |
 | `dknet-domain-event-path.dataflow.json` | how a domain event travels from an entity method to a bus consumer |
 
-The rest are named after the package they document.
+Every other diagram belongs to one package and lives in `docs/<Package>/diagrams/`.

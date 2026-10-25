@@ -677,7 +677,7 @@ public class ProductService
 
 **After (CQRS via `DKNet.SlimBus.Extensions`)** — see
 [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) for the full contract set, and
-[DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) for the auto-save the handler relies on:
+[Auto-save after a successful write](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) for the auto-save the handler relies on:
 ```csharp
 using DKNet.SlimBus.Extensions;
 using FluentResults;
@@ -905,8 +905,10 @@ services.AddScoped<ProductService>();
 // New: one IRepositorySpec for every entity, plus SlimBus (DKNet's MediatR-free CQRS package).
 // No per-entity repository registration, and no per-handler registration either.
 services.AddSpecRepo<AppDbContext>();
-services.AddSlimBusForEfCore<AppDbContext>(typeof(CreateProductHandler).Assembly);  // DKNet.SlimBus.Extensions.EfCore
-// No EF Core in the handlers? services.AddSlimBusForMediator(typeof(CreateProductHandler).Assembly);
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();  // DKNet.SlimBus.Extensions: auto-save after a successful write
+services.AddSlimMessageBus(mbb => mbb                   // SlimMessageBus's own setup, memory provider
+    .AddServicesFromAssembly(typeof(CreateProductHandler).Assembly)
+    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ---
