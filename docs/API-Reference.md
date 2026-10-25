@@ -1,7 +1,7 @@
 # API Reference
 
-Index into the per-package API documentation. Each package below has its own canonical reference page —
-`docs/<Area>/<Package>.md` — kept in sync with `src/` on every change. This page does not restate their contents;
+Index into the per-package API documentation. Each package below has its own canonical reference folder —
+`docs/<Package>/`, starting at its `index.md` — kept in sync with `src/` on every change. This page does not restate their contents;
 it points to them, sorted by area, and lists all 28 published packages plus the one source-only one.
 
 Looking for a package by the problem you have rather than by name? Use the
@@ -27,8 +27,7 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 📨 Messaging & CQRS
 
-- [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) — EF-free `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts and `AddSlimBusForMediator`, a one-call MediatR replacement
-- [DKNet.SlimBus.Extensions.EfCore](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) — auto-save after a successful write and domain events forwarded onto the bus; `AddSlimBusForEfCore<TDbContext>`
+- [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) — `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts on SlimMessageBus, plus auto-save after a successful write (`AddSlimBusEfCoreInterceptor<TDbContext>`) and domain events forwarded onto the bus (`AddSlimBusEventPublisher<TDbContext>`)
 - [DKNet.SlimBus.Generators](DKNet.SlimBus.Generators/index.md) — emits request records, handlers, and endpoint registration from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
 ## 🗃️ Blob Storage Services

@@ -255,6 +255,6 @@ Global exclusions are processed at **compile-time**, not runtime:
 ## Related Documentation
 
 - [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) — the package's full reference
-- [EF Core packages index](./README.md) — where this page sits in the family
+- [EF Core packages index](../README.md#entity-framework-core-extensions) — where this page sits in the family
 - [Source Generator Documentation](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
 - [MSBuild Properties](https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild-properties)

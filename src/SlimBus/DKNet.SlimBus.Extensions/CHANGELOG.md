@@ -53,7 +53,6 @@ All fluent interfaces maintain backward compatibility:
 
 All EF Core integration methods maintain backward compatibility:
 
-- `AddSlimBusForEfCore()`
 - `EfAutoSavePostProcessor<,>`
 
 #### Result Patterns

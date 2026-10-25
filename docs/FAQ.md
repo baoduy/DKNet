@@ -148,7 +148,7 @@ Four common causes, in order of likelihood:
 1. **The `DbContext` was registered with `AddDbContext`, not `AddDbContextWithHook`** — no hook interceptor, so no
    dispatch.
 2. **No publisher is registered.** Use `AddEventPublisher<TDbContext, TImplementation>()`, or
-   `AddSlimBusEventPublisher<TDbContext>()` (`DKNet.SlimBus.Extensions.EfCore`) to forward events onto SlimMessageBus.
+   `AddSlimBusEventPublisher<TDbContext>()` (`DKNet.SlimBus.Extensions`) to forward events onto SlimMessageBus.
 3. **The save failed.** Events are published after the write commits, not before.
 4. **A publisher threw.** Publisher failures are logged and swallowed, so the save succeeds and the event is
    lost — check the logs for the publisher's type name.
@@ -165,18 +165,27 @@ throws `EventException` rather than dropping the event silently.
 No. `DKNet.SlimBus.Extensions` is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not
 reference MediatR — it *replaces* it, following SlimMessageBus's
 [Replace MediatR](https://github.com/zarusz/SlimMessageBus/blob/master/docs/UseCases/ReplaceMediatR.md) use case.
-Pick the setup by whether your handlers use EF Core:
+Set up the bus with SlimMessageBus's own `AddSlimMessageBus(...)` and its memory provider (the
+`SlimMessageBus.Host.Memory` package); add the two `DKNet.SlimBus.Extensions` calls first when your handlers use a
+`DbContext`:
 
 ```csharp
-// Without EF Core — DKNet.SlimBus.Extensions: in-memory bus + handler discovery.
-services.AddSlimBusForMediator(typeof(Program).Assembly);
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
 
-// With EF Core — DKNet.SlimBus.Extensions.EfCore: the same, plus auto-save and domain events onto the bus.
-services.AddSlimBusForEfCore<AppDbContext>(typeof(Program).Assembly);
+// With EF Core — DKNet.SlimBus.Extensions: auto-save, and domain events onto the bus.
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+services.AddSlimBusEventPublisher<AppDbContext>();
+
+// SlimMessageBus's own setup: in-memory bus + handler discovery.
+services.AddSlimMessageBus(mbb => mbb
+    .AddServicesFromAssembly(typeof(Program).Assembly)
+    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
 ```
 
-The core package has no EF Core dependency, so it fits a project without a database. For a real transport (Azure
-Service Bus, Kafka), configure `AddSlimMessageBus` yourself — see
+The package references EF Core (`X.PagedList.EF` and `DKNet.EfCore.Events`), but a project without a database can
+still use it and skip the two EF Core calls. For a real transport (Azure Service Bus, Kafka), pass that provider to
+`AddChildBus(...)` instead of `WithProviderMemory()` — see
 [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md#-quick-start).
 
 ### How do I validate a command?
@@ -188,8 +197,7 @@ to a command does nothing on its own. To run validation before a handler, regist
 
 ### Why does my handler not need SaveChangesAsync?
 
-`AddSlimBusEfCoreInterceptor<TDbContext>()` — or `AddSlimBusForEfCore<TDbContext>(...)`, from
-`DKNet.SlimBus.Extensions.EfCore` — registers an interceptor with `Order = int.MaxValue`, so it wraps the
+`AddSlimBusEfCoreInterceptor<TDbContext>()`, from `DKNet.SlimBus.Extensions`, registers an interceptor with `Order = int.MaxValue`, so it wraps the
 handler and runs last. After the handler returns, it saves — but only when the response is non-null, is not a
 failed `IResultBase`, and the request is a `Fluents.Requests` write. A failed command therefore leaves nothing
 behind and needs no rollback code.

@@ -13,11 +13,11 @@ Before generating ANY code, you MUST:
 ```
 1. Read /CLAUDE.md (repo map, architecture, conventions, pitfalls)
 2. Read /src/AGENTS.md (coding, testing and PR conventions)
-3. Read /docs/<Area>/README.md (index of the area you are touching)
-4. Read /docs/<Area>/<Package>.md (API, DI setup and options per package)
+3. Read /docs/README.md (package index, grouped by area)
+4. Read /docs/<Package>/index.md (overview, Quick Start and feature pages per package)
 ```
 
-**Priority**: CLAUDE.md → AGENTS.md → area README → package page
+**Priority**: CLAUDE.md → AGENTS.md → package index → package pages
 
 > `/memory-bank/` was removed; `docs/` replaced it.
 
@@ -150,7 +150,7 @@ public void MethodName_WhenScenarioOccurs_ThenExpectedOutcome()
 ### 6. Decision Making Guidelines
 
 #### When Asked to Implement a Feature
-1. **Check** `docs/<Area>/<Package>.md` - Does a package already do this?
+1. **Check** `docs/README.md` and `docs/<Package>/index.md` - Does a package already do this?
 2. **Review** `CLAUDE.md` - What pattern should be used?
 3. **Reference** `plugins/dknet-skills/skills/dknet-packages` - Which package fits the scenario, and which skill owns it?
 4. **Generate** code following established patterns
@@ -267,8 +267,8 @@ When the user asks about:
 ### File Priority (Load Order)
 1. `/CLAUDE.md` - Repo map, architecture, conventions, pitfalls
 2. `/src/AGENTS.md` - Coding, testing and PR conventions
-3. `/docs/<Area>/README.md` - Area index
-4. `/docs/<Area>/<Package>.md` - Per-package API reference
+3. `/docs/README.md` - Package index
+4. `/docs/<Package>/index.md` - Per-package reference (e.g. `/docs/DKNet.EfCore.Specifications/index.md`)
 5. `/plugins/dknet-skills/skills/` - the `dknet-skills` plugin (`dknet-packages` router, one skill per package family, `dknet-codegen`, `dknet-testing`)
 
 ### Critical Patterns

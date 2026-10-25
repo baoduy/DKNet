@@ -621,8 +621,8 @@ rect.c-bg-rect { fill: var(--bg); }
           <text x="551" y="122" class="t-muted" font-size="7" text-anchor="middle">MsSql / Npgsql / Redis</text>
         </g>
 
-        <g id="node-bus" data-node-id="bus" data-node-label="Bus + auto-save" tabindex="0" role="button" aria-label="Focus Bus + auto-save, SlimBus.Extensions.EfCore, Sequence participant" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="SlimBus.Extensions.EfCore" data-node-context="Sequence participant">
-          <title>Bus + auto-save · SlimBus.Extensions.EfCore · Sequence participant</title>
+        <g id="node-bus" data-node-id="bus" data-node-label="Bus + auto-save" tabindex="0" role="button" aria-label="Focus Bus + auto-save, DKNet.SlimBus.Extensions, Sequence participant" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="DKNet.SlimBus.Extensions" data-node-context="Sequence participant">
+          <title>Bus + auto-save · DKNet.SlimBus.Extensions · Sequence participant</title>
           <rect x="638.6666666666666" y="72" width="113" height="60" rx="6" class="c-mask"/>
           <rect x="638.6666666666666" y="72" width="113" height="60" rx="6" class="c-messagebus" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(644.6666666666666 78) scale(0.6875)">
@@ -632,7 +632,7 @@ rect.c-bg-rect { fill: var(--bg); }
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
           <text data-node-label="" x="695.1666666666666" y="108" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Bus + auto-save</text>
-          <text x="695.1666666666666" y="122" class="t-muted" font-size="7" text-anchor="middle">SlimBus.Extensions.EfCore</text>
+          <text x="695.1666666666666" y="122" class="t-muted" font-size="7" text-anchor="middle">DKNet.SlimBus.Extensions</text>
         </g>
 
         <g id="node-handler" data-node-id="handler" data-node-label="Handler" tabindex="0" role="button" aria-label="Focus Handler, Fluents.Requests.IHandler, Sequence participant" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Fluents.Requests.IHandler" data-node-context="Sequence participant">

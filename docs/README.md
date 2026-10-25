@@ -48,12 +48,12 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 | Encrypt a column without changing the queries that read it | [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) |
 | Stop hand-writing DTOs that mirror entities | [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) |
 | Check for or create a table at runtime, whatever the relational provider | [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) |
-| Replace MediatR with an in-process command/query bus (no EF Core) | [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) |
-| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions.EfCore](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) |
+| Replace MediatR with an in-process command/query bus | [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) |
+| Separate commands from queries and stop calling `SaveChangesAsync` in handlers | [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) — auto-save |
 | Generate CRUD requests, handlers, and endpoints from an attributed entity member | [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators/index.md) |
 | Map minimal-API endpoint groups by convention and turn a `Result` into `ProblemDetails` | [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) |
 | Make a `POST`/`PUT`/`PATCH` safe for a client to retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
-| Run a job exactly once at start-up, before traffic arrives | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) |
+| Run a batch of jobs once per host start, in a hosted `BackgroundService` alongside traffic | [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) |
 | Store files without binding the application to one cloud | [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions/index.md) plus one adapter |
 | Encrypt, sign, or hash a value in ordinary application code | [DKNet.Svc.Encryption](./DKNet.Svc.Encryption/index.md) |
 | Render Markdown or HTML to a PDF file | [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators/index.md) |
@@ -64,13 +64,13 @@ Sorted by the problem you have, not by namespace. Follow the link for the full A
 
 ## Component Documentation
 
-### [Core Framework](./Core/README.md)
+### Core Framework
 Foundation utilities that sit at the bottom of the dependency graph and pull in nothing else from DKNet.
 
 - [DKNet.Fw.Extensions](./DKNet.Fw.Extensions/index.md) — framework-agnostic reflection, type, string, enum and DI-inspection helpers, plus fluent assembly/type scanning (`TypeExtractors`)
 - [DKNet.RandomCreator](./DKNet.RandomCreator/index.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
 
-### [Entity Framework Core Extensions](./EfCore/README.md)
+### Entity Framework Core Extensions
 Entity base classes, the specification pattern, and the `SaveChanges` interceptor pipeline everything else hangs off.
 
 - [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md) — the persistence-agnostic vocabulary every other `DKNet.EfCore.*` package builds on: entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
@@ -84,14 +84,13 @@ Entity base classes, the specification pattern, and the `SaveChanges` intercepto
 - [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) — a Roslyn incremental source generator that emits DTO properties from an entity type at compile time
 - [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) — four `DbContext` extension methods for relational bookkeeping EF Core does not expose: table creation, connection access, table-name resolution, and table-existence checks
 
-### [Messaging & CQRS](./Messaging/README.md)
-SlimMessageBus integration: CQRS contracts, automatic save, and the CRUD source generator.
+### Messaging & CQRS
+SlimMessageBus integration: CQRS contracts, automatic save, domain events onto the bus, and the CRUD source generator.
 
-- [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) — EF-free fluent command/query/event interfaces and a one-call MediatR-replacement setup
-- [DKNet.SlimBus.Extensions.EfCore](./DKNet.SlimBus.Extensions/auto-save-dbcontext.md) — automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
+- [DKNet.SlimBus.Extensions](./DKNet.SlimBus.Extensions/index.md) — fluent command/query/event interfaces on SlimMessageBus, automatic `SaveChanges` after a successful write, and domain events forwarded onto the bus
 - [DKNet.SlimBus.Generators](./DKNet.SlimBus.Generators/index.md) — emits a whole CRUD vertical slice (request records, handlers, endpoint registration) from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
-### [Service Layer](./Services/README.md)
+### Service Layer
 Application-level services with no dependency on the EF Core packages.
 
 - [DKNet.Svc.BlobStorage.Abstractions](./DKNet.Svc.BlobStorage.Abstractions/index.md) — provider-agnostic `IBlobService` contract and shared model types
@@ -102,7 +101,7 @@ Application-level services with no dependency on the EF Core packages.
 - [DKNet.Svc.PdfGenerators](./DKNet.Svc.PdfGenerators/index.md) — converts HTML or Markdown into a PDF using headless Chromium (PuppeteerSharp) and Markdig, with page layout, header/footer, and margin control
 - [DKNet.Svc.Transformation](./DKNet.Svc.Transformation/index.md) — fills bracketed tokens in a template string from plain objects or string dictionaries by reflection
 
-### [ASP.NET Core Utilities](./AspNetCore/README.md)
+### ASP.NET Core Utilities
 Start-up orchestration, minimal-API glue, and idempotency for web and API workloads.
 
 - [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) — host-populated request members, discovered and versioned endpoint groups, verb-to-command mappers, generic list/read/delete endpoints, and `FluentResults`-to-`IResult` conversion
@@ -113,7 +112,7 @@ Start-up orchestration, minimal-API glue, and idempotency for web and API worklo
 - [DKNet.AspCore.Idempotency.RedisStore](DKNet.AspCore.Idempotency.RedisStore/index.md) — Redis-backed key store using `SET NX` reservation and native key expiry, with no schema or migrations
 - [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational/index.md) — the shared EF Core building blocks the two relational stores derive from. Not referenced directly by application code
 
-### [Aspire Integrations](./Aspire/README.md)
+### Aspire Integrations
 Infrastructure orchestration helpers for .NET Aspire AppHost projects.
 
 - [Aspire.Hosting.ServiceBus](./Aspire.Hosting.ServiceBus/index.md) — adds the Azure Service Bus emulator as a resource inside an Aspire AppHost, so local work needs no shared cloud namespace. **Source-only**: it sets `<IsPackable>false</IsPackable>`, so reference the project from your AppHost rather than a NuGet package
