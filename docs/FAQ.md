@@ -165,18 +165,22 @@ throws `EventException` rather than dropping the event silently.
 No. `DKNet.SlimBus.Extensions` is built on [SlimMessageBus](https://github.com/zarusz/SlimMessageBus) and does not
 reference MediatR — it *replaces* it, following SlimMessageBus's
 [Replace MediatR](https://github.com/zarusz/SlimMessageBus/blob/master/docs/UseCases/ReplaceMediatR.md) use case.
-Set up the bus with SlimMessageBus's own `AddSlimMessageBus(...)` and its memory provider; add the two
-`DKNet.SlimBus.Extensions` calls when your handlers use a `DbContext`:
+Set up the bus with SlimMessageBus's own `AddSlimMessageBus(...)` and its memory provider (the
+`SlimMessageBus.Host.Memory` package); add the two `DKNet.SlimBus.Extensions` calls first when your handlers use a
+`DbContext`:
 
 ```csharp
-// SlimMessageBus's own setup: in-memory bus + handler discovery.
-services.AddSlimMessageBus(mbb => mbb
-    .AddServicesFromAssembly(typeof(Program).Assembly)
-    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
 
 // With EF Core — DKNet.SlimBus.Extensions: auto-save, and domain events onto the bus.
 services.AddSlimBusEfCoreInterceptor<AppDbContext>();
 services.AddSlimBusEventPublisher<AppDbContext>();
+
+// SlimMessageBus's own setup: in-memory bus + handler discovery.
+services.AddSlimMessageBus(mbb => mbb
+    .AddServicesFromAssembly(typeof(Program).Assembly)
+    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
 ```
 
 The package references EF Core (`X.PagedList.EF` and `DKNet.EfCore.Events`), but a project without a database can

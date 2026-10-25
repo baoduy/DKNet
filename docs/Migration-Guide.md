@@ -898,6 +898,8 @@ public static class ConfigurationMigration
 **Solution**: 
 ```csharp
 using DKNet.EfCore.Specifications;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
 
 // Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
@@ -906,7 +908,8 @@ services.AddScoped<ProductService>();
 // No per-entity repository registration, and no per-handler registration either.
 services.AddSpecRepo<AppDbContext>();
 services.AddSlimBusEfCoreInterceptor<AppDbContext>();  // DKNet.SlimBus.Extensions: auto-save after a successful write
-services.AddSlimMessageBus(mbb => mbb                   // SlimMessageBus's own setup, memory provider
+services.AddSlimBusEventPublisher<AppDbContext>();      // DKNet.SlimBus.Extensions: domain events onto the bus
+services.AddSlimMessageBus(mbb => mbb                   // SlimMessageBus.Host.Memory: SlimMessageBus's own setup
     .AddServicesFromAssembly(typeof(CreateProductHandler).Assembly)
     .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```

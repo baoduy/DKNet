@@ -191,11 +191,15 @@ internal sealed class DeactivateProductHandler(AppDbContext db)
 }
 ```
 
-The package brings no bus setup of its own. Call SlimMessageBus's own `AddSlimMessageBus(...)` with the provider you
-pick (the memory provider for in-process dispatch), then add `AddSlimBusEfCoreInterceptor<TDbContext>()` for auto-save
-and `AddSlimBusEventPublisher<TDbContext>()` to forward domain events onto the bus:
+The package brings no bus setup of its own. Add `AddSlimBusEfCoreInterceptor<TDbContext>()` for auto-save and
+`AddSlimBusEventPublisher<TDbContext>()` to forward domain events onto the bus, then call SlimMessageBus's own
+`AddSlimMessageBus(...)` with the provider you pick (the memory provider, from the `SlimMessageBus.Host.Memory`
+package, for in-process dispatch):
 
 ```csharp
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
+
 services.AddSlimBusEfCoreInterceptor<AppDbContext>();
 services.AddSlimBusEventPublisher<AppDbContext>();
 services.AddSlimMessageBus(mbb => mbb
