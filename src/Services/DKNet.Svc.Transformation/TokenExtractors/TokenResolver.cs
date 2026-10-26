@@ -134,7 +134,8 @@ internal sealed class TokenResolver : ITokenResolver
                            propertyName,
                            BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.NonPublic);
 
-            return prop?.GetValue(data);
+            // An indexer (e.g. Dictionary<,>.Item) needs index arguments, so it never answers a token.
+            return prop is not null && prop.GetIndexParameters().Length == 0 ? prop.GetValue(data) : null;
         }
         catch (ArgumentNullException ex)
         {
