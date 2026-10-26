@@ -17,7 +17,7 @@ public interface ITokenResolver
     /// <param name="token">
     ///     <see cref="IToken" />
     /// </param>
-    /// <param name="data"> data object or IDictionary[string, object]</param>
+    /// <param name="data"> data object or IDictionary[string, string]</param>
     /// <returns>value found from data or NULL</returns>
     object? Resolve(IToken token, params object?[] data);
 
@@ -27,7 +27,7 @@ public interface ITokenResolver
     /// <param name="token">
     ///     <see cref="IToken" />
     /// </param>
-    /// <param name="data"> data object or IDictionary[string, object]</param>
+    /// <param name="data"> data object or IDictionary[string, string]</param>
     /// <returns>value found from data or NULL</returns>
     Task<object?> ResolveAsync(IToken token, params object?[] data);
 
@@ -83,6 +83,13 @@ internal sealed class TokenResolver : ITokenResolver
             switch (item)
             {
                 case null: continue;
+                case IDictionary<string, string> dictionary:
+                {
+                    var value = TryGetValueByKey(dictionary, keyName);
+                    if (value is not null) return value;
+
+                    break;
+                }
                 case IEnumerable<object?> objArray:
                 {
                     var value = TryGetValueFromCollection(objArray, keyName);
@@ -107,8 +114,13 @@ internal sealed class TokenResolver : ITokenResolver
         if (dictionary is not IDictionary<string, string> objects)
             throw new ArgumentException("Only IDictionary[string, string] is supported", nameof(dictionary));
 
-        var key = objects.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
-        return key is not null ? objects[key] : null;
+        return TryGetValueByKey(objects, keyName);
+    }
+
+    private static string? TryGetValueByKey(IDictionary<string, string> dictionary, string keyName)
+    {
+        var key = dictionary.Keys.FirstOrDefault(k => k.Equals(keyName, StringComparison.OrdinalIgnoreCase));
+        return key is not null ? dictionary[key] : null;
     }
 
     private static object? TryGetValueFromObject(object data, string propertyName)
