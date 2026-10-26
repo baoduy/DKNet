@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "S3BlobService inside the host application",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.AwsS3/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package type"
+        },
+        "database": {
+          "label": "Cached SDK client"
+        },
+        "cloud": {
+          "label": "AWS S3 / S3-compatible bucket"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "app",
+      "label": "Application code",
+      "sublabel": "IBlobService consumer",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3Setup.cs",
+          "line": 27,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "setup",
+      "label": "AddS3BlobService",
+      "sublabel": "S3Setup \u2014 binds S3Options",
+      "pos": [
+        520,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3Setup.cs",
+          "line": 27,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "svc",
+      "label": "S3BlobService : BlobService",
+      "sublabel": "IDisposable, lazy client build",
+      "pos": [
+        990,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 22,
+          "end_line": 37
+        }
+      ]
+    },
+    {
+      "id": "options",
+      "label": "S3Options",
+      "sublabel": "BlobService:S3 section",
+      "pos": [
+        990,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3Options.cs",
+          "line": 13,
+          "end_line": 65
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "label": "AmazonS3Client",
+      "sublabel": "built once, cached for process lifetime",
+      "pos": [
+        1460,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 290,
+          "end_line": 309
+        }
+      ]
+    },
+    {
+      "id": "bucket",
+      "label": "S3 bucket",
+      "sublabel": "created on first use if missing",
+      "pos": [
+        1460,
+        80
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "cloud",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 311,
+          "end_line": 316
+        }
+      ]
+    },
+    {
+      "id": "base",
+      "label": "Abstractions.BlobService",
+      "sublabel": "shared validation + path prefix",
+      "pos": [
+        520,
+        310
+      ],
+      "size": [
+        220,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "app",
+      "to": "setup",
+      "label": "registers once"
+    },
+    {
+      "from": "setup",
+      "to": "svc",
+      "label": "IBlobService \u2192 singleton"
+    },
+    {
+      "from": "svc",
+      "to": "base",
+      "label": "derives from"
+    },
+    {
+      "from": "svc",
+      "to": "options",
+      "label": "reads"
+    },
+    {
+      "from": "svc",
+      "to": "client",
+      "label": "builds lazily"
+    },
+    {
+      "from": "client",
+      "to": "bucket",
+      "label": "PutObject / ListObjectsV2"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Lifetime",
+      "items": [
+        "Registered as a process-lifetime singleton \u2014 the AWS SDK client is thread-safe and built at most once per instance.",
+        "RegionEndpointName is declared on S3Options but never applied to the client; encode the region in ConnectionString."
+      ]
+    }
+  ]
+}

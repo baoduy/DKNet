@@ -18,7 +18,7 @@ renamed, not removed, and there is nothing here for a consumer to migrate: no ex
 
 `IRepositorySpec` covers the same read/write/paging surface as `IRepository<T>` while composing directly with
 `Specification<T>` (filter + include + order-by in one object), so callers no longer need a second query layer
-bolted on top of the repository. See [`DKNet.EfCore.Specifications`](./DKNet.EfCore.Specifications.md) for the
+bolted on top of the repository. See [`DKNet.EfCore.Specifications`](../DKNet.EfCore.Specifications/index.md) for the
 package's own docs.
 
 ## Registration
@@ -186,6 +186,6 @@ var expensiveActive = await repo.ToListAsync(new ExpensiveActiveProductsSpecific
 
 ## See also
 
-- `DKNet.EfCore.Specifications` package docs: [`DKNet.EfCore.Specifications.md`](./DKNet.EfCore.Specifications.md)
+- `DKNet.EfCore.Specifications` package docs: [`DKNet.EfCore.Specifications/index.md`](../DKNet.EfCore.Specifications/index.md)
 - Source of record: `src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs`,
   `src/EfCore/DKNet.EfCore.Specifications/SpecSetup.cs`

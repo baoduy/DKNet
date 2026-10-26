@@ -53,7 +53,7 @@ project already has; others need their own. This is the single most common "why 
 |---|---|
 | `UseAutoConfigModel<TContext>()` | `Microsoft.EntityFrameworkCore` |
 | `AddEventPublisher<TDbContext, TImpl>()` | `Microsoft.Extensions.DependencyInjection` |
-| `AddSlimBusForMediator(...)`, `AddSlimBusForEfCore<T>(...)`, `AddSlimBusEfCoreInterceptor<T>()`, `AddSlimBusEventPublisher<T>()` | `Microsoft.Extensions.DependencyInjection` |
+| `AddSlimBusEfCoreInterceptor<T>()`, `AddSlimBusEventPublisher<T>()` | `Microsoft.Extensions.DependencyInjection` |
 | `AddAzureStorageAdapter(...)`, `AddLocalDirectoryBlobService(...)` | `Microsoft.Extensions.DependencyInjection` |
 | `AddDbContextWithHook<T>()`, `AddHook<...>()` | `DKNet.EfCore.Hooks` |
 | `AddSpecRepo<TDbContext>()` | `DKNet.EfCore.Specifications` |
@@ -179,6 +179,8 @@ using DKNet.EfCore.Hooks;                    // AddDbContextWithHook
 using DKNet.EfCore.Specifications;           // AddSpecRepo
 using Microsoft.EntityFrameworkCore;         // UseAutoConfigModel, UseSqlServer
 using SlimMessageBus;                        // IMessageBus
+using SlimMessageBus.Host;                   // AddSlimMessageBus
+using SlimMessageBus.Host.Memory;            // WithProviderMemory
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -193,9 +195,13 @@ builder.Services.AddSpecRepo<AppDbContext>();
 // Field-level change history, handed to a publisher you write.
 builder.Services.AddEfCoreAuditLogs<AppDbContext, ConsoleAuditLogPublisher>();
 
-// In-memory SlimMessageBus + handler discovery, SaveChanges after a successful write, and domain events
-// forwarded onto the bus (DKNet.SlimBus.Extensions.EfCore). Without EF Core: AddSlimBusForMediator(...).
-builder.Services.AddSlimBusForEfCore<AppDbContext>(typeof(Program).Assembly);
+// SaveChanges after a successful write, and domain events forwarded onto the bus (DKNet.SlimBus.Extensions),
+// then SlimMessageBus's own setup: the in-memory provider and handler discovery.
+builder.Services.AddSlimBusEfCoreInterceptor<AppDbContext>();
+builder.Services.AddSlimBusEventPublisher<AppDbContext>();
+builder.Services.AddSlimMessageBus(mbb => mbb
+    .AddServicesFromAssembly(typeof(Program).Assembly)
+    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(Program).Assembly)));
 
 // Retry protection, backed by Redis. The service call must come before the route call.
 builder.Services.AddIdempotencyWithRedisStore(
@@ -213,10 +219,10 @@ app.MapPost("/products", (IMessageBus bus, CreateProduct command) => bus.Send(co
 app.Run();
 ```
 
-`AddSlimBusForEfCore` wires SlimMessageBus's in-memory provider and discovers handlers from the assemblies you pass —
-the MediatR-style setup. For an out-of-process transport (an Azure Service Bus provider, Kafka, …) call
-SlimMessageBus's own `AddSlimMessageBus(...)` instead and add `AddSlimBusEfCoreInterceptor<AppDbContext>()` /
-`AddSlimBusEventPublisher<AppDbContext>()` individually. There is no per-handler DKNet registration, and no
+`DKNet.SlimBus.Extensions` brings no bus setup of its own: `AddSlimMessageBus(...)` and `WithProviderMemory()` come
+from SlimMessageBus (`SlimMessageBus.Host.Memory`). For an out-of-process transport (an Azure Service Bus provider,
+Kafka, …) pass that provider to the same `AddChildBus(...)` call instead; `AddSlimBusEfCoreInterceptor<AppDbContext>()`
+and `AddSlimBusEventPublisher<AppDbContext>()` stay the same. There is no per-handler DKNet registration, and no
 validation pipeline — request validation is bring-your-own.
 
 ## Environment and secrets
@@ -266,24 +272,23 @@ Each page below owns the exhaustive table for its own package. This page does no
 
 | Package | Its configuration surface |
 |---|---|
-| [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
-| [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
-| [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
-| [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
-| [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
-| [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
-| [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
-| [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
-| [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) | `AddSlimBusForMediator` |
-| [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) | `AddSlimBusForEfCore`, `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
-| [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
-| [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) | `IdempotencyOptions` in full |
-| [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
-| [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) | `BlobServiceOptions` validation keys shared by all adapters |
-| [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
-| [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) | `AddPdfGenerator` and the page/margin options |
-| [DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation.md) | `AddTransformerService`, `TransformOptions` |
-| [Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus.md) | `AddServiceBus` and the emulator resource |
+| [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) | `UseAutoConfigModel`, seeding, GUID v7 keys, `[Sequence]` |
+| [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) | `AddDbContextWithHook`, `AddHook`, hook disabling |
+| [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) | `AddEventPublisher`, `IEventPublisher`, `[RaisesEvent]` |
+| [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md) | `AddEfCoreAuditLogs`, `AddCurrentUserProvider`, `ICurrentUserProvider`, `[AuditLog]`, `[SensitiveData]`, `[IgnoreAuditLog]` |
+| [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md) | `AddDataOwnerProvider`, `IDataOwnerDbContext`, `IOwnedBy` |
+| [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) | `AddEfCoreEncryption<TKeyProvider>`, `[Encrypted]` |
+| [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) | `AddSpecRepo`, `Specification<T>` builder methods, `Ops` |
+| [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) | `[GenerateDto]`, and the MSBuild properties in the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md) |
+| [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) | `AddSlimBusEfCoreInterceptor`, `AddSlimBusEventPublisher` |
+| [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) | `AddContextualRequestPopulation`, `EndpointRegistrationOptions`, `[FromClaim]`, `ListQueryOptions` (`DKNet:ListQuery`) |
+| [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) | `IdempotencyOptions` in full |
+| [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) | `AddBackgroundJob`, `AddBackgroundJobFrom` |
+| [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) | `BlobServiceOptions` validation keys shared by all adapters |
+| [DKNet.Svc.Encryption](DKNet.Svc.Encryption/index.md) | `AddEncryptionServices`, `AddAesGcmEncryption`, `AddRsaEncryption` |
+| [DKNet.Svc.PdfGenerators](DKNet.Svc.PdfGenerators/index.md) | `AddPdfGenerator` and the page/margin options |
+| [DKNet.Svc.Transformation](DKNet.Svc.Transformation/index.md) | `AddTransformerService`, `TransformOptions` |
+| [Aspire.Hosting.ServiceBus](Aspire.Hosting.ServiceBus/index.md) | `AddServiceBus` and the emulator resource |
 
 ---
 

@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Getting a browser, then guarding every request the rendered page makes",
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/browser-lifecycle-and-request-safety.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "column_fit": "spread",
+    "viewBox": [
+      1050,
+      660
+    ],
+    "legend": {
+      "entries": {
+        "default": {
+          "label": "Plain in-process call"
+        },
+        "emphasis": {
+          "label": "Launch / allow path"
+        },
+        "dashed": {
+          "label": "Skip / abort path"
+        },
+        "return": {
+          "label": "Result back to caller"
+        }
+      }
+    }
+  },
+  "participants": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "ConvertXAsync",
+      "sublabel": "any conversion entry point",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 204,
+          "end_line": 204
+        }
+      ]
+    },
+    {
+      "id": "getbrowser",
+      "type": "backend",
+      "label": "GetBrowserAsync",
+      "sublabel": "guarded by _browserLock",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 290,
+          "end_line": 320
+        }
+      ]
+    },
+    {
+      "id": "fetcher",
+      "type": "cloud",
+      "label": "BrowserFetcher",
+      "sublabel": "ChromeDownloadLock",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 269,
+          "end_line": 282
+        }
+      ]
+    },
+    {
+      "id": "puppeteer",
+      "type": "cloud",
+      "label": "LaunchAsync",
+      "sublabel": "--no-sandbox in CI",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 302,
+          "end_line": 313
+        }
+      ]
+    },
+    {
+      "id": "page",
+      "type": "frontend",
+      "label": "IPage",
+      "sublabel": "JS + interception on",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 207,
+          "end_line": 210
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "RequestGuard",
+      "sublabel": "scheme + address check",
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Services/RequestGuard.cs",
+          "line": 30,
+          "end_line": 48
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "label": "Browser acquisition",
+      "from": 170,
+      "to": 380
+    },
+    {
+      "label": "Per-request guard",
+      "from": 400,
+      "to": 560
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "caller",
+      "to": "getbrowser",
+      "y": 200,
+      "label": "await GetBrowserAsync()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m2",
+      "from": "getbrowser",
+      "to": "fetcher",
+      "y": 240,
+      "label": "DownloadAsync()",
+      "note": "skipped entirely when ChromePath is set"
+    },
+    {
+      "id": "m3",
+      "from": "getbrowser",
+      "to": "puppeteer",
+      "y": 280,
+      "label": "LaunchAsync(launchOptions)",
+      "variant": "emphasis",
+      "note": "re-launched if the previous _browser is closed or disconnected"
+    },
+    {
+      "id": "m4",
+      "from": "puppeteer",
+      "to": "getbrowser",
+      "y": 320,
+      "label": "IBrowser",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "caller",
+      "to": "page",
+      "y": 360,
+      "label": "NewPageAsync() + SetContentAsync(html)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m6",
+      "from": "page",
+      "to": "guard",
+      "y": 420,
+      "label": "Request event -> GuardRequestAsync",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m7",
+      "from": "guard",
+      "to": "page",
+      "y": 460,
+      "label": "ContinueAsync()",
+      "variant": "emphasis",
+      "note": "data: URLs, and http/https resolving to a public address"
+    },
+    {
+      "id": "m8",
+      "from": "guard",
+      "to": "page",
+      "y": 500,
+      "label": "AbortAsync()",
+      "variant": "dashed",
+      "note": "non-http(s) scheme, or a loopback/private/CGNAT address, unless AllowPrivateNetworkRequests is true"
+    },
+    {
+      "id": "m9",
+      "from": "page",
+      "to": "caller",
+      "y": 548,
+      "label": "PdfAsync(outputFilePath, pdfOptions)",
+      "variant": "return"
+    }
+  ]
+}

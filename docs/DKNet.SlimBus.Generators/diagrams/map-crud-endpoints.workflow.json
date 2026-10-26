@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Map{Entity}Crud: validate, guard, map, configure",
+    "output": ".task-validation/DKNet.SlimBus.Generators/map-crud-endpoints.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    }
+  },
+  "lanes": [
+    { "id": "call", "label": "Host app" },
+    { "id": "guard", "label": "Per route" },
+    { "id": "map", "label": "Mapped" }
+  ],
+  "mainPath": ["configure", "validate", "exclude", "mapcall"],
+  "nodes": [
+    { "id": "configure", "lane": "call", "col": 0, "type": "backend", "label": "group.Map{Entity}Crud(configure)", "sublabel": "CrudMapOptions", "width": 220, "sources": [{ "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs", "line": 978, "label": "Emitter.BuildEndpointsSource" }] },
+    { "id": "validate", "lane": "guard", "col": 1, "type": "backend", "label": "ValidateRouteNames", "sublabel": "every route name the entity has", "width": 200 },
+    { "id": "throws", "lane": "map", "col": 1, "type": "security", "label": "ArgumentException", "sublabel": "unknown Exclude/Configure name", "width": 200 },
+    { "id": "exclude", "lane": "guard", "col": 2, "type": "backend", "label": "IsExcluded(op) and (name)?", "sublabel": "per operation, then per route name", "width": 220 },
+    { "id": "mapcall", "lane": "map", "col": 3, "type": "frontend", "label": "Map{Op}(...)", "sublabel": "GetById, GetList, Create, Update, Delete, Action", "width": 220 },
+    { "id": "apply", "lane": "map", "col": 4, "type": "frontend", "label": "options.Apply", "sublabel": "operation-kind settings, then name settings", "width": 190 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "configure", "to": "validate", "variant": "emphasis" },
+    { "id": "e2", "from": "validate", "to": "throws", "label": "unknown name", "variant": "security", "role": "error" },
+    { "id": "e3", "from": "validate", "to": "exclude", "variant": "emphasis" },
+    { "id": "e4", "from": "exclude", "to": "mapcall", "label": "not excluded", "variant": "emphasis" },
+    { "id": "e5", "from": "mapcall", "to": "apply", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Fixed per-entity registration order",
+      "items": [
+        "GetById, GetList, Delete, Create",
+        "Each [CrudUpdate] in declaration order",
+        "Each [CrudAction] in declaration order"
+      ]
+    }
+  ]
+}

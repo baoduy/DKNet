@@ -55,7 +55,7 @@
       "id": "bus",
       "type": "messagebus",
       "label": "Bus + auto-save",
-      "sublabel": "SlimBus.Extensions.EfCore"
+      "sublabel": "DKNet.SlimBus.Extensions"
     },
     {
       "id": "handler",

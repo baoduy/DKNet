@@ -63,8 +63,8 @@ public class Product : AuditedEntity
 
 ### Commands and queries
 
-Handlers talk to the `DbContext` directly and let `AddSlimBusForEfCore<AppDbContext>(...)` save on success —
-see [DKNet.SlimBus.Extensions.EfCore](../Messaging/DKNet.SlimBus.Extensions.EfCore.md).
+Handlers talk to the `DbContext` directly and let `AddSlimBusEfCoreInterceptor<AppDbContext>()` save on success —
+see [Auto-save after a successful write](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md).
 
 ```csharp
 using DKNet.SlimBus.Extensions;
@@ -144,7 +144,7 @@ public record ProductDeactivatedEvent(Guid ProductId, string ProductName) : Even
 
 Events are queued on the entity by `AddEvent(...)` (see `UpdateDetails`/`Deactivate` above) and dispatched by
 `DKNet.EfCore.Events` to every registered `IEventPublisher` **after** a successful `SaveChangesAsync`.
-`AddSlimBusForEfCore<AppDbContext>(...)` adds a publisher that forwards each one onto SlimMessageBus, where the
+`AddSlimBusEventPublisher<AppDbContext>()` (from `DKNet.SlimBus.Extensions`) adds a publisher that forwards each one onto SlimMessageBus, where the
 consumers below pick it up. The whole path is traced in
 [A domain event end to end](../Architecture.md#a-domain-event-end-to-end).
 
@@ -201,7 +201,7 @@ transport when a consumer must not miss an event.
 
 A `Specification<TEntity>` is configured entirely from its constructor via `protected` builder methods — there is
 no boolean `.And()`/`.Or()`/`.Not()` combinator; compose criteria by passing them into one specification's
-constructor instead. See [DKNet.EfCore.Specifications](../EfCore/DKNet.EfCore.Specifications.md) for the full API.
+constructor instead. See [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) for the full API.
 
 ```csharp
 using DKNet.EfCore.Specifications.Definitions;
@@ -252,7 +252,7 @@ public class ProductService(IRepositorySpec repo)
 ## Multi-tenant application
 
 Row-level, ownership-based isolation is a built-in feature —
-[DKNet.EfCore.DataAuthorization](../EfCore/DKNet.EfCore.DataAuthorization.md) — rather than something to hand-roll
+[DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) — rather than something to hand-roll
 per repository. An entity opts in via `IOwnedBy`; a global query filter and a `SaveChanges` hook do the rest.
 
 ### Tenant-owned entity

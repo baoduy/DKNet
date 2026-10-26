@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "What a DKCRUDGEN diagnostic costs you",
+    "output": ".task-validation/DKNet.SlimBus.Generators/read-diagnostics.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "security": {
+          "label": "Error: build fails"
+        },
+        "backend": {
+          "label": "Info: build succeeds"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "in",
+      "label": "Diagnostic reported"
+    },
+    {
+      "id": "out",
+      "label": "Effect on the build"
+    }
+  ],
+  "mainPath": [
+    "diag",
+    "entitySkip"
+  ],
+  "nodes": [
+    {
+      "id": "diag",
+      "lane": "in",
+      "col": 0,
+      "type": "backend",
+      "label": "DKCRUDGEN0xx",
+      "sublabel": "reported by CrudModelBuilder",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 42,
+          "label": "CrudDiagnostics"
+        }
+      ]
+    },
+    {
+      "id": "entitySkip",
+      "lane": "out",
+      "col": 1,
+      "type": "security",
+      "label": "001, 002, 006",
+      "sublabel": "Error \u2014 entity emits nothing",
+      "width": 190
+    },
+    {
+      "id": "memberSkip",
+      "lane": "out",
+      "col": 2,
+      "type": "security",
+      "label": "003, 004, 007, 008, 009",
+      "sublabel": "Error \u2014 entity still emits",
+      "width": 230
+    },
+    {
+      "id": "infoOnly",
+      "lane": "out",
+      "col": 3,
+      "type": "backend",
+      "label": "005, 010",
+      "sublabel": "Info \u2014 build succeeds unchanged",
+      "width": 190
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "diag",
+      "to": "entitySkip",
+      "label": "no DTO / key",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e2",
+      "from": "diag",
+      "to": "memberSkip",
+      "label": "member or route conflict",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e3",
+      "from": "diag",
+      "to": "infoOnly",
+      "label": "override or name fallback",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Reading the id",
+      "items": [
+        "DKCRUDGEN001 no [GenerateDto] DTO; 002 more than one",
+        "DKCRUDGEN006 entity doesn't implement IEntity<TKey>",
+        "DKCRUDGEN005 hand-written handler found; 010 delete name taken"
+      ]
+    }
+  ]
+}

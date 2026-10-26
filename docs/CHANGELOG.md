@@ -8,16 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `DKNet.SlimBus.Extensions` can replace MediatR in one call, following SlimMessageBus's
-  [Replace MediatR](https://github.com/zarusz/SlimMessageBus/blob/master/docs/UseCases/ReplaceMediatR.md) use case.
-  `AddSlimBusForMediator(params Assembly[] handlerAssemblies)` registers SlimMessageBus with the memory provider and
-  discovers the handlers in those assemblies, both in DI and on the bus. It registers no serializer, and passing no
-  assemblies throws `ArgumentException`. A new `DKNet.SlimBus.Extensions.EfCore` package adds
-  `AddSlimBusForEfCore<TDbContext>(params Assembly[] handlerAssemblies)`. That call is the same setup plus
-  `AddSlimBusEfCoreInterceptor<TDbContext>()` and `AddSlimBusEventPublisher<TDbContext>()`. Both are memory-only;
-  a host on a real transport keeps calling `AddSlimMessageBus` itself. See
-  [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) and
-  [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md).
 - `DKNet.AspCore.Extensions` can now fill a request member from a named HTTP request header.
   `[FromRequestHeader("Idempotency-Key")]` on a request property — one required constructor argument, the
   header name, exposed as `HeaderName` — is populated before validation and before the handler runs by the
@@ -36,14 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   binding convenience only, never proof of identity. The published OpenAPI operation declares the header as an
   `in: header` parameter — unlike `[FromClaim]`, which is hidden entirely, the caller has to know to send it —
   while the member itself stays absent from the published
-  request body. See [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
+  request body. See [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md).
 - The SlimBus CRUD generator now reports `DKCRUDGEN010` (Info) when a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`
   member already resolves to the name `Delete{Entity}Request`. That collision has always made the generator skip the
   generated delete request and fall back to the request-less `MapDeleteById<TEntity, TKey>()`; the diagnostic names the
   entity, the colliding member and the request name it took, so the fallback is no longer silent. Severity is `Info`:
   the build still succeeds and the entity's DELETE route keeps working unchanged — only the delete request you could
   hang a validation rule on is missing, which renaming the member restores. See
-  [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md).
+  [DKNet.SlimBus.Generators](DKNet.SlimBus.Generators/index.md).
 - `DKNet.EfCore.AuditLogs` can now stamp `CreatedBy`/`UpdatedBy` from the signed-in user. Implement the new
   `ICurrentUserProvider` (one member, `string? GetCurrentUser()`, returning `null`/empty when there is no user) and
   register it with `services.AddCurrentUserProvider<TDbContext, TProvider>()` — an application-wide, scoped,
@@ -58,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as before, so existing applications need no change. Both providers are optional and each works without the
   other. The returned value reaches every registered `IAuditLogPublisher` **unmasked**, so an application under a
   personal-data rule should return a stable non-personal identifier (for example a subject id) rather than an email
-  address. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+  address. See [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md).
 - Generated CRUD endpoints can now be excluded per route, not only per operation kind.
   `CrudMapOptions.Exclude(params string[] routeNames)` withdraws the one route carrying each name and leaves
   the entity's other routes of the same kind published at their existing addresses — so a single
@@ -105,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Endpoints the fluent mappers registered are covered by the endpoint filter `ProducesCommons()` adds; an endpoint
   registered outside those mappers is covered in `Production` but still answers with the developer-exception page
   in `Development`. See
-  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+  [One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 - Non-generic `AddIdempotentKey(Action<IdempotencyOptions>? config = null)` (`DKNet.AspCore.Idempotency`) enables
   idempotency with no store named and no infrastructure at all — no database, cache, Redis, or connection string.
   It registers a new in-process store that reserves each key atomically within the process, adds no options
@@ -118,14 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registrations keep behaving exactly as before.
 
 ### Changed
-- **Breaking:** `DKNet.SlimBus.Extensions` no longer depends on EF Core. The auto-save interceptor,
-  `SlimBusEventPublisher`, `AddSlimBusEfCoreInterceptor<TDbContext>()` and `AddSlimBusEventPublisher<TDbContext>()`
-  moved to the new `DKNet.SlimBus.Extensions.EfCore` package, which references the core and `DKNet.EfCore.Events`.
-  Namespaces are unchanged, so code needs no new `using`. A host that calls either method, including any host running
-  `DKNet.SlimBus.Generators` slices, which rely on auto-save, must add a `DKNet.SlimBus.Extensions.EfCore`
-  package reference. The core now depends on the EF-free `X.PagedList` instead of `X.PagedList.EF`. If you call
-  `ToPagedListAsync` on an `IQueryable` inside a paged-query handler, reference `X.PagedList.EF` yourself; it also
-  comes through `DKNet.EfCore.Specifications`. The core also gains a dependency on `SlimMessageBus.Host.Memory`.
 - **Breaking, security-motivated:** `DKNet.Svc.PdfGenerators` no longer lets rendered HTML or Markdown make the
   server request internal hosts. Every request the page issues while rendering is now checked: a request to a
   loopback, unspecified, link-local (including `169.254.169.254` cloud metadata), private (RFC 1918), CGNAT or
@@ -160,7 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   named `EncryptedAttribute` is redacted too. Separately, the error log written when an `IAuditLogPublisher`
   throws no longer serializes the failed batch's entries; it now names the publisher, the entity name(s), and the
   entry count instead. A consumer parsing entry values out of that publisher-failure log line must switch to the
-  publisher's own retry/outbox path. See [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md).
+  publisher's own retry/outbox path. See [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md).
 - Automatically composed `[RaisesEvent]` convention-form payloads now honour the project-wide
   `DtoGeneratorExclusions` MSBuild list (the same list `[GenerateDto]` DTOs already respect), so composed
   event payloads narrow in any project that configures it — unless overridden by a non-empty `Include`.
@@ -169,6 +151,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking (binary only):** `EfCoreEncryptionSetup.AddEfCoreEncryption<T>()` now takes and returns
   `IServiceCollection` instead of the concrete `ServiceCollection`, so it is callable on `builder.Services`.
   Source-compatible for existing callers; pre-compiled assemblies referencing the old signature must be recompiled.
+- **Breaking:** `DKNet.EfCore.Encryption`'s `UseColumnEncryption` now refuses every `[Encrypted]` placement it
+  cannot encrypt, at model build, instead of skipping it silently. It throws `InvalidOperationException` naming the
+  type and property when `[Encrypted]` is on a member of an EF Core complex type (table-split, nested, JSON-mapped
+  or a complex collection) or on a complex property itself, or on a mapped member that is not a `string` (for
+  example `int`, `byte[]`, an enum, or a navigation, owned ones included). Such values were previously stored in
+  plaintext. To fix the startup error, move the field to an entity or owned type as a `string` property, or remove
+  the attribute. Strings on entity and owned types are encrypted exactly as before, the primary-key/foreign-key
+  refusal is unchanged, members EF Core does not map are still ignored, and no stored data changes.
 - **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
@@ -199,7 +189,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   acting-user property on the request itself, mark it with an `IContextualSource` attribute — for example
   `[FromClaim(ClaimTypes.Name)]` from `DKNet.AspCore.Extensions` — and register
   `services.AddContextualRequestPopulation()`, which stamps the property before validation and before the handler
-  runs. See [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md).
+  runs. See [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md).
 - **Breaking:** `AddDataOwnerProvider<TDbContext, TProvider>()` in `DKNet.EfCore.DataAuthorization` now constrains
   `TDbContext` to `DbContext, IDataOwnerDbContext`. This is source-breaking: a consumer whose `DbContext` does not
   implement `IDataOwnerDbContext` no longer compiles. Previously it compiled and silently lost row-level ownership
@@ -221,7 +211,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request where 100 was previously the worst case. Bind the `DKNet:ListQuery:MaxPageSize` configuration key, or call
   `services.AddListQueryOptions(o => o.MaxPageSize = 100)`, to keep the old ceiling. The clamp semantics are
   unchanged: an oversized `pageSize` is still served trimmed to the ceiling, never rejected with a `400`. See
-  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+  [Page-size defaults and ceiling](DKNet.AspCore.Extensions/query-list-endpoints.md#page-size-defaults-and-ceiling).
 - **Behaviour change on upgrade:** the page size a generic list endpoint (`MapGetList`,
   `DKNet.AspCore.Extensions`) serves when the caller asks for none is now `1000` instead of `20`, matching the
   ceiling. A consumer who upgrades and configures nothing therefore answers a bare list request with up to 1,000
@@ -230,7 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rejected, and an absent or below-one `pageNumber` is still the first page. Set
   `DKNet:ListQuery:DefaultPageSize` to `20`, or call `services.AddListQueryOptions(o => o.DefaultPageSize = 20)`,
   to keep the old default. See
-  [Page-size defaults and ceiling](AspNetCore/DKNet.AspCore.Extensions.md#page-size-defaults-and-ceiling).
+  [Page-size defaults and ceiling](DKNet.AspCore.Extensions/query-list-endpoints.md#page-size-defaults-and-ceiling).
 - **Behaviour change on upgrade:** a generic list endpoint (`MapGetList`, `DKNet.AspCore.Extensions`) over records
   that carry audit timestamps (`IAuditedProperties`) now answers a bare request with the last **3 months** of
   activity instead of all history, and accepts two new query parameters — `fromDate` and `toDate` — that bound a
@@ -242,7 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ListQueryOptions.DefaultActivityWindowMonths`: bind `DKNet:ListQuery:DefaultActivityWindowMonths`, or call
   `services.AddListQueryOptions(o => o.DefaultActivityWindowMonths = 0)`, to switch the default window off and keep
   today's unbounded listing. See
-  [Default recent-activity window](AspNetCore/DKNet.AspCore.Extensions.md#default-recent-activity-window).
+  [Default recent-activity window](DKNet.AspCore.Extensions/query-list-endpoints.md#default-recent-activity-window).
 - **Breaking:** the standard error-response body (`DKNet.AspCore.Extensions`) no longer carries `Detail`, and its
   `errors` extension is now an `ErrorItem[]` (`{ message, code?, field? }`) instead of a flat message-string list —
   for every failure kind `Response()`/`Response<T>()` answer, whether or not `AddErrorResponses` is registered. `type` is now always the final response status'
@@ -250,7 +240,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   body carries a `traceId`. A consumer parsing `errors` as strings, or `Detail` for the failure message, must read
   `errors[].message` instead. See the
   [Migration guide](Migration-Guide.md#dknetaspcoreextensions--one-error-response-body-and-the-helpers-that-bypassed-it-are-gone) and
-  [One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+  [One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 
 ### Removed
 - **Breaking:** `DKNet.EfCore.Repos` and `DKNet.EfCore.Repos.Abstractions` packages, and the `Mapster.EFCore`
@@ -301,7 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   attribute, not only the ones missing a value. Your resolver must perform the built-in lookup itself
   (`httpContext.User.FindFirst(claimType)?.Value ?? "system-account"`, or the header equivalent) before
   substituting, or it silently overrides every caller who *does* have the claim or header. See
-  [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md).
+  [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md).
 
 ### Fixed
 - `DKNet.EfCore.Extensions` no longer reuses a cached model built without a global model builder (DRK-1969).

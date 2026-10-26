@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "The path an [Encrypted] property takes to the column and back",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Encrypted round trip"
+        },
+        "security": {
+          "label": "Key material and failures"
+        },
+        "database": {
+          "label": "Stored ciphertext"
+        },
+        "default": {
+          "label": "Key supplied at model build"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/Encryption/efcore-encryption-column-path.html",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "5ff6521c0360f61670970d123e54f77340589971"
+    }
+  },
+  "stages": [
+    {
+      "label": "Model build"
+    },
+    {
+      "label": "Value converter"
+    },
+    {
+      "label": "Cipher"
+    },
+    {
+      "label": "Stored column"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "attr",
+      "type": "external",
+      "label": "[Encrypted] property",
+      "sublabel": "string properties only",
+      "stage": 0,
+      "row": 0,
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
+    },
+    {
+      "id": "keyprov",
+      "type": "security",
+      "label": "IEncryptionKeyProvider",
+      "sublabel": "GetKey(entityType)",
+      "stage": 2,
+      "row": 2,
+      "width": 152,
+      "tag": "16, 24 or 32 bytes",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Encryption/EncryptionKeyProvider.cs",
+          "line": 1,
+          "end_line": 13
+        }
+      ]
+    },
+    {
+      "id": "reject",
+      "type": "security",
+      "label": "Model build fails",
+      "sublabel": "complex-type, non-string or key member",
+      "stage": 0,
+      "row": 2,
+      "width": 152,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 49,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "converter",
+      "type": "backend",
+      "label": "ColumnEncryptionConverter",
+      "sublabel": "EF Core ValueConverter",
+      "stage": 1,
+      "row": 0,
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
+    },
+    {
+      "id": "aes",
+      "type": "security",
+      "label": "AES-GCM provider",
+      "sublabel": "AesGcmColumnEncryptionProvider",
+      "stage": 2,
+      "row": 0,
+      "width": 168,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Encryption/AesGcmColumnEncryptionProvider.cs",
+          "line": 86,
+          "end_line": 110
+        }
+      ]
+    },
+    {
+      "id": "column",
+      "type": "database",
+      "label": "Database column",
+      "sublabel": "Base64 of IV + tag + ciphertext",
+      "stage": 3,
+      "row": 0,
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 37,
+          "end_line": 67
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "from": "attr",
+      "to": "converter",
+      "label": "attached at model build",
+      "variant": "emphasis",
+      "labelDy": -38,
+      "route": "straight"
+    },
+    {
+      "from": "attr",
+      "to": "reject",
+      "label": "reject",
+      "variant": "security",
+      "labelDy": 90
+    },
+    {
+      "from": "keyprov",
+      "to": "aes",
+      "label": "key material",
+      "classification": "one key per entity CLR type",
+      "variant": "default",
+      "labelDy": -55
+    },
+    {
+      "from": "converter",
+      "to": "aes",
+      "label": "Encrypt on write, Decrypt on read",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    },
+    {
+      "from": "aes",
+      "to": "column",
+      "label": "ciphertext in, ciphertext out",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelDy": -38
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "What the converter changes",
+      "items": [
+        "Null and empty values pass through untouched, never encrypted",
+        "Each write draws a fresh random IV, so the same plaintext stores differently",
+        "Ciphertext is Base64, so plan the column length for the expansion"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "What it cannot do",
+      "items": [
+        "Ciphertext does not preserve plaintext query or ordering semantics",
+        "Keys are resolved once per model, so rotation needs a rebuild and a data migration",
+        "A wrong key surfaces as InvalidOperationException on read, not a silent miss"
+      ]
+    }
+  ]
+}

@@ -10,15 +10,15 @@ sibling `*.Tests` project, and coverage gates are enforced in CI to keep the fra
 - **Stack**: xUnit + Shouldly + TestContainers.MsSql; avoid mocking the database.
 - **Isolation**: prefer `IAsyncLifetime` fixtures over shared `IClassFixture` state when isolation matters.
 - **SQL verification**: assert on `query.ToQueryString()` output alongside the materialized rows — a recurring
-  pattern in the [Specifications](./EfCore/DKNet.EfCore.Specifications.md) tests that confirms filtering is
+  pattern in the [Specifications](DKNet.EfCore.Specifications/index.md) tests that confirms filtering is
   translated to SQL, not run in memory.
 
 ## Why real databases
 
 Integration tests run against TestContainers.MsSql (Docker required) rather than EF Core InMemory, because the
 in-memory provider masks SQL-specific behavior. This is what validates features such as
-[Specifications](./EfCore/DKNet.EfCore.Specifications.md), its Dynamic Predicate Builder (including the mandatory
-`.AsExpandable()` expansion), and [DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md)'s query-filter
+[Specifications](DKNet.EfCore.Specifications/index.md), its Dynamic Predicate Builder (including the mandatory
+`.AsExpandable()` expansion), and [DataAuthorization](DKNet.EfCore.DataAuthorization/index.md)'s query-filter
 translation. Never run these tests locally on an ARM device (no `mssql/server` ARM image) — verify via the
 `remote-tests.yml` GitHub Actions workflow instead (see the root `CLAUDE.md`).
 

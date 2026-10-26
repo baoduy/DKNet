@@ -1,0 +1,215 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Resolving an attributed member into a request record",
+    "output": ".task-validation/DKNet.SlimBus.Generators/generate-crud-requests.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Attribute and accessibility checks"
+        },
+        "database": {
+          "label": "Lookups against the compiling project"
+        },
+        "frontend": {
+          "label": "Generated request record"
+        },
+        "security": {
+          "label": "Reported diagnostic"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "declare",
+      "label": "Declared on the entity"
+    },
+    {
+      "id": "resolve",
+      "label": "Resolved against the project"
+    },
+    {
+      "id": "emit",
+      "label": "Emitted"
+    }
+  ],
+  "mainPath": [
+    "member",
+    "public",
+    "dto",
+    "key",
+    "model",
+    "request"
+  ],
+  "nodes": [
+    {
+      "id": "member",
+      "lane": "declare",
+      "col": 0,
+      "type": "backend",
+      "label": "Attributed member",
+      "sublabel": "[CrudCreate]/[CrudUpdate]/[CrudAction]",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 254,
+          "label": "TryBuildEntityModel scan"
+        }
+      ]
+    },
+    {
+      "id": "public",
+      "lane": "declare",
+      "col": 1,
+      "type": "backend",
+      "label": "Public?",
+      "sublabel": "constructor or method",
+      "width": 140,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 350,
+          "label": "EnsurePublic"
+        }
+      ]
+    },
+    {
+      "id": "dto",
+      "lane": "resolve",
+      "col": 1,
+      "type": "database",
+      "label": "[GenerateDto] lookup",
+      "sublabel": "exactly one match",
+      "width": 158,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 218,
+          "label": "BuildDtoLookup"
+        }
+      ]
+    },
+    {
+      "id": "key",
+      "lane": "resolve",
+      "col": 2,
+      "type": "database",
+      "label": "IEntity<TKey> key",
+      "sublabel": "from implemented interfaces",
+      "width": 158,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 624,
+          "label": "ResolveKeyFullName"
+        }
+      ]
+    },
+    {
+      "id": "model",
+      "lane": "resolve",
+      "col": 3,
+      "type": "backend",
+      "label": "CrudEntityModel",
+      "sublabel": "key, DTO, members",
+      "width": 150
+    },
+    {
+      "id": "errors",
+      "lane": "declare",
+      "col": 2,
+      "type": "security",
+      "label": "DKCRUDGEN001/002/004/006",
+      "sublabel": "member or entity skipped",
+      "width": 240,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 46,
+          "label": "CrudDiagnostics"
+        }
+      ]
+    },
+    {
+      "id": "request",
+      "lane": "emit",
+      "col": 4,
+      "type": "frontend",
+      "label": "{X}{Entity}Request",
+      "sublabel": "IWitResponse<TDto>(+ IWithKey)",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Generators/CrudGenerator.cs",
+          "line": 724,
+          "label": "Emitter.BuildSource"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "member",
+      "to": "public",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "public",
+      "to": "dto",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "dto",
+      "to": "key",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "key",
+      "to": "model",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "model",
+      "to": "request",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "public",
+      "to": "errors",
+      "label": "not public",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e7",
+      "from": "dto",
+      "to": "errors",
+      "label": "zero or 2+ DTOs",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e8",
+      "from": "key",
+      "to": "errors",
+      "label": "no IEntity<TKey>",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": []
+}

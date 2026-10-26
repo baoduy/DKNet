@@ -1,0 +1,209 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ValidateFile's three independent, opt-in checks",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.Abstractions/write-a-custom-blob-service-provider.html",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Provider's SaveAsync override"
+        },
+        "backend": {
+          "label": "Shared check (skipped when unset)"
+        },
+        "security": {
+          "label": "FileLoadException"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "provider",
+      "label": "Your BlobService subclass"
+    },
+    {
+      "id": "base",
+      "label": "BlobService.ValidateFile"
+    },
+    {
+      "id": "reject",
+      "label": "Rejected",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "name",
+    "ext",
+    "size",
+    "ok"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "provider",
+      "col": 0,
+      "type": "frontend",
+      "label": "SaveAsync(blob)",
+      "sublabel": "calls ValidateFile first",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 227,
+          "end_line": 227
+        }
+      ]
+    },
+    {
+      "id": "name",
+      "lane": "base",
+      "col": 1,
+      "type": "backend",
+      "label": "MaxFileNameLength",
+      "sublabel": "skipped when 0",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 279,
+          "end_line": 281
+        }
+      ]
+    },
+    {
+      "id": "ext",
+      "lane": "base",
+      "col": 2,
+      "type": "backend",
+      "label": "IncludedExtensions",
+      "sublabel": "skipped when empty",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 283,
+          "end_line": 288
+        }
+      ]
+    },
+    {
+      "id": "size",
+      "lane": "base",
+      "col": 3,
+      "type": "backend",
+      "label": "MaxFileSizeInMb",
+      "sublabel": "decimal MB: * 1_000_000",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 296,
+          "end_line": 311
+        }
+      ]
+    },
+    {
+      "id": "denied",
+      "lane": "reject",
+      "col": 2,
+      "type": "security",
+      "label": "FileLoadException",
+      "sublabel": "name / extension / size",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 281,
+          "end_line": 281
+        }
+      ]
+    },
+    {
+      "id": "ok",
+      "lane": "provider",
+      "col": 4,
+      "type": "frontend",
+      "label": "Write to backing store",
+      "sublabel": "your override's own logic",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.Abstractions/IBlobService.cs",
+          "line": 131,
+          "end_line": 131
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "call",
+      "to": "name",
+      "label": "validates"
+    },
+    {
+      "id": "e2",
+      "from": "name",
+      "to": "ext",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "ext",
+      "to": "size",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "size",
+      "to": "ok",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "name",
+      "to": "denied",
+      "label": "too long",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e6",
+      "from": "ext",
+      "to": "denied",
+      "label": "not allow-listed",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e7",
+      "from": "size",
+      "to": "denied",
+      "label": "over limit",
+      "variant": "security",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Each rule is independent",
+      "items": [
+        "All three checks are opt-in \u2014 a 0 or empty-collection option disables that one check, not all of them.",
+        "A provider calls ValidateFile(BlobData) at the top of SaveAsync; the stream overload returns a size-enforcing wrapper instead when the source can't be seeked."
+      ]
+    }
+  ]
+}

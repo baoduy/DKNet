@@ -231,7 +231,7 @@ registers that filter in `EfCoreSetup.GlobalModelBuilders`, which is **static**:
 reporting `DbContext`, say — whose model contains `IOwnedBy` entities and that does not implement
 `IDataOwnerDbContext` therefore starts throwing at model-build time after this upgrade, with no compile error
 pointing at it. Implement `IDataOwnerDbContext` on that context too, or keep `IOwnedBy` entities out of its model.
-Details: [DKNet.EfCore.DataAuthorization](./EfCore/DKNet.EfCore.DataAuthorization.md).
+Details: [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md).
 
 ### Behaviour changes that fail silently
 
@@ -584,7 +584,7 @@ message. Supply `ErrorResponseOptions.UnhandledError` to answer with a body of y
 still wins over the status it sets, and `Customize` still runs afterwards.
 
 No ADR was written for this change — the decisions are recorded here and in
-[One error-response setting](AspNetCore/DKNet.AspCore.Extensions.md#one-error-response-setting--adderrorresponses).
+[One error-response setting](DKNet.AspCore.Extensions/shape-error-responses.md#one-error-response-setting).
 
 ---
 
@@ -624,7 +624,7 @@ public class Product
 ```
 
 **After** — there is no separate `AggregateRoot` type; derive from `AuditedEntity` (or plain `Entity` if you don't
-need audit fields) — see [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md):
+need audit fields) — see [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md):
 ```csharp
 using DKNet.EfCore.Abstractions.Entities;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -676,8 +676,8 @@ public class ProductService
 ```
 
 **After (CQRS via `DKNet.SlimBus.Extensions`)** — see
-[DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) for the full contract set, and
-[DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) for the auto-save the handler relies on:
+[DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) for the full contract set, and
+[Auto-save after a successful write](DKNet.SlimBus.Extensions/auto-save-dbcontext.md) for the auto-save the handler relies on:
 ```csharp
 using DKNet.SlimBus.Extensions;
 using FluentResults;
@@ -898,6 +898,8 @@ public static class ConfigurationMigration
 **Solution**: 
 ```csharp
 using DKNet.EfCore.Specifications;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
 
 // Old (e.g. a hand-rolled service, or a MediatR-based handler)
 services.AddScoped<ProductService>();
@@ -905,8 +907,11 @@ services.AddScoped<ProductService>();
 // New: one IRepositorySpec for every entity, plus SlimBus (DKNet's MediatR-free CQRS package).
 // No per-entity repository registration, and no per-handler registration either.
 services.AddSpecRepo<AppDbContext>();
-services.AddSlimBusForEfCore<AppDbContext>(typeof(CreateProductHandler).Assembly);  // DKNet.SlimBus.Extensions.EfCore
-// No EF Core in the handlers? services.AddSlimBusForMediator(typeof(CreateProductHandler).Assembly);
+services.AddSlimBusEfCoreInterceptor<AppDbContext>();  // DKNet.SlimBus.Extensions: auto-save after a successful write
+services.AddSlimBusEventPublisher<AppDbContext>();      // DKNet.SlimBus.Extensions: domain events onto the bus
+services.AddSlimMessageBus(mbb => mbb                   // SlimMessageBus.Host.Memory: SlimMessageBus's own setup
+    .AddServicesFromAssembly(typeof(CreateProductHandler).Assembly)
+    .AddChildBus("Memory", m => m.WithProviderMemory().AutoDeclareFrom(typeof(CreateProductHandler).Assembly)));
 ```
 
 ---

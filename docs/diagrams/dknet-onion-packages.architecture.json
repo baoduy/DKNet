@@ -61,22 +61,9 @@
       "id": "slimbus",
       "type": "backend",
       "label": "DKNet.SlimBus.Extensions",
-      "sublabel": "CQRS contracts, no EF Core",
+      "sublabel": "CQRS, auto-save, events onto the bus",
       "tag": "Application",
       "row": 0,
-      "col": 1,
-      "size": [
-        175,
-        78
-      ]
-    },
-    {
-      "id": "slimbusEf",
-      "type": "backend",
-      "label": "DKNet.SlimBus.Extensions.EfCore",
-      "sublabel": "auto-save, events onto the bus",
-      "tag": "Application",
-      "row": 1,
       "col": 1,
       "size": [
         215,
@@ -170,12 +157,6 @@
       "variant": "emphasis"
     },
     {
-      "id": "efcore-extends-core",
-      "from": "slimbusEf",
-      "to": "slimbus",
-      "label": "references core"
-    },
-    {
       "id": "endpoints-to-specs",
       "from": "aspcore",
       "to": "specs",
@@ -183,7 +164,7 @@
     },
     {
       "id": "handlers-publish",
-      "from": "slimbusEf",
+      "from": "slimbus",
       "to": "events",
       "label": "publishes domain events"
     },

@@ -1,7 +1,7 @@
 # API Reference
 
-Index into the per-package API documentation. Each package below has its own canonical reference page —
-`docs/<Area>/<Package>.md` — kept in sync with `src/` on every change. This page does not restate their contents;
+Index into the per-package API documentation. Each package below has its own canonical reference folder —
+`docs/<Package>/`, starting at its `index.md` — kept in sync with `src/` on every change. This page does not restate their contents;
 it points to them, sorted by area, and lists all 28 published packages plus the one source-only one.
 
 Looking for a package by the problem you have rather than by name? Use the
@@ -9,57 +9,56 @@ Looking for a package by the problem you have rather than by name? Use the
 
 ## 🔧 Core Framework
 
-- [DKNet.Fw.Extensions](Core/DKNet.Fw.Extensions.md) — framework-agnostic reflection, type, string, enum, `DateTime` and DI-inspection helpers, plus fluent assembly/type scanning
-- [DKNet.RandomCreator](Core/DKNet.RandomCreator.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
+- [DKNet.Fw.Extensions](DKNet.Fw.Extensions/index.md) — framework-agnostic reflection, type, string, enum, `DateTime` and DI-inspection helpers, plus fluent assembly/type scanning
+- [DKNet.RandomCreator](DKNet.RandomCreator/index.md) — cryptographically secure random string and character generation for passwords, tokens, and other secrets
 
 ## 🗄️ Entity Framework Core
 
-- [DKNet.EfCore.Abstractions](EfCore/DKNet.EfCore.Abstractions.md) — entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
-- [DKNet.EfCore.Extensions](EfCore/DKNet.EfCore.Extensions.md) — convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, `SnapshotContext`
-- [DKNet.EfCore.Specifications](EfCore/DKNet.EfCore.Specifications.md) — filter/includes/order-by as one reusable object, the non-generic `IRepositorySpec`, and the runtime Dynamic Predicate Builder. The current, supported way to query and persist
-- [DKNet.EfCore.Hooks](EfCore/DKNet.EfCore.Hooks.md) — before/after-`SaveChanges` interceptor pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`)
-- [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md) — dispatches domain events raised by entities during `SaveChanges`
-- [DKNet.EfCore.AuditLogs](EfCore/DKNet.EfCore.AuditLogs.md) — structured, field-level change records handed to publishers you register
-- [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md) — global query filter on reads plus `SaveChanges`-time owner stamping on writes
-- [DKNet.EfCore.Encryption](EfCore/DKNet.EfCore.Encryption.md) — transparent column-level encryption via an EF Core `ValueConverter`
-- [DKNet.EfCore.DtoGenerator](EfCore/DKNet.EfCore.DtoGenerator.md) — Roslyn incremental source generator that emits DTO properties from an entity type. See also the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md)
-- [DKNet.EfCore.Relational.Helpers](EfCore/DKNet.EfCore.Relational.Helpers.md) — table creation, connection access, table-name resolution, and table-existence checks
+- [DKNet.EfCore.Abstractions](DKNet.EfCore.Abstractions/index.md) — entity base classes, domain-event contracts, and the attributes that steer audit, sequence, and mapping behaviour
+- [DKNet.EfCore.Extensions](DKNet.EfCore.Extensions/index.md) — convention-based entity configuration, global query filters, data seeding, GUID v7 keys, SQL sequences, `SnapshotContext`
+- [DKNet.EfCore.Specifications](DKNet.EfCore.Specifications/index.md) — filter/includes/order-by as one reusable object, the non-generic `IRepositorySpec`, and the runtime Dynamic Predicate Builder. The current, supported way to query and persist
+- [DKNet.EfCore.Hooks](DKNet.EfCore.Hooks/index.md) — before/after-`SaveChanges` interceptor pipeline (`IBeforeSaveHookAsync`/`IAfterSaveHookAsync`)
+- [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md) — dispatches domain events raised by entities during `SaveChanges`
+- [DKNet.EfCore.AuditLogs](DKNet.EfCore.AuditLogs/index.md) — structured, field-level change records handed to publishers you register
+- [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md) — global query filter on reads plus `SaveChanges`-time owner stamping on writes
+- [DKNet.EfCore.Encryption](DKNet.EfCore.Encryption/index.md) — transparent column-level encryption via an EF Core `ValueConverter`
+- [DKNet.EfCore.DtoGenerator](DKNet.EfCore.DtoGenerator/index.md) — Roslyn incremental source generator that emits DTO properties from an entity type. See also the [Global Exclusions Guide](EfCore/GLOBAL_EXCLUSIONS_GUIDE.md)
+- [DKNet.EfCore.Relational.Helpers](DKNet.EfCore.Relational.Helpers/index.md) — table creation, connection access, table-name resolution, and table-existence checks
 
 ## 📨 Messaging & CQRS
 
-- [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md) — EF-free `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts and `AddSlimBusForMediator`, a one-call MediatR replacement
-- [DKNet.SlimBus.Extensions.EfCore](Messaging/DKNet.SlimBus.Extensions.EfCore.md) — auto-save after a successful write and domain events forwarded onto the bus; `AddSlimBusForEfCore<TDbContext>`
-- [DKNet.SlimBus.Generators](Messaging/DKNet.SlimBus.Generators.md) — emits request records, handlers, and endpoint registration from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
+- [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md) — `Fluents.Requests`/`Fluents.Queries`/`Fluents.EventsConsumers` contracts on SlimMessageBus, plus auto-save after a successful write (`AddSlimBusEfCoreInterceptor<TDbContext>`) and domain events forwarded onto the bus (`AddSlimBusEventPublisher<TDbContext>`)
+- [DKNet.SlimBus.Generators](DKNet.SlimBus.Generators/index.md) — emits request records, handlers, and endpoint registration from `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members
 
 ## 🗃️ Blob Storage Services
 
-- [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) — provider-agnostic `IBlobService` contract and shared model types
-- [DKNet.Svc.BlobStorage.AwsS3](Services/DKNet.Svc.BlobStorage.AwsS3.md) — AWS S3 adapter, also usable against MinIO and Cloudflare R2
-- [DKNet.Svc.BlobStorage.AzureStorage](Services/DKNet.Svc.BlobStorage.AzureStorage.md) — Azure Blob Storage adapter
-- [DKNet.Svc.BlobStorage.Local](Services/DKNet.Svc.BlobStorage.Local.md) — local-filesystem adapter with path-traversal protection
+- [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) — provider-agnostic `IBlobService` contract and shared model types
+- [DKNet.Svc.BlobStorage.AwsS3](DKNet.Svc.BlobStorage.AwsS3/index.md) — AWS S3 adapter, also usable against MinIO and Cloudflare R2
+- [DKNet.Svc.BlobStorage.AzureStorage](DKNet.Svc.BlobStorage.AzureStorage/index.md) — Azure Blob Storage adapter
+- [DKNet.Svc.BlobStorage.Local](DKNet.Svc.BlobStorage.Local/index.md) — local-filesystem adapter with path-traversal protection
 
 ## 🔐 Cryptography
 
-- [DKNet.Svc.Encryption](Services/DKNet.Svc.Encryption.md) — AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, Base64/Base64URL helpers
+- [DKNet.Svc.Encryption](DKNet.Svc.Encryption/index.md) — AES-GCM and RSA encryption, RSA signing, HMAC and SHA hashing, Base64/Base64URL helpers
 
 ## 📝 Documents & Text
 
-- [DKNet.Svc.PdfGenerators](Services/DKNet.Svc.PdfGenerators.md) — HTML or Markdown to PDF via headless Chromium (PuppeteerSharp) and Markdig
-- [DKNet.Svc.Transformation](Services/DKNet.Svc.Transformation.md) — fills bracketed tokens in a template string from plain objects or string dictionaries
+- [DKNet.Svc.PdfGenerators](DKNet.Svc.PdfGenerators/index.md) — HTML or Markdown to PDF via headless Chromium (PuppeteerSharp) and Markdig
+- [DKNet.Svc.Transformation](DKNet.Svc.Transformation/index.md) — fills bracketed tokens in a template string from plain objects or string dictionaries
 
 ## 🌐 ASP.NET Core Utilities
 
-- [DKNet.AspCore.Extensions](AspNetCore/DKNet.AspCore.Extensions.md) — host-populated request members, discovered and versioned endpoint groups, generic list/read/delete endpoints, `FluentResults`-to-`IResult` conversion
-- [DKNet.AspCore.Tasks](AspNetCore/DKNet.AspCore.Tasks.md) — `IBackgroundTask` implementations run once at host start-up
-- [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) — endpoint filter that blocks a duplicate write and replays or rejects the retry
-- [DKNet.AspCore.Idempotency.MsSqlStore](AspNetCore/DKNet.AspCore.Idempotency.MsSqlStore.md) — SQL Server key store
-- [DKNet.AspCore.Idempotency.NpgsqlStore](AspNetCore/DKNet.AspCore.Idempotency.NpgsqlStore.md) — PostgreSQL key store
-- [DKNet.AspCore.Idempotency.RedisStore](AspNetCore/DKNet.AspCore.Idempotency.RedisStore.md) — Redis key store, no schema or migrations
-- [DKNet.AspCore.Idempotency.Relational](AspNetCore/DKNet.AspCore.Idempotency.Relational.md) — shared EF Core building blocks the relational stores derive from; not referenced directly by application code
+- [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md) — host-populated request members, discovered and versioned endpoint groups, generic list/read/delete endpoints, `FluentResults`-to-`IResult` conversion
+- [DKNet.AspCore.Tasks](DKNet.AspCore.Tasks/index.md) — `IBackgroundTask` implementations run once at host start-up
+- [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) — endpoint filter that blocks a duplicate write and replays or rejects the retry
+- [DKNet.AspCore.Idempotency.MsSqlStore](DKNet.AspCore.Idempotency.MsSqlStore/index.md) — SQL Server key store
+- [DKNet.AspCore.Idempotency.NpgsqlStore](DKNet.AspCore.Idempotency.NpgsqlStore/index.md) — PostgreSQL key store
+- [DKNet.AspCore.Idempotency.RedisStore](DKNet.AspCore.Idempotency.RedisStore/index.md) — Redis key store, no schema or migrations
+- [DKNet.AspCore.Idempotency.Relational](DKNet.AspCore.Idempotency.Relational/index.md) — shared EF Core building blocks the relational stores derive from; not referenced directly by application code
 
 ## ☁️ Aspire Integrations
 
-- [Aspire.Hosting.ServiceBus](Aspire/Aspire.Hosting.ServiceBus.md) — adds the Azure Service Bus emulator as a resource inside a .NET Aspire AppHost. **Source-only** (`<IsPackable>false</IsPackable>`) — reference the project, not a package
+- [Aspire.Hosting.ServiceBus](Aspire.Hosting.ServiceBus/index.md) — adds the Azure Service Bus emulator as a resource inside a .NET Aspire AppHost. **Source-only** (`<IsPackable>false</IsPackable>`) — reference the project, not a package
 
 ## ⚙️ Configuration
 

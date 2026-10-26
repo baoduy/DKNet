@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.SlimBus.Extensions components inside the host",
+    "output": ".task-validation/DKNet.SlimBus.Extensions/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "96cf1580ccab328d02d23e365428dff25dc63333"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Host application"
+        },
+        "backend": {
+          "label": "Package and your types"
+        },
+        "messagebus": {
+          "label": "SlimMessageBus"
+        },
+        "database": {
+          "label": "EF Core DbContext"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Host application",
+      "sublabel": "Program.cs DI container",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "external",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/SlimBusEfCoreSetup.cs",
+          "line": 20,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "bus",
+      "label": "IMessageBus",
+      "sublabel": "SlimMessageBus, any provider",
+      "pos": [
+        530,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "messagebus",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 16,
+          "end_line": 29
+        }
+      ]
+    },
+    {
+      "id": "fluents",
+      "label": "Fluents contracts",
+      "sublabel": "Requests / Queries / EventsConsumers",
+      "pos": [
+        1010,
+        80
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 16,
+          "end_line": 106
+        }
+      ]
+    },
+    {
+      "id": "handlers",
+      "label": "Your handlers",
+      "sublabel": "Fluents.*.IHandler implementations",
+      "pos": [
+        530,
+        260
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 37,
+          "end_line": 63
+        },
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Fluents.cs",
+          "line": 71,
+          "end_line": 94
+        }
+      ]
+    },
+    {
+      "id": "mapper",
+      "label": "LazyMapper",
+      "sublabel": "ILazyMap<T> over Mapster IMapper",
+      "pos": [
+        1010,
+        260
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/LazyMapper/LazyMapExtensions.cs",
+          "line": 15,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "autosave",
+      "label": "EfAutoSavePostInterceptor",
+      "sublabel": "optional, Order = int.MaxValue",
+      "pos": [
+        50,
+        440
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/EfAutoSavePostInterceptor.cs",
+          "line": 12,
+          "end_line": 88
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "label": "DbContext",
+      "sublabel": "Microsoft.EntityFrameworkCore",
+      "pos": [
+        530,
+        440
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "database",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/AutoSaveDbContextRegistration.cs",
+          "line": 17,
+          "end_line": 25
+        }
+      ]
+    },
+    {
+      "id": "publisher",
+      "label": "SlimBusEventPublisher",
+      "sublabel": "optional, IEventPublisher for TDbContext",
+      "pos": [
+        1010,
+        440
+      ],
+      "size": [
+        250,
+        82
+      ],
+      "type": "messagebus",
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Handlers/SlimBusEventPublisher.cs",
+          "line": 14,
+          "end_line": 54
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "host",
+      "to": "bus",
+      "label": "AddSlimMessageBus, picks the provider"
+    },
+    {
+      "from": "bus",
+      "to": "handlers",
+      "label": "Send / Publish dispatches to"
+    },
+    {
+      "from": "handlers",
+      "to": "fluents",
+      "label": "implement IHandler<...>"
+    },
+    {
+      "from": "handlers",
+      "to": "mapper",
+      "label": "ResultOf<T> / LazyMap<T>"
+    },
+    {
+      "from": "autosave",
+      "to": "handlers",
+      "label": "wraps as IRequestHandlerInterceptor<,>"
+    },
+    {
+      "from": "autosave",
+      "to": "db",
+      "label": "SaveChangesWithConcurrencyHandlingAsync"
+    },
+    {
+      "from": "db",
+      "to": "publisher",
+      "label": "DKNet.EfCore.Events hook, after save"
+    },
+    {
+      "from": "publisher",
+      "to": "bus",
+      "label": "Publish(event), headers from AdditionalData"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Opt-in by registration call",
+      "items": [
+        "The core package only supplies Fluents contracts, handlers and LazyMapper \u2014 no DbContext, no transport.",
+        "AddSlimBusEfCoreInterceptor<TDbContext>() and AddSlimBusEventPublisher<TDbContext>() add the bottom row; neither is required to use the top row."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "No bundled transport",
+      "items": [
+        "The host picks the SlimMessageBus provider (memory, Azure Service Bus, Kafka) in its own AddSlimMessageBus call."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.Fw.Extensions inside the caller",
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Helper families"
+        },
+        "database": {
+          "label": "Shared metadata caches"
+        },
+        "external": {
+          "label": "Caller and .NET dependencies"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/components/components.html"
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "Consumer application",
+      "sublabel": "Calls extension methods",
+      "pos": [
+        570,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeArrayExtractorExtensions.cs",
+          "line": 36,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "scan",
+      "type": "backend",
+      "label": "ITypeExtractor",
+      "sublabel": "Immutable filter chains",
+      "pos": [
+        30,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 93,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "types",
+      "type": "database",
+      "label": "TypesByAssembly",
+      "sublabel": "Cached Assembly.GetTypes()",
+      "pos": [
+        30,
+        440
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/TypeExtractors/TypeExtractor.cs",
+          "line": 114,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "props",
+      "type": "backend",
+      "label": "PropertyExtensions",
+      "sublabel": "Read / convert / write",
+      "pos": [
+        390,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 58,
+          "end_line": 96
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "type": "database",
+      "label": "PropertyCache",
+      "sublabel": "Type + name + flags",
+      "pos": [
+        390,
+        440
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Reflection/PropertyExtensions.cs",
+          "line": 21,
+          "end_line": 22
+        }
+      ]
+    },
+    {
+      "id": "values",
+      "type": "backend",
+      "label": "Value helpers",
+      "sublabel": "Types, enums, strings, dates",
+      "pos": [
+        750,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Enums/EnumExtensions.cs",
+          "line": 24,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "annotations",
+      "type": "external",
+      "label": "DisplayAttribute",
+      "sublabel": "Component-model annotations",
+      "pos": [
+        750,
+        440
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/Enums/EnumExtensions.cs",
+          "line": 30,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "di",
+      "type": "backend",
+      "label": "Registration helpers",
+      "sublabel": "Inspect service descriptors",
+      "pos": [
+        1110,
+        240
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/ServiceCollectionExtensions.cs",
+          "line": 60,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "descriptors",
+      "type": "external",
+      "label": "IServiceCollection",
+      "sublabel": "DI abstractions",
+      "pos": [
+        1110,
+        440
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.Fw.Extensions/DKNet.Fw.Extensions.csproj",
+          "line": 8,
+          "end_line": 11
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "call-scan",
+      "from": "caller",
+      "to": "scan",
+      "label": "calls"
+    },
+    {
+      "id": "scan-types",
+      "from": "scan",
+      "to": "types",
+      "label": "uses"
+    },
+    {
+      "id": "call-props",
+      "from": "caller",
+      "to": "props",
+      "label": "calls"
+    },
+    {
+      "id": "props-metadata",
+      "from": "props",
+      "to": "metadata",
+      "label": "uses"
+    },
+    {
+      "id": "call-values",
+      "from": "caller",
+      "to": "values",
+      "label": "calls"
+    },
+    {
+      "id": "values-annotations",
+      "from": "values",
+      "to": "annotations",
+      "label": "uses"
+    },
+    {
+      "id": "call-di",
+      "from": "caller",
+      "to": "di",
+      "label": "calls"
+    },
+    {
+      "id": "di-descriptors",
+      "from": "di",
+      "to": "descriptors",
+      "label": "uses"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Consumer process",
+      "wraps": [
+        "caller",
+        "scan",
+        "types",
+        "props",
+        "metadata",
+        "values",
+        "annotations",
+        "di",
+        "descriptors"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Other independent helpers",
+      "items": [
+        "AttributeExtensions checks metadata; CollectionExtensions appends items.",
+        "Reflection helpers also use .NET Type, PropertyInfo and Attribute APIs. No store or remote service is involved."
+      ]
+    }
+  ]
+}

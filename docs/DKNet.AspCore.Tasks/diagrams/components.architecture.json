@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Startup task dependencies inside the generic host",
+    "output": ".task-validation/DKNet.AspCore.Tasks/components.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "11f428e5ce7acaad3cdfd489b39e7f2a7f8f0a3e"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Package operations"
+        },
+        "external": {
+          "label": "Host and result"
+        },
+        "security": {
+          "label": "Guard or refusal"
+        },
+        "database": {
+          "label": "Stored state"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "host",
+      "label": "Generic host",
+      "sublabel": "Starts registered BackgroundService",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Tasks/TaskSetups.cs",
+          "line": 60,
+          "end_line": 66
+        }
+      ],
+      "type": "external",
+      "pos": [
+        30,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "runner",
+      "label": "BackgroundJobHost",
+      "sublabel": "One batch per host start",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Tasks/Internals/BackgroundJobHost.cs",
+          "line": 8,
+          "end_line": 19
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        460,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "scope",
+      "label": "AsyncServiceScope",
+      "sublabel": "Shared across the whole batch",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Tasks/Internals/BackgroundJobHost.cs",
+          "line": 16,
+          "end_line": 17
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        900,
+        30
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "task",
+      "label": "IBackgroundTask implementations",
+      "sublabel": "Scoped; concurrent RunAsync",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Tasks/TaskSetups.cs",
+          "line": 26,
+          "end_line": 34
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        900,
+        260
+      ],
+      "size": [
+        247,
+        76
+      ]
+    },
+    {
+      "id": "log",
+      "label": "ILogger<BackgroundJobHost>",
+      "sublabel": "Reports individual failures",
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Tasks/Internals/BackgroundJobHost.cs",
+          "line": 29,
+          "end_line": 35
+        }
+      ],
+      "type": "external",
+      "pos": [
+        460,
+        260
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e0",
+      "from": "host",
+      "to": "runner",
+      "label": "starts"
+    },
+    {
+      "id": "e1",
+      "from": "runner",
+      "to": "scope",
+      "label": "creates"
+    },
+    {
+      "id": "e2",
+      "from": "scope",
+      "to": "task",
+      "label": "resolves"
+    },
+    {
+      "id": "e3",
+      "from": "runner",
+      "to": "log",
+      "label": "logs failures"
+    }
+  ]
+}

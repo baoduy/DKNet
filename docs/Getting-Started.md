@@ -33,8 +33,8 @@ dotnet add package DKNet.EfCore.Extensions
 # Querying and persistence through IRepositorySpec
 dotnet add package DKNet.EfCore.Specifications
 
-# CQRS handlers with automatic SaveChanges (brings DKNet.SlimBus.Extensions with it)
-dotnet add package DKNet.SlimBus.Extensions.EfCore
+# CQRS handlers with automatic SaveChanges and domain events onto the bus
+dotnet add package DKNet.SlimBus.Extensions
 ```
 
 Add more as the need appears — nothing above depends on the others being present, and no package needs a
@@ -154,11 +154,11 @@ end-to-end walkthroughs (an HTTP request and a domain event):
 
 | Goal | Read next |
 |---|---|
-| A CRUD API with commands and queries separated | [DKNet.SlimBus.Extensions](Messaging/DKNet.SlimBus.Extensions.md), then [Examples](Examples/README.md#complete-crud-api-with-cqrs) |
-| Side effects that run after a write commits | [DKNet.EfCore.Events](EfCore/DKNet.EfCore.Events.md), then [A domain event end to end](Architecture.md#a-domain-event-end-to-end) |
-| Row-level isolation between tenants or owners | [DKNet.EfCore.DataAuthorization](EfCore/DKNet.EfCore.DataAuthorization.md), then [Examples](Examples/README.md#multi-tenant-application) |
-| A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](AspNetCore/DKNet.AspCore.Idempotency.md) on its own for local development, plus one store package for deployed traffic |
-| Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](Services/DKNet.Svc.BlobStorage.Abstractions.md) |
+| A CRUD API with commands and queries separated | [DKNet.SlimBus.Extensions](DKNet.SlimBus.Extensions/index.md), then [Examples](Examples/README.md#complete-crud-api-with-cqrs) |
+| Side effects that run after a write commits | [DKNet.EfCore.Events](DKNet.EfCore.Events/index.md), then [A domain event end to end](Architecture.md#a-domain-event-end-to-end) |
+| Row-level isolation between tenants or owners | [DKNet.EfCore.DataAuthorization](DKNet.EfCore.DataAuthorization/index.md), then [Examples](Examples/README.md#multi-tenant-application) |
+| A `POST` a client can safely retry | [DKNet.AspCore.Idempotency](DKNet.AspCore.Idempotency/index.md) on its own for local development, plus one store package for deployed traffic |
+| Files in Azure, S3, or on disk behind one interface | [DKNet.Svc.BlobStorage.Abstractions](DKNet.Svc.BlobStorage.Abstractions/index.md) |
 
 ## Getting help
 

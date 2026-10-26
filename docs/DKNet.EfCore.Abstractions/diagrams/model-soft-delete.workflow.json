@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Represent a soft deletion in the domain",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Abstractions/model-soft-delete.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Delete(user)",
+      "sublabel": "domain method decides",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/ISoftDeletableEntity.cs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Set deletion fields",
+      "sublabel": "your implementation",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/ISoftDeletableEntity.cs",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Return IResultBase",
+      "sublabel": "caller checks outcome",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Entities/ISoftDeletableEntity.cs",
+          "line": 1
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "The contract supplies no deletion implementation."
+      ]
+    }
+  ]
+}

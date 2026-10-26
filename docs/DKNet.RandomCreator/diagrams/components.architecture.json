@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DKNet.RandomCreator inside the caller",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Calling application"
+        },
+        "backend": {
+          "label": "Package types"
+        },
+        "security": {
+          "label": ".NET randomness APIs"
+        }
+      }
+    },
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "eb104d54c357efb7e6ef5c1ffed3bd4d706242be"
+    },
+    "quality_profile": "showcase",
+    "output": ".task-validation/diagrams/components/components.html"
+  },
+  "components": [
+    {
+      "id": "caller",
+      "type": "external",
+      "label": "Consumer application",
+      "sublabel": "Supplies length and options",
+      "pos": [
+        50,
+        80
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/RandomCreators.cs",
+          "line": 21,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "public",
+      "type": "backend",
+      "label": "RandomCreators",
+      "sublabel": "NewString / NewChars",
+      "pos": [
+        390,
+        80
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/RandomCreators.cs",
+          "line": 21,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "creator",
+      "type": "backend",
+      "label": "StringCreator",
+      "sublabel": "Validate and fill char[]",
+      "pos": [
+        730,
+        80
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 32,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "rng",
+      "type": "security",
+      "label": "RandomNumberGenerator",
+      "sublabel": "GetItems / Shuffle",
+      "pos": [
+        1070,
+        80
+      ],
+      "size": [
+        240,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/Core/DKNet.RandomCreator/StringCreator.cs",
+          "line": 47,
+          "end_line": 61
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "caller",
+      "to": "public",
+      "label": "calls"
+    },
+    {
+      "from": "public",
+      "to": "creator",
+      "label": "creates"
+    },
+    {
+      "from": "creator",
+      "to": "rng",
+      "label": "draws / shuffles"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Consumer process",
+      "wraps": [
+        "caller",
+        "public",
+        "creator",
+        "rng"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Per-call state",
+      "items": [
+        "Each call creates StringCreator and a result buffer; fixed character pools are constants.",
+        "StringCreatorOptions supplies MinNumbers and MinSpecials. Null options create a fresh default instance."
+      ]
+    }
+  ]
+}

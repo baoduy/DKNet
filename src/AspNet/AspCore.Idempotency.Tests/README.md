@@ -16,5 +16,5 @@ Store-backed and end-to-end coverage lives in the sibling projects:
 `AspCore.Idempotency.MsSqlStore.Tests`, `.NpgsqlStore.Tests`, `.RedisStore.Tests`
 (TestContainers — Docker required) and `AspCore.Idempotency.ApiTests`.
 
-Package reference: `docs/AspNetCore/DKNet.AspCore.Idempotency.md`.
+Package reference: `docs/DKNet.AspCore.Idempotency/index.md`.
 Repo-wide testing conventions: `src/AGENTS.md` and the `dknet-testing` skill.

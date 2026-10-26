@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DTO generation inside the consuming compiler",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/DtoGenerator/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "input",
+      "label": "Consumer compilation",
+      "sublabel": "entities + partial shells",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 799,
+          "end_line": 809
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "generator",
+      "label": "DtoGenerator",
+      "sublabel": "select and emit properties",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 93,
+          "end_line": 133
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "output",
+      "label": "Generated partial DTOs",
+      "sublabel": "init-only data members",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DtoGenerator.cs",
+          "line": 1603,
+          "end_line": 1638
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "options",
+      "label": "AnalyzerConfigOptions",
+      "sublabel": "buildTransitive switches",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DKNet.EfCore.DtoGenerator.props",
+          "line": 1,
+          "end_line": 8
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "validator",
+      "label": "RaisesEventValidator",
+      "sublabel": "validate and emit payloads",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/RaisesEventValidator.cs",
+          "line": 43,
+          "end_line": 79
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "composer",
+      "label": "EventNameComposer",
+      "sublabel": "linked shared source",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.DtoGenerator/DKNet.EfCore.DtoGenerator.csproj",
+          "line": 27,
+          "end_line": 28
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "input",
+      "to": "generator",
+      "label": "symbols"
+    },
+    {
+      "id": "c1",
+      "from": "generator",
+      "to": "output",
+      "label": "generated source"
+    },
+    {
+      "id": "c2",
+      "from": "options",
+      "to": "generator",
+      "label": "project defaults"
+    },
+    {
+      "id": "c3",
+      "from": "input",
+      "to": "validator",
+      "label": "RaisesEvent rules"
+    },
+    {
+      "id": "c4",
+      "from": "validator",
+      "to": "composer",
+      "label": "shared naming"
+    },
+    {
+      "id": "c5",
+      "from": "composer",
+      "to": "output",
+      "label": "convention payload"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "Generation runs in the compiler, not a runtime service. Attribute source is compiled into the consumer; runtime event dispatch is a separate Events package."
+      ]
+    }
+  ]
+}

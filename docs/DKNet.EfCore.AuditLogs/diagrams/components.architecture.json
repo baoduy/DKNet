@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Audit capture components inside an EF host",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+    },
+    "output": ".task-validation/AuditLogs/components.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer code"
+        },
+        "backend": {
+          "label": "Package and EF operations"
+        },
+        "database": {
+          "label": "Database values"
+        },
+        "security": {
+          "label": "Policy or alternate result"
+        },
+        "messagebus": {
+          "label": "Consumer publisher"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "context",
+      "label": "Hook-enabled DbContext",
+      "sublabel": "SaveChangesAsync",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 48,
+          "end_line": 66
+        }
+      ],
+      "type": "external",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "runner",
+      "label": "HookRunnerInterceptor",
+      "sublabel": "captures SnapshotContext",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 78,
+          "end_line": 98
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "hook",
+      "label": "EfCoreAuditHook",
+      "sublabel": "before capture / after publish",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 10,
+          "end_line": 58
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        860,
+        300
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "user",
+      "label": "ICurrentUserProvider",
+      "sublabel": "optional scoped identity",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/EfCoreAuditLogSetup.cs",
+          "line": 158,
+          "end_line": 174
+        }
+      ],
+      "type": "security",
+      "pos": [
+        860,
+        60
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "options",
+      "label": "AuditLogOptions",
+      "sublabel": "singleton capture policy",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/EfCoreAuditLogSetup.cs",
+          "line": 104,
+          "end_line": 115
+        }
+      ],
+      "type": "backend",
+      "pos": [
+        450,
+        540
+      ],
+      "size": [
+        260,
+        82
+      ]
+    },
+    {
+      "id": "publisher",
+      "label": "IAuditLogPublisher",
+      "sublabel": "keyed scoped sink adapter",
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/Internals/EfCoreAuditHook.cs",
+          "line": 102,
+          "end_line": 123
+        }
+      ],
+      "type": "messagebus",
+      "pos": [
+        860,
+        540
+      ],
+      "size": [
+        260,
+        82
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c0",
+      "from": "context",
+      "to": "runner",
+      "label": "async save"
+    },
+    {
+      "id": "c1",
+      "from": "runner",
+      "to": "hook",
+      "label": "snapshot"
+    },
+    {
+      "id": "c2",
+      "from": "user",
+      "to": "hook",
+      "label": "current user"
+    },
+    {
+      "id": "c3",
+      "from": "options",
+      "to": "hook",
+      "label": "capture rules"
+    },
+    {
+      "id": "c4",
+      "from": "hook",
+      "to": "publisher",
+      "label": "after successful save"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Runtime boundary",
+      "items": [
+        "The host implements the publisher and its external sink. Pending batches are scoped in-memory state; this package supplies no durable audit store."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Declare audit capture and sensitive properties",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Abstractions/declare-audit-policy.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    },
+    "viewBox": [
+      850,
+      528
+    ]
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Domain declaration"
+    },
+    {
+      "id": "audit",
+      "label": "Audit capture"
+    },
+    {
+      "id": "response",
+      "label": "Response serialization"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "SensitiveData roles",
+      "sublabel": "metadata on property",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Abstractions/Attributes/SensitiveDataAttribute.cs",
+          "line": 6,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "audit",
+      "col": 1,
+      "type": "backend",
+      "label": "AuditLogs consumer",
+      "sublabel": "redacts captured value",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.AuditLogs/AuditLogExtensions.cs",
+          "line": 130,
+          "end_line": 154
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "response",
+      "col": 1,
+      "type": "backend",
+      "label": "Opted-in JSON options",
+      "sublabel": "checks current principal",
+      "width": 210,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 61,
+          "end_line": 97
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "audit",
+      "from": "s0",
+      "to": "s1",
+      "label": "audit consumer",
+      "variant": "emphasis"
+    },
+    {
+      "id": "response",
+      "from": "s0",
+      "to": "s2",
+      "label": "JSON opt-in",
+      "variant": "emphasis",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "AuditLog can force capture under the selected audit property policy.",
+        "IgnoreAuditLog always excludes; SensitiveData always redacts captured values."
+      ]
+    }
+  ]
+}

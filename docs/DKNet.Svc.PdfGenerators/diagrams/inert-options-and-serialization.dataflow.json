@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "SerializableOptions round-trips every field, but PdfGenerator only reads a few",
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "Reaches the Chromium render"
+        },
+        "dashed": {
+          "label": "Settable, serializable, never read by PdfGenerator"
+        },
+        "security": {
+          "label": "Dead-end services"
+        }
+      }
+    },
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.PdfGenerators/inert-options-and-serialization.html"
+  },
+  "stages": [
+    {
+      "label": "Source"
+    },
+    {
+      "label": "SerializableOptions"
+    },
+    {
+      "label": "PdfGeneratorOptions"
+    },
+    {
+      "label": "Consumer"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "json",
+      "type": "external",
+      "label": "JSON / front matter",
+      "sublabel": "hyphenated keys",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Services/InlineOptionsParser.cs",
+          "line": 59,
+          "end_line": 59
+        }
+      ]
+    },
+    {
+      "id": "ser",
+      "type": "backend",
+      "label": "SerializableOptions",
+      "sublabel": "every field nullable",
+      "stage": 1,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Options/SerializableOptions.cs",
+          "line": 75,
+          "end_line": 128
+        }
+      ]
+    },
+    {
+      "id": "applied",
+      "type": "backend",
+      "label": "Applied fields",
+      "sublabel": "Format, Scale, Margins",
+      "stage": 2,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Options/SerializableOptions.cs",
+          "line": 101,
+          "end_line": 121
+        }
+      ]
+    },
+    {
+      "id": "inert",
+      "type": "security",
+      "label": "Inert fields",
+      "sublabel": "Theme, TOC, Module...",
+      "stage": 2,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Options/SerializableOptions.cs",
+          "line": 79,
+          "end_line": 109
+        }
+      ]
+    },
+    {
+      "id": "pdfgen",
+      "type": "backend",
+      "label": "PdfGenerator",
+      "sublabel": "renders via Chromium",
+      "stage": 3,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/PdfGenerator.cs",
+          "line": 204,
+          "end_line": 232
+        }
+      ]
+    },
+    {
+      "id": "services",
+      "type": "security",
+      "label": "Theme/TOC/Module",
+      "sublabel": "never constructed",
+      "stage": 3,
+      "row": 2,
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.PdfGenerators/Services/ThemeService.cs",
+          "line": 6,
+          "end_line": 6
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "json",
+      "to": "ser",
+      "label": "deserialize",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f2",
+      "from": "ser",
+      "to": "applied",
+      "label": "ToPdfGeneratorOptions()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f3",
+      "from": "ser",
+      "to": "inert",
+      "label": "ToPdfGeneratorOptions()",
+      "variant": "dashed"
+    },
+    {
+      "id": "f4",
+      "from": "applied",
+      "to": "pdfgen",
+      "label": "read by pipeline",
+      "variant": "emphasis",
+      "labelAt": [
+        638,
+        119
+      ]
+    },
+    {
+      "id": "f5",
+      "from": "inert",
+      "to": "services",
+      "label": "no caller",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Name resolution by reflection",
+      "items": [
+        "An unknown Theme string becomes Theme.Custom(value); an unknown ModuleOptions string becomes ModuleOptions.FromLocalPath(value).",
+        "An unknown Format or CodeHighlightTheme string is ignored rather than throwing."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Inert but fully testable",
+      "items": [
+        "Every inert type round-trips through SerializableOptions and has its own unit tests.",
+        "InlineOptionsParser.ParseYamlFrontMatter throws InvalidDataException when the file has no closing delimiter; PdfGenerator never calls it."
+      ]
+    }
+  ]
+}

@@ -1,82 +1,70 @@
 # DKNet.EfCore.Events
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Events)](https://www.nuget.org/packages/DKNet.EfCore.Events/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+Domain-event collection and publishing during successful async saves for .NET developers using entity event queues or RaisesEvent declarations.
 
-Dispatches domain events raised by entities during EF Core `SaveChanges`. An entity queues a plain object from a
-business method (`AddEvent(...)`); this package publishes it after the save has actually committed — never
-before, never for a save that fails.
+## ✨ Why use it?
 
-## Features
+- Keep transport calls out of domain methods by collecting queued event objects on save.
+- Capture declared create/update/delete rules before save and map their payloads afterward.
+- Fan the combined batch out to host-supplied publisher implementations.
 
-- `AddEvent(object)` / `AddEvent<TEvent>()` on any `IEventEntity` (already implemented by `Entity<TKey>` /
-  `Entity` in `DKNet.EfCore.Abstractions`) to queue events from domain methods.
-- Automatic dispatch after a successful `SaveChanges`, via an `EventHook` that plugs into the same save pipeline
-  as `DKNet.EfCore.Hooks`.
-- `[RaisesEvent]` declared events — raise events by attribute instead of by hand, with no `IEventEntity`
-  requirement (needs `DKNet.EfCore.DtoGenerator` for the payload).
-- `IEventPublisher` / `DefaultEventPublisher` abstraction — plug in any messaging technology; multiple publishers
-  can be registered and all run per save.
-- `EventException` surfaces missing `IMapper` registrations and unresolved declared-event payloads instead of
-  failing silently.
+## 🚀 Quick Start
 
-## Install
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
 dotnet add package DKNet.EfCore.Events
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 10.0.12
 ```
 
-## Quick start
-
 ```csharp
-public record OrderPlacedEvent(Guid OrderId, decimal Total);
+using Microsoft.EntityFrameworkCore;
+using DKNet.EfCore.Hooks;
+using Microsoft.Extensions.DependencyInjection;
 
-public class Order : Entity<Guid>
+using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+connection.Open();
+var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+services.AddLogging();
+services.AddDbContextWithHook<DemoDb>(o => o.UseSqlite(connection));
+services.AddEventPublisher<DemoDb, ConsolePublisher>();
+using var provider = services.BuildServiceProvider();
+using var scope = provider.CreateScope();
+await using var db = scope.ServiceProvider.GetRequiredService<DemoDb>();
+await db.Database.EnsureCreatedAsync();
+var item = new Item();
+item.Announce();
+db.Add(item);
+await db.SaveChangesAsync();
+
+public sealed class DemoDb(DbContextOptions<DemoDb> options) : DbContext(options)
 {
-    public Order(Guid id, decimal total) : base(id)
-    {
-        Total = total;
-        AddEvent(new OrderPlacedEvent(id, total)); // queued, not dispatched yet
-    }
-
-    public decimal Total { get; private set; }
+    public DbSet<Item> Items => Set<Item>();
 }
-
-public sealed class LoggingEventPublisher(ILogger<LoggingEventPublisher> logger) : DefaultEventPublisher
+public sealed class Item : DKNet.EfCore.Abstractions.Entities.Entity<int>
 {
-    public override Task PublishAsync(object eventObj, CancellationToken cancellationToken = default)
+    public string Name { get; set; } = "Coffee";
+    public void Announce() => AddEvent(new ItemCreated(Name));
+}
+public sealed record ItemCreated(string Name);
+public sealed class ConsolePublisher : DKNet.EfCore.Abstractions.Events.DefaultEventPublisher
+{
+    public override Task PublishAsync(object value, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Publishing {EventType}", eventObj.GetType().Name);
+        Console.WriteLine(value); // ItemCreated { Name = Coffee }
         return Task.CompletedTask;
     }
 }
-
-// Startup — DbContext must be hook-aware for events to dispatch at all
-services.AddDbContextWithHook<AppDbContext>((_, o) => o.UseSqlServer(connectionString));
-services.AddEventPublisher<AppDbContext, LoggingEventPublisher>();
-
-// Usage
-db.Orders.Add(new Order(Guid.NewGuid(), 42.00m));
-await db.SaveChangesAsync(); // OrderPlacedEvent reaches LoggingEventPublisher only after this commits
 ```
 
-## Customisation reference
+Run with `dotnet run`.
 
-There is no options class — every knob is a DI registration.
+## Documentation
 
-| Knob | Lifetime | Required? | Effect |
-|---|---|---|---|
-| `AddEventPublisher<TDbContext, TPublisher>()` | publisher is scoped | yes | Registers `TPublisher` as an `IEventPublisher` and `EventHook` as a hook for `TDbContext`. Repeating it with the same implementation is a no-op; different implementations all register, and **every one runs on every save**. |
-| `AddDbContextWithHook<TDbContext>()` or `options.UseHooks<TDbContext>(provider)` | — | yes | Installs the interceptor. Without it `EventHook` sits in DI and is never invoked. |
-| `MapsterMapper.IMapper` | your choice | only for `AddEvent<TEvent>()` and `[RaisesEvent]` | Maps the entity onto the payload type. `EventHook` uses the first registered `IMapper`. Missing it throws `EventException` at dispatch time. |
-| `ILogger<EventHook>` | your choice | no | One informational entry per `AfterSaveAsync`, one error entry per failed publisher. |
-
-Behaviour that is deliberately not configurable: dispatch happens only after a successful save, a publisher that
-throws is logged and swallowed so the other publishers still run, and there is no retry, ordering knob, or
-dead-letter path.
-
-## Full documentation
-
-Registration details, the complete dispatch lifecycle, `[RaisesEvent]` declared events, configuration, and how
-this composes with `DKNet.EfCore.Abstractions` and `DKNet.EfCore.Hooks`:
-https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Events.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Events/index.md) | Start with architecture and the end-to-end flow. |
+| [Publish queued events after a successful save](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Events/publish-domain-events.md) | Connect entity event queues to one or more `IEventPublisher` implementations through the save hook. |
+| [Publish payloads declared on entity operations](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Events/publish-declared-events.md) | Evaluate `[RaisesEvent]` rules before the write, then map qualifying payloads from the entity after a successful save. |

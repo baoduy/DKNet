@@ -1,0 +1,222 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "S3BlobService.SaveAsync: validate, conflict check, upload",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.BlobStorage.AwsS3/configure-and-operate-s3-storage.html",
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "Caller"
+        },
+        "backend": {
+          "label": "S3BlobService step"
+        },
+        "security": {
+          "label": "Rejected"
+        },
+        "cloud": {
+          "label": "AWS S3 / S3-compatible call"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "app",
+      "label": "Application code"
+    },
+    {
+      "id": "svc",
+      "label": "S3BlobService"
+    },
+    {
+      "id": "reject",
+      "label": "Rejected",
+      "variant": "exception"
+    },
+    {
+      "id": "s3",
+      "label": "S3 bucket"
+    }
+  ],
+  "mainPath": [
+    "call",
+    "validate",
+    "exists",
+    "put",
+    "store",
+    "done"
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "lane": "app",
+      "col": 0,
+      "type": "frontend",
+      "label": "SaveAsync(blob)",
+      "sublabel": "BlobData or BlobStreamData",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 335,
+          "end_line": 339
+        }
+      ]
+    },
+    {
+      "id": "validate",
+      "lane": "svc",
+      "col": 1,
+      "type": "backend",
+      "label": "ValidateFile(stream)",
+      "sublabel": "shared BlobServiceOptions rules",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 341,
+          "end_line": 341
+        }
+      ]
+    },
+    {
+      "id": "exists",
+      "lane": "svc",
+      "col": 2,
+      "type": "backend",
+      "label": "CheckExistsAsync",
+      "sublabel": "prefix list, exact key match",
+      "width": 170,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 343,
+          "end_line": 345
+        }
+      ]
+    },
+    {
+      "id": "conflict",
+      "lane": "reject",
+      "col": 2,
+      "type": "security",
+      "label": "InvalidOperationException",
+      "sublabel": "exists and Overwrite == false",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 344,
+          "end_line": 345
+        }
+      ]
+    },
+    {
+      "id": "put",
+      "lane": "svc",
+      "col": 3,
+      "type": "backend",
+      "label": "PutObjectRequest",
+      "sublabel": "ContentType, DisablePayloadSigning",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 347,
+          "end_line": 355
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "lane": "s3",
+      "col": 3,
+      "type": "cloud",
+      "label": "PutObject",
+      "sublabel": "single call, no multipart",
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 357,
+          "end_line": 357
+        }
+      ]
+    },
+    {
+      "id": "done",
+      "lane": "app",
+      "col": 4,
+      "type": "frontend",
+      "label": "Returns blob.Name",
+      "sublabel": "the original name, not a URL",
+      "width": 150,
+      "sources": [
+        {
+          "path": "src/Services/DKNet.Svc.BlobStorage.AwsS3/S3BlobService.cs",
+          "line": 358,
+          "end_line": 358
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "call",
+      "to": "validate",
+      "label": "one call"
+    },
+    {
+      "id": "e2",
+      "from": "validate",
+      "to": "exists",
+      "label": "passes",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "exists",
+      "to": "conflict",
+      "label": "exists, no overwrite",
+      "variant": "security",
+      "role": "error"
+    },
+    {
+      "id": "e4",
+      "from": "exists",
+      "to": "put",
+      "label": "missing or overwrite=true",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "put",
+      "to": "store",
+      "label": "uploads"
+    },
+    {
+      "id": "e6",
+      "from": "store",
+      "to": "done",
+      "label": "ack"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Not shown here",
+      "items": [
+        "Folder delete pages the prefix with ListObjectsV2 and deletes each page's keys in parallel (Task.WhenAll) \u2014 see Gotchas.",
+        "ListItemsAsync follows NextContinuationToken across every page; it is not truncated at 1,000 objects."
+      ]
+    }
+  ]
+}

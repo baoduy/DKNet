@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Verifying an inbound webhook signature with IHmacHashing",
+    "legend": {
+      "entries": {
+        "emphasis": { "label": "Signature trusted" },
+        "security": { "label": "Signature rejected" },
+        "database": { "label": "Returned value" }
+      }
+    },
+    "quality_profile": "showcase",
+    "viewBox": [965, 620],
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "e5d12c2e567a15c1f5ea2e92df2049f98e9f14b2"
+    },
+    "output": ".task-validation/DKNet.Svc.Encryption/hmac-signing.html"
+  },
+  "stages": [
+    { "label": "Call" },
+    { "label": "Compute" },
+    { "label": "Compare" },
+    { "label": "Result" }
+  ],
+  "nodes": [
+    {
+      "id": "call",
+      "type": "external",
+      "label": "VerifySha256(body, sig)",
+      "sublabel": "signatureIsBase64 defaults true",
+      "stage": 0,
+      "row": 1,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/HmacHashing.cs", "line": 121, "end_line": 141 }
+      ]
+    },
+    {
+      "id": "compute",
+      "type": "backend",
+      "label": "HMACSHA256.HashData",
+      "sublabel": "key bytes zeroed after use",
+      "stage": 1,
+      "row": 1,
+      "width": 190,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/HmacHashing.cs", "line": 75, "end_line": 93 }
+      ]
+    },
+    {
+      "id": "match",
+      "type": "backend",
+      "label": "bytes equal",
+      "sublabel": "FixedTimeEquals",
+      "stage": 2,
+      "row": 0,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/HmacHashing.cs", "line": 121, "end_line": 141 }
+      ]
+    },
+    {
+      "id": "nomatch",
+      "type": "security",
+      "label": "bytes differ / bad encoding",
+      "sublabel": "returns false, never throws",
+      "stage": 2,
+      "row": 2,
+      "width": 200,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/HmacHashing.cs", "line": 121, "end_line": 141 }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "database",
+      "label": "bool",
+      "sublabel": "true / false",
+      "stage": 3,
+      "row": 0,
+      "width": 150,
+      "sources": [
+        { "path": "src/Services/DKNet.Svc.Encryption/Hashing/HmacHashing.cs", "line": 147, "end_line": 152 }
+      ]
+    }
+  ],
+  "flows": [
+    { "from": "call", "to": "compute", "label": "recomputes", "variant": "default", "labelAt": [210, 315] },
+    { "from": "compute", "to": "match", "label": "equal", "variant": "emphasis", "labelAt": [423, 201] },
+    { "from": "compute", "to": "nomatch", "label": "not equal", "variant": "security", "labelAt": [423, 330] },
+    { "from": "match", "to": "result", "label": "true", "variant": "emphasis", "route": "straight", "labelAt": [790, 110] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Encoding must match on both ends",
+      "items": [
+        "asBase64/signatureIsBase64 pick Base64 or upper-case hex for the signature",
+        "A mismatched encoding choice returns false rather than throwing",
+        "Blank message, secretKey, or expectedSignature throws ArgumentException"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Key handling is defensive",
+      "items": [
+        "The secret key's UTF-8 bytes are zeroed in a finally block after every computation",
+        "Comparison runs through CryptographicOperations.FixedTimeEquals",
+        "IHmacHashing has no ignoreCase parameter at all, unlike IShaHashing"
+      ]
+    }
+  ]
+}

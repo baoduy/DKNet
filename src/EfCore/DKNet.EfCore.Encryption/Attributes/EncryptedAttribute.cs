@@ -9,8 +9,9 @@ namespace DKNet.EfCore.Encryption.Attributes;
 ///     Marks a property for automatic column-level encryption in Entity Framework Core.
 /// </summary>
 /// <remarks>
-///     Apply this attribute to string properties that should be automatically encrypted
-///     when persisted to the database and decrypted when retrieved.
+///     Apply this attribute to string properties of entity or owned types that should be automatically encrypted
+///     when persisted to the database and decrypted when retrieved. Members of complex types and members whose type
+///     is not <see cref="string" /> are not supported: <c>UseColumnEncryption</c> refuses them at model build.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class EncryptedAttribute : Attribute;

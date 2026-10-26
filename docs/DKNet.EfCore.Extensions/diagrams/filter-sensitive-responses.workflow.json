@@ -1,0 +1,162 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Withhold sensitive properties from unauthorised callers",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "4a297d44d000d5e97c2be99d9247b7d291f7668c"
+    },
+    "output": ".task-validation/DKNet.EfCore.Extensions/filter-sensitive-responses.html",
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Consumer call"
+        },
+        "backend": {
+          "label": "Package operation"
+        },
+        "security": {
+          "label": "Alternative result"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Normal path"
+    },
+    {
+      "id": "exit",
+      "label": "Alternative exit",
+      "variant": "exception"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "UseRoleAwareSensitiveData",
+      "sublabel": "add metadata modifier",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 42,
+          "end_line": 50
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "main",
+      "col": 1,
+      "type": "backend",
+      "label": "Sensitive property",
+      "sublabel": "read accessor.Current",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 80,
+          "end_line": 97
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Authenticated + role",
+      "sublabel": "allow any declared role",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 61,
+          "end_line": 77
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Write JSON property",
+      "sublabel": "otherwise omit",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 61,
+          "end_line": 77
+        }
+      ]
+    },
+    {
+      "id": "exit",
+      "lane": "exit",
+      "col": 2,
+      "type": "security",
+      "label": "Omit property",
+      "sublabel": "null / anonymous / wrong role",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Serialization/SensitiveDataJsonExtensions.cs",
+          "line": 61,
+          "end_line": 77
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alternative",
+      "from": "s2",
+      "to": "exit",
+      "label": "not permitted",
+      "role": "branch",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "No ASP.NET dependency or built-in principal accessor is supplied."
+      ]
+    }
+  ]
+}

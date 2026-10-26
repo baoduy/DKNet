@@ -1,112 +1,53 @@
 # DKNet.EfCore.Abstractions
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.EfCore.Abstractions)](https://www.nuget.org/packages/DKNet.EfCore.Abstractions/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.EfCore.Abstractions)](https://www.nuget.org/packages/DKNet.EfCore.Abstractions/)
+Entity identities, event contracts and policy attributes for .NET developers modelling a domain without the EF Core runtime.
 
-Persistence-technology-agnostic base classes, interfaces, and attributes shared by every DKNet EF Core package —
-entity identity, audit tracking, domain events, concurrency, and cross-cutting attributes for audit-log and
-sequence behavior. It has no dependency on `Microsoft.EntityFrameworkCore` itself, so domain projects can model
-entities without pulling in the full EF Core runtime.
+## ✨ Why use it?
 
-## Install
+- Give domain entities a consistent identity and event queue without depending on a transport.
+- Declare audit, sequence, CRUD and sensitivity policy next to the model while keeping enforcement in infrastructure.
+- Share audit, concurrency and soft-delete contracts across the DKNet persistence packages.
+
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EfCoreDemo
+cd EfCoreDemo
 dotnet add package DKNet.EfCore.Abstractions
 ```
 
-## Features
-
-- `IEntity<TKey>` / `Entity<TKey>` / `Entity` — entity identity base classes (Guid-keyed `Entity` by default)
-- `IEventEntity` — per-entity domain event queue (`AddEvent`, `AddEvent<TEvent>()`, `GetEvents`, `ClearEvents`),
-  implemented by `Entity<TKey>`
-- `[RaisesEvent]` / `EventOperations` — declare events raised automatically on Created/Updated/Deleted, with
-  optional property narrowing
-- `IAuditedProperties` / `IAuditedEntity<TKey>` / `AuditedEntity<TKey>` / `AuditedEntity` — creation/modification
-  tracking with `SetCreatedBy`/`SetUpdatedBy`
-- `IConcurrencyEntity<TType>` — optimistic concurrency via a `RowVersion` token
-- `ISoftDeletableEntity` — soft-delete contract (`IsDeleted`, `DeletedOn`, `DeletedBy`, `Delete(...)`)
-- `[Sequence]` / `[SqlSequence]` — database-generated sequential values for fields and enum-backed SQL sequences
-- `[AuditLog]` / `[IgnoreAuditLog]` — audit-log opt-in and exclusion markers (consumed by `DKNet.EfCore.AuditLogs`)
-- `[SensitiveData(params string[] roles)]` — one declaration read by two consumers: always redacted in the audit
-  log (`DKNet.EfCore.AuditLogs`), and withheld from API responses for callers outside the named roles once a host
-  opts in (`DKNet.EfCore.Extensions`). Naming no role means *any authenticated caller*
-- `[IgnoreEntity]` — marker to exclude a class from automatic entity mapping
-- `IEventPublisher` / `DefaultEventPublisher` / `IEventItem` / `EventItem` — the event-publishing contract consumed
-  by `DKNet.EfCore.Events`
-
-## Quick start
-
 ```csharp
 using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.Abstractions.Events;
 
-public class Order : AuditedEntity // Guid-keyed, audit-tracked, event-capable
+var order = new Order();
+order.Place();
+Console.WriteLine(order.GetEvents().Events.Length); // 1
+order.ClearEvents();
+Console.WriteLine(order.GetEvents().Events.Length); // 0
+
+public sealed class Order : Entity
 {
-    private Order() { }
-
-    public static Order Create(string createdBy)
-    {
-        var order = new Order();
-        order.SetCreatedBy(createdBy);
-        order.AddEvent(new OrderCreatedEvent(order.Id));
-        return order;
-    }
-
-    public string Status { get; private set; } = "Pending";
+    public void Place() => AddEvent(new OrderPlaced(Id));
 }
-
-public record OrderCreatedEvent(Guid OrderId);
+public sealed record OrderPlaced(Guid OrderId) : EventItem;
 ```
 
-## Customisation reference
+Run with `dotnet run`.
 
-No options object and no DI registration — the customisation surface is the attributes and the interfaces.
+## Documentation
 
-`[RaisesEvent]` (`AttributeTargets.Class`, repeatable, not inherited) — three constructor forms:
-`(Type eventType, EventOperations operations, params string[] properties)`,
-`(string label, EventOperations operations, params string[] properties)`, and
-`(EventOperations operations, params string[] properties)`.
-
-| Member | Type | Default | Effect |
-|---|---|---|---|
-| `EventType` | `Type?` | `null` | Type-naming form only; must be a `[GenerateDto]` record generated from the same entity. |
-| `Label` | `string?` | `null` | Label form only; one segment of the composed name. Never affects the payload's shape. |
-| `Operations` | `EventOperations` | required | `Created = 1`, `Updated = 2`, `Deleted = 4`, combinable. `0` is a build error. |
-| `Properties` | trailing `params string[]` | empty | Narrows an `Updated` rule to the listed direct properties. Empty means any change qualifies. |
-| `Exclude` | `string[]` | `[]` | Convention forms only; drops properties from the composed payload. Mutually exclusive with `Include`. |
-| `Include` | `string[]` | `[]` | Convention forms only; when non-empty it is the whole truth for the payload shape and overrides `DtoGeneratorExclusions`. |
-
-Convention-form names are composed in a fixed order: entity name, label (when given), narrowing properties
-(de-duplicated, ordinal-sorted), operations in the order Created, Updated, Deleted, then the suffix `Event`.
-
-`[Sequence]` (`AttributeTargets.Field` — on an enum member):
-
-| Member | Type | Default | Effect |
-|---|---|---|---|
-| `Type` (ctor arg) | `Type` | `typeof(int)` | Only `byte`, `short`, `int`, `long`; anything else throws `NotSupportedException`. |
-| `Cyclic` | `bool` | `true` | Wrap back to the minimum after the maximum. |
-| `StartAt` / `IncrementsBy` / `Min` / `Max` | `long` / `int` / `long` / `long` | `-1` | Applied only when greater than zero; otherwise the database default stands. |
-| `FormatString` | `string?` | `null` | Used by `NextSeqValueWithFormat`. `{1}` is the value; the literal token `DateTime` becomes `{0}` bound to `DateTime.UtcNow`. |
-
-`[SqlSequence]` (`AttributeTargets.Enum`): `Schema` (ctor arg) — `string`, default `"seq"`.
-
-Marker attributes with no properties: `[AuditLog]` (class or property), `[IgnoreAuditLog]` (class or property),
-`[IgnoreEntity]` (class).
-
-`[SensitiveData]` (`AttributeTargets.Property`):
-
-| Member | Type | Default | Effect |
-|---|---|---|---|
-| `roles` (trailing `params string[]` ctor arg) | `string[]` | empty | Role names permitted to receive the property in an API response. |
-| `Roles` | `IReadOnlyList<string>` | empty, never `null` | Empty means *any authenticated caller* — not *everyone*; an unauthenticated caller is always refused. |
-
-Audit-log redaction ignores `Roles` entirely and is unchanged. The response filtering is opt-in per host and lives
-in `DKNet.EfCore.Extensions` — see
-[docs/EfCore/DKNet.EfCore.Extensions.md](https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Extensions.md#withhold-sensitive-properties-from-unauthorised-callers).
-
-CRUD vertical-slice markers, consumed by `DKNet.SlimBus.Generators`: `[CrudCreate]` and `[CrudUpdate]` each expose
-`Name` (`string?`, default `null`); `[CrudAction]` adds `route` (ctor arg, `string?`, default `null` → the
-kebab-cased method name) and `Verb` (`CrudActionVerb`, default `Post`; `Post`/`Put`/`Patch`, no `Delete`).
-
-Full feature walkthrough, configuration defaults, and how this package composes with
-`DKNet.EfCore.Events`/`Hooks`/`AuditLogs`/`DataAuthorization`/`Encryption`/`DtoGenerator`:
-[docs/EfCore/DKNet.EfCore.Abstractions.md](https://github.com/baoduy/DKNet/blob/main/docs/EfCore/DKNet.EfCore.Abstractions.md)
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/index.md) | Start with architecture and the end-to-end flow. |
+| [Give domain entities an identity](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/define-entities.md) | Use `Entity<TKey>` for an identity plus event queues, or implement the covariant `IEntity<out TKey>` contract yourself. |
+| [Record who created and changed an entity](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/track-audit-fields.md) | Derive from `AuditedEntity<TKey>` or its Guid specialization to store audit identity and timestamps. |
+| [Expose an optimistic concurrency token](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/declare-concurrency.md) | Implement `IConcurrencyEntity<TType>` to give infrastructure a consistent `RowVersion` property and setter. |
+| [Represent a soft deletion in the domain](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/model-soft-delete.md) | Implement `ISoftDeletableEntity` when deletion records a flag, user and time instead of removing the object. |
+| [Queue domain events without choosing a transport](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/queue-domain-events.md) | `Entity<TKey>` implements `IEventEntity` with separate queues for event objects and event types. |
+| [Declare events for persistence operations](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/declare-save-events.md) | Apply repeatable, non-inherited `[RaisesEvent]` declarations to an entity for create, update or delete payloads. |
+| [Describe database sequences with enum metadata](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/declare-sequences.md) | Put `[SqlSequence]` on an enum and `[Sequence]` on each member that represents a database sequence. |
+| [Declare audit capture and sensitive properties](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/declare-audit-policy.md) | Attach policy markers to the domain model and let the appropriate runtime consumer enforce them. |
+| [Mark domain members for CRUD generation](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Abstractions/mark-crud-members.md) | Declare which constructors and methods SlimBus.Generators can turn into request handlers and endpoints. |

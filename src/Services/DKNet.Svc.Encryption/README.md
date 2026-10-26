@@ -1,92 +1,58 @@
 # DKNet.Svc.Encryption
 
-[![NuGet](https://img.shields.io/nuget/v/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/DKNet.Svc.Encryption)](https://www.nuget.org/packages/DKNet.Svc.Encryption/)
-[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/baoduy/DKNet/blob/main/LICENSE)
+Explicitly-invoked cryptography toolkit for .NET developers — AES-GCM and RSA encryption, RSA signing, HMAC and SHA
+hashing, and Base64/Base64URL helpers, all string-in/string-out.
 
-Standalone, explicitly-invoked cryptography toolkit: AES-GCM encryption, RSA encrypt/sign, HMAC and SHA hashing, and
-Base64/Base64URL helpers, all operating on UTF-8 strings. For transparent EF Core column encryption instead, see
-`DKNet.EfCore.Encryption` — a different package.
+## ✨ Why use it?
 
-## Features
+- Authenticated AES-256-GCM encryption with a fresh nonce per call, packaged into one opaque Base64 string.
+- RSA encrypt/decrypt (OAEP-SHA256) and sign/verify (SHA-256 with PKCS#1 v1.5), including public-key-only instances.
+- HMAC-SHA256/512 and SHA-256/512 compute plus constant-time verify.
+- Base64 and Base64URL encode/decode helpers.
+- No EF Core, hosting, or storage dependency — usable from any domain service, console app, or worker.
 
-- `IAesGcmEncryption` — authenticated AES-256-GCM encryption with optional associated data
-- `IRsaEncryption` — RSA encrypt/decrypt (OAEP-SHA256) and sign/verify (PKCS1-SHA256), including public-key-only instances
-- `IHmacHashing` / `IShaHashing` — HMAC-SHA256/512 and SHA-256/512 compute + constant-time verify
-- `Base64StringExtensions` — Base64 and Base64URL encode/decode helpers
+> AES-CBC (`IAesEncryption`, `AesEncryption`, `EncryptionSetup.AddAesEncryption`) was removed, not deprecated, with
+> no compatibility shim, and ciphertext it produced has no conversion path. See the
+> [AES-GCM feature page](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/aes-gcm-encryption.md)
+> for details.
 
-## Installation
+## 🚀 Quick Start
+
+Use a .NET 10 console project. Install the package, then replace `Program.cs` with the example.
 
 ```bash
+dotnet new console -f net10.0 -n EncDemo
+cd EncDemo
 dotnet add package DKNet.Svc.Encryption
+dotnet add package Microsoft.Extensions.DependencyInjection
 ```
-
-## Quick Start
 
 ```csharp
 using DKNet.Svc.Encryption;
 using DKNet.Svc.Encryption.Ciphers;
+using Microsoft.Extensions.DependencyInjection;
 
-builder.Services.AddEncryptionServices();                                       // HMAC + SHA hashing
-builder.Services.AddAesGcmEncryption(builder.Configuration["Crypto:AesKey"]!);  // singleton IAesGcmEncryption
+var services = new ServiceCollection();
+services.AddEncryptionServices();                                   // IShaHashing, IHmacHashing
+services.AddAesGcmEncryption(new AesGcmEncryption().Key);            // a throwaway demo key
+using var provider = services.BuildServiceProvider();
 
-public sealed class SecretStore(IAesGcmEncryption aesGcm)
-{
-    public string Protect(string plainText) => aesGcm.EncryptString(plainText);
-    public string Reveal(string cipherPackage) => aesGcm.DecryptString(cipherPackage);
-}
+var aesGcm = provider.GetRequiredService<IAesGcmEncryption>();
+var package = aesGcm.EncryptString("4111-1111-1111-1111");
+var plain = aesGcm.DecryptString(package);
+Console.WriteLine(plain); // 4111-1111-1111-1111
 ```
 
-## Migration — namespace changes in this release
-
-Root types were grouped into concern folders; the namespace of each moved type now ends
-with its folder name. This is an import-only source break: no type was renamed, removed,
-resignatured, or had its behaviour changed — update the `using` line and you're done.
-
-| Type | Old namespace | New namespace |
-|---|---|---|
-| `IAesGcmEncryption`/`AesGcmEncryption`, `IRsaEncryption`/`RsaEncryption` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Ciphers` |
-| `IHmacHashing`/`HmacHashing`, `IShaHashing`/`ShaHashing` | `DKNet.Svc.Encryption` | `DKNet.Svc.Encryption.Hashing` |
-
-`EncryptionSetup` (registration point) and `Base64StringExtensions`
-(the Base64/Base64URL encoding helpers) stay at `DKNet.Svc.Encryption`.
-
-## Configuration — registration and constructor surface
-
-There is no options type and no `IConfiguration` binding path. Everything a caller can vary is an argument.
-
-| Registration | Argument | Registers | Lifetime |
-|---|---|---|---|
-| `AddEncryptionServices()` | — | `IShaHashing`, `IHmacHashing` | Transient |
-| `AddAesGcmEncryption(base64Key)` | Base64 128/192/256-bit key | `IAesGcmEncryption` | Singleton |
-| `AddRsaEncryption(privateKeyBase64)` | Base64 PKCS#1 private key | `IRsaEncryption` | Singleton |
-
-All three are idempotent — a second call registers nothing, so the **first** call's key is the one the
-application uses. The two cipher methods throw `ArgumentException` for a null, empty, or whitespace key.
-
-| Constructor / factory | Parameter | Default | Effect |
-|---|---|---|---|
-| `new AesGcmEncryption(string? key = null)` | Base64 key, must not contain `:` | `null` | `null` generates a random 256-bit key; a supplied key must decode to 16, 24, or 32 bytes. |
-| `new RsaEncryption(int keySize = 2048)` | Key size in bits | `2048` | Generates a fresh key pair. |
-| `new RsaEncryption(string privateKeyBase64)` | PKCS#1 private key | *(required)* | Loads an existing pair; the public key is derived. |
-| `RsaEncryption.FromPublicKey(string publicKeyBase64)` | PKCS#1 public key | *(required)* | Public-only: `Encrypt`/`Verify` work, `Decrypt`/`Sign` throw `InvalidOperationException`. |
-
-| Per-call switch | Default | Effect |
-|---|---|---|
-| `IAesGcmEncryption.EncryptString`/`DecryptString` — `associatedData` | `null` | Extra bytes bound into the tag; a mismatch on decrypt throws `CryptographicException`. |
-| `IHmacHashing.ComputeSha*` — `asBase64` | `true` | `false` returns upper-case hex. |
-| `IHmacHashing.VerifySha*` — `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
-| `IShaHashing.ComputeSha*` — `upperCase` | `false` | `true` returns upper-case hex. |
-| `IShaHashing.VerifySha*` — `ignoreCase` | `true` | No effect — comparison runs on decoded bytes. |
-
-Fixed, non-configurable choices: AES-GCM uses a fresh 12-byte nonce and a 16-byte tag per call and packages
-the result as Base64 of `base64(nonce):base64(tag):base64(cipher)`; RSA uses OAEP-SHA256 for encryption and
-SHA-256 with PKCS#1 v1.5 for signatures; keys are exported as raw PKCS#1 DER in Base64, not PEM; every
-`Verify*` compares with `CryptographicOperations.FixedTimeEquals`; so does the `base64Key` overload key check, so a
-wrong key is rejected in constant time and a byte-identical but textually different base64 key is accepted.
+Run with `dotnet run`. In a real application, source the key passed to `AddAesGcmEncryption` from configuration or a
+key vault — never a freshly generated one.
 
 ## Documentation
 
-Full feature reference, configuration, and gotchas:
-https://github.com/baoduy/DKNet/blob/main/docs/Services/DKNet.Svc.Encryption.md
+| Guide | Read when |
+|---|---|
+| [Package overview](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/index.md) | Start with architecture and the end-to-end flow. |
+| [AES-GCM authenticated encryption](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/aes-gcm-encryption.md) | Encrypt and decrypt a string with a fresh nonce every call. |
+| [RSA encryption and signing](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/rsa-encryption.md) | Asymmetric encrypt/decrypt and sign/verify, including public-only instances. |
+| [SHA content hashing](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/sha-content-hashing.md) | Compute and verify SHA-256/512 hex digests. |
+| [HMAC message signing](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/hmac-signing.md) | Compute and verify keyed HMAC-SHA256/512 signatures. |
+| [Base64 and Base64URL encoding](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.Svc.Encryption/base64-encoding.md) | Encode/decode helpers for both alphabets. |
