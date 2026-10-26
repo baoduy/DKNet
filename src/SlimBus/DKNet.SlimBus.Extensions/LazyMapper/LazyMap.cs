@@ -36,13 +36,17 @@ internal class LazyMap<TResult>(object? originalValue, IMapper mapper) : ILazyMa
     #region Fields
 
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+    // Tracked apart from _value: a struct or a mapper-returned null cannot tell "not mapped yet" by value.
+    private bool _mapped;
     private TResult? _value;
 
     #endregion
 
     #region Properties
 
-    public TResult Value => ValueOrDefault ?? throw new InvalidOperationException(nameof(ValueOrDefault));
+    public TResult Value => originalValue is not null && GetValue() is { } value
+        ? value
+        : throw new InvalidOperationException(nameof(ValueOrDefault));
 
     public TResult ValueOrDefault => GetValue()!;
 
@@ -57,20 +61,13 @@ internal class LazyMap<TResult>(object? originalValue, IMapper mapper) : ILazyMa
             return default;
         }
 
-        if (_value is not null)
+        if (_mapped)
         {
             return _value;
         }
 
-        if (originalValue is TResult o)
-        {
-            _value = o;
-        }
-        else
-        {
-            _value = _mapper.Map<TResult>(originalValue);
-        }
-
+        _value = originalValue is TResult o ? o : _mapper.Map<TResult>(originalValue);
+        _mapped = true;
         return _value;
     }
 
