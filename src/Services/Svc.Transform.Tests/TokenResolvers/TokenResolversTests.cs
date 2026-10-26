@@ -2,6 +2,9 @@
 
 public class TokenResolversTests
 {
+    private static readonly TokenResult CompanyToken =
+        new(TransformOptions.SquareBrackets, "[Company]", "[Company]", 0);
+
     #region Methods
 
     [Fact]
@@ -77,9 +80,6 @@ public class TokenResolversTests
 
         val.ShouldBe("Duy");
     }
-
-    private static readonly TokenResult CompanyToken =
-        new(TransformOptions.SquareBrackets, "[Company]", "[Company]", 0);
 
     [Fact]
     public void Resolve_DictionaryInsideNestedList_ResolvesByKey()
@@ -180,14 +180,6 @@ public class TokenResolversTests
         val.ShouldBe("Acme");
     }
 
-    private sealed class DictionaryEnumeratingObjects : Dictionary<string, string>, IEnumerable<object?>
-    {
-        IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
-        {
-            yield return new { Company = "FromEnumeration" };
-        }
-    }
-
     [Fact]
     public void TestTokenResolverTokenNull()
     {
@@ -199,4 +191,12 @@ public class TokenResolversTests
     }
 
     #endregion
+
+    private sealed class DictionaryEnumeratingObjects : Dictionary<string, string>, IEnumerable<object?>
+    {
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+        {
+            yield return new { Company = "FromEnumeration" };
+        }
+    }
 }
