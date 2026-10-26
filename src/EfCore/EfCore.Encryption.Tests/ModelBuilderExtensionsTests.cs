@@ -133,8 +133,13 @@ internal class TestKeyProvider : IEncryptionKeyProvider
 
     #region Methods
 
-    public byte[] GetKey(Type entityType) =>
-        _typeKeys.TryGetValue(entityType, out var key) ? key : _defaultKey;
+    public List<Type> RequestedTypes { get; } = [];
+
+    public byte[] GetKey(Type entityType)
+    {
+        RequestedTypes.Add(entityType);
+        return _typeKeys.TryGetValue(entityType, out var key) ? key : _defaultKey;
+    }
 
     public void SetKeyForType(Type type, byte[] key)
     {
