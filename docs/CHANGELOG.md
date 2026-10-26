@@ -151,6 +151,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking (binary only):** `EfCoreEncryptionSetup.AddEfCoreEncryption<T>()` now takes and returns
   `IServiceCollection` instead of the concrete `ServiceCollection`, so it is callable on `builder.Services`.
   Source-compatible for existing callers; pre-compiled assemblies referencing the old signature must be recompiled.
+- **Breaking:** `DKNet.EfCore.Encryption`'s `UseColumnEncryption` now refuses every `[Encrypted]` placement it
+  cannot encrypt, at model build, instead of skipping it silently. It throws `InvalidOperationException` naming the
+  type and property when `[Encrypted]` is on a member of an EF Core complex type (table-split, nested, JSON-mapped
+  or a complex collection) or on a complex property itself, or on a mapped member that is not a `string` (for
+  example `int`, `byte[]`, an enum, or a navigation, owned ones included). Such values were previously stored in
+  plaintext. To fix the startup error, move the field to an entity or owned type as a `string` property, or remove
+  the attribute. Strings on entity and owned types are encrypted exactly as before, the primary-key/foreign-key
+  refusal is unchanged, members EF Core does not map are still ignored, and no stored data changes.
 - **Breaking:** `AddEncryptionServices()` no longer registers `IRsaEncryption` — it previously resolved to a new,
   throwaway random key pair on every DI resolution, so keys never survived across resolutions. Callers that need
   RSA must opt in explicitly with `services.AddRsaEncryption(privateKeyBase64)`, which registers `IRsaEncryption`
