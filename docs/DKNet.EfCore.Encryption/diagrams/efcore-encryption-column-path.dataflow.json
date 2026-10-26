@@ -23,7 +23,7 @@
     "output": ".task-validation/Encryption/efcore-encryption-column-path.html",
     "repository": {
       "url": "https://github.com/baoduy/DKNet.git",
-      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+      "revision": "5ff6521c0360f61670970d123e54f77340589971"
     }
   },
   "stages": [
@@ -78,15 +78,15 @@
       "id": "reject",
       "type": "security",
       "label": "Model build fails",
-      "sublabel": "the property is a key or foreign key",
+      "sublabel": "complex-type, non-string or key member",
       "stage": 0,
       "row": 2,
       "width": 152,
       "sources": [
         {
           "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
-          "line": 37,
-          "end_line": 67
+          "line": 49,
+          "end_line": 80
         }
       ]
     },

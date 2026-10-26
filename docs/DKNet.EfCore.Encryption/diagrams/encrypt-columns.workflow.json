@@ -6,7 +6,7 @@
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/baoduy/DKNet.git",
-      "revision": "cc19bb397bfbc9c73619b864152d96881ddb744f"
+      "revision": "5ff6521c0360f61670970d123e54f77340589971"
     },
     "output": ".task-validation/Encryption/encrypt-columns.html",
     "legend": {
@@ -52,14 +52,14 @@
       "lane": "main",
       "col": 0,
       "type": "external",
-      "label": "Mapped string properties",
-      "sublabel": "inspect EncryptedAttribute",
+      "label": "Mapped members",
+      "sublabel": "entity and owned types",
       "width": 220,
       "sources": [
         {
           "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
-          "line": 42,
-          "end_line": 54
+          "line": 47,
+          "end_line": 69
         }
       ]
     },
@@ -68,14 +68,14 @@
       "lane": "main",
       "col": 1,
       "type": "backend",
-      "label": "Check PK and FK",
-      "sublabel": "keys are unsupported",
+      "label": "Check the mark",
+      "sublabel": "string, not complex, not a key",
       "width": 220,
       "sources": [
         {
           "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
-          "line": 54,
-          "end_line": 60
+          "line": 49,
+          "end_line": 80
         }
       ]
     },
@@ -90,8 +90,8 @@
       "sources": [
         {
           "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
-          "line": 60,
-          "end_line": 62
+          "line": 82,
+          "end_line": 82
         }
       ]
     },
@@ -105,9 +105,9 @@
       "width": 220,
       "sources": [
         {
-          "path": "src/EfCore/DKNet.EfCore.Encryption/Converters/ColumnEncryptionConverter.cs",
-          "line": 1,
-          "end_line": 13
+          "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
+          "line": 83,
+          "end_line": 84
         }
       ]
     },
@@ -122,8 +122,8 @@
       "sources": [
         {
           "path": "src/EfCore/DKNet.EfCore.Encryption/Extensions/ModelBuilderExtensions.cs",
-          "line": 56,
-          "end_line": 58
+          "line": 91,
+          "end_line": 103
         }
       ]
     }
@@ -151,7 +151,7 @@
       "id": "alternate",
       "from": "s1",
       "to": "alternative",
-      "label": "marked PK or FK",
+      "label": "complex, non-string, PK or FK",
       "variant": "security",
       "role": "branch"
     }
@@ -161,7 +161,7 @@
       "dot": "cyan",
       "title": "Behavior boundary",
       "items": [
-        "Unmarked, non-string and shadow-only properties are skipped. Apply after model properties exist."
+        "Unmarked members and members EF Core does not map are skipped. A marked complex-type member, non-string member, primary key or foreign key throws. Apply after model properties exist."
       ]
     }
   ]

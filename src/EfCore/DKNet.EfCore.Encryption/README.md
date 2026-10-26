@@ -69,6 +69,10 @@ public sealed class Customer
 
 Run with `dotnet run`.
 
+## ⚠️ Upgrading from 13.3.0 or earlier
+
+`UseColumnEncryption` now throws `InvalidOperationException` at model build when `[Encrypted]` sits on a complex-type member, a complex property or a mapped member that is not a `string`. Earlier releases skipped those marks and stored the values as plaintext. Remove the attribute, or move the field to an entity or owned type as a `string` property and encrypt its stored values outside EF Core first: see [Gotchas & limits](https://github.com/baoduy/DKNet/blob/main/docs/DKNet.EfCore.Encryption/encrypt-columns.md#-gotchas--limits).
+
 ## Documentation
 
 | Guide | Read when |
