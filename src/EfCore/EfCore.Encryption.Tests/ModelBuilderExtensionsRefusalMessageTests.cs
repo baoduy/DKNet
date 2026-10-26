@@ -34,7 +34,7 @@ public class ModelBuilderExtensionsRefusalMessageTests
             modelBuilder.UseColumnEncryption(new TestKeyProvider()));
 
         ex.Message.ShouldBe(
-            "Property 'CardInfo.Number' is marked with [Encrypted] but belongs to a complex type, which is not supported. Move it to an entity or owned type as a string property, or remove the attribute.");
+            "Property 'CardInfo.Number' is marked with [Encrypted] but is a complex type or a member of one, which is not supported. Move it to an entity or owned type as a string property, or remove the attribute.");
     }
 
     #endregion
