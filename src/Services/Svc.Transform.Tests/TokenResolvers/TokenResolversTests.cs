@@ -170,6 +170,25 @@ public class TokenResolversTests
     }
 
     [Fact]
+    public void Resolve_DictionaryThatAlsoEnumeratesObjectsInsideList_ResolvesByKeyFirst()
+    {
+        var resolver = new TokenResolver();
+        var dict = new DictionaryEnumeratingObjects { ["Company"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict });
+
+        val.ShouldBe("Acme");
+    }
+
+    private sealed class DictionaryEnumeratingObjects : Dictionary<string, string>, IEnumerable<object?>
+    {
+        IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+        {
+            yield return new { Company = "FromEnumeration" };
+        }
+    }
+
+    [Fact]
     public void TestTokenResolverTokenNull()
     {
         var resolver = new TokenResolver();
