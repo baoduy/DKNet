@@ -5,7 +5,7 @@ Fills bracketed tokens in a template string (`[Name]` by default; `{Email}`, `<A
 ## ✨ Why use it?
 
 - Resolve every token in a template against one or more parameter sources in a single `Transform`/`TransformAsync` call — no `string.Replace` chains.
-- Use whatever data you already have: a DTO, an anonymous object, or a collection of objects. An `IDictionary<string, string>` resolves by key only when passed directly to `Transform`/`TransformAsync`.
+- Use whatever data you already have: a DTO, an anonymous object, or a collection of objects. An `IDictionary<string, string>` resolves by key, case-insensitively, whether passed directly, inside a collection or in `GlobalParameters`.
 - Render numbers, dates, and booleans through a pluggable `IValueFormatter` instead of per-call formatting code.
 
 ## 🚀 Quick Start

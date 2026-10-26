@@ -77,7 +77,7 @@ Only EF Core is referenced by this package. `AddEfCoreEncryption` registers a si
 
 ## 🔄 How it works
 
-![UseColumnEncryption selects marked string properties, rejects primary or foreign key columns, obtains entity keys and installs converters that encrypt writes and decrypt reads.](diagrams/efcore-encryption-column-path.svg)
+![UseColumnEncryption selects marked string properties, rejects marked complex-type, non-string and key members, obtains entity keys and installs converters that encrypt writes and decrypt reads.](diagrams/efcore-encryption-column-path.svg)
 
 The demo uses an ephemeral key only for its in-memory database. Persisted databases need a stable protected key across restarts. Null and empty strings pass through, while malformed or unauthenticated ciphertext throws.
 

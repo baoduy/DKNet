@@ -5,7 +5,7 @@ Fills bracketed tokens in a template string — `[Name]`, `{Email}`, `<Amount>`,
 ## ✨ Why use it?
 
 - **No `string.Replace` chains.** One `Transform(template, data)` call resolves every token in the template against the objects you pass, in order.
-- **The data source can be whatever you already have.** A DTO, an anonymous object, or a collection of objects — property lookup is case-insensitive. An `IDictionary<string, string>` is looked up by key only when passed directly to `Transform`/`TransformAsync`, not inside a collection or in `GlobalParameters`.
+- **The data source can be whatever you already have.** A DTO, an anonymous object, or a collection of objects — property lookup is case-insensitive. An `IDictionary<string, string>` is looked up by key, case-insensitively, wherever it sits: passed directly to `Transform`/`TransformAsync`, inside a collection, or in `GlobalParameters`.
 - **Values are formatted, not just stringified.** Numbers, dates, and booleans go through a pluggable `IValueFormatter`, so `true` renders as `Yes` and `1234.5` as `1,234.50` without per-call formatting code.
 - **Your template's brackets, not the library's.** Square brackets by default; curly, angled, double-curly, or a custom pair are one option away.
 
