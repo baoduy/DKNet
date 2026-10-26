@@ -243,6 +243,84 @@ public class TransformTests
     }
 
     [Fact]
+    public void Transform_DictionaryPassedDirectly_ResolvesByKey()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions()));
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        t.Transform("[Company]", dict).ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Transform_StringObjectDictionaryPassedDirectly_ThrowsArgumentException()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions()));
+        var dict = new Dictionary<string, object> { ["Company"] = "Acme" };
+
+        Should.Throw<ArgumentException>(() => t.Transform("[Company]", dict));
+    }
+
+    [Fact]
+    public void Transform_DictionaryInsideList_ResolvesByKey()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions()));
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        t.Transform("[Company]", new List<object> { dict }).ShouldBe("Acme");
+    }
+
+    [Fact]
+    public async Task Transform_DictionaryInGlobalParameters_ResolvesByKey()
+    {
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+        var t = new TransformerService(Options.Create(new TransformOptions { GlobalParameters = [dict] }));
+
+        t.Transform("[Company]").ShouldBe("Acme");
+        (await t.TransformAsync("[Company]")).ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Transform_DictionaryPropertyNameInsideList_IsUnResolved()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions()));
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        Should.Throw<UnResolvedTokenException>(() => t.Transform("[Count]", new List<object> { dict }));
+    }
+
+    [Fact]
+    public void Transform_StringObjectDictionaryInGlobalParameters_FallsThroughToNextItem()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions
+        {
+            GlobalParameters = [new Dictionary<string, object> { ["Company"] = "Acme" }, new { Company = "FromObj" }]
+        }));
+
+        t.Transform("[Company]").ShouldBe("FromObj");
+    }
+
+    [Fact]
+    public void Transform_DictionaryInAdditionalData_WinsOverGlobalParameters()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions
+        {
+            GlobalParameters = [new { Company = "Global" }]
+        }));
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        t.Transform("[Company]", dict).ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Transform_EmptyListOrListOfNull_IsUnResolved()
+    {
+        var t = new TransformerService(Options.Create(new TransformOptions()));
+
+        Should.Throw<UnResolvedTokenException>(() => t.Transform("[Company]", new List<object>()));
+        Should.Throw<UnResolvedTokenException>(() => t.Transform("[Company]", new List<object?> { null }));
+    }
+
+    [Fact]
     public async Task TransformAsyncTest()
     {
         var options = Options.Create(new TransformOptions());

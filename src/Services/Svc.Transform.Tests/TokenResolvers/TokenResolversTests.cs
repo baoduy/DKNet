@@ -78,6 +78,97 @@ public class TokenResolversTests
         val.ShouldBe("Duy");
     }
 
+    private static readonly TokenResult CompanyToken =
+        new(TransformOptions.SquareBrackets, "[Company]", "[Company]", 0);
+
+    [Fact]
+    public void Resolve_DictionaryInsideNestedList_ResolvesByKey()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { new List<object> { dict } });
+
+        val.ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Resolve_DictionaryInsideList_NeverAnswersFromItsOwnProperties()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        var val = resolver.Resolve(
+            new TokenResult(TransformOptions.SquareBrackets, "[Count]", "[Count]", 0),
+            new List<object> { dict });
+
+        val.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Resolve_OrdinalDictionaryInsideList_ResolvesKeyCaseInsensitively()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string>(StringComparer.Ordinal) { ["company"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict });
+
+        val.ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Resolve_DictionaryInsideListWithoutTheKey_FallsThroughToNextItem()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string> { ["Other"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict, new { Company = "FromObj" } });
+
+        val.ShouldBe("FromObj");
+    }
+
+    [Fact]
+    public void Resolve_DictionaryInsideListWithNullValue_FallsThroughToNextItem()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string?> { ["Company"] = null };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict, new { Company = "FromObj" } });
+
+        val.ShouldBe("FromObj");
+    }
+
+    [Fact]
+    public void Resolve_DictionaryBeforeObjectInsideList_FirstNonNullWins()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, string> { ["Company"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict, new { Company = "FromObj" } });
+
+        val.ShouldBe("Acme");
+    }
+
+    [Fact]
+    public void Resolve_StringObjectDictionaryInsideList_IsReadByPropertyWithoutThrowing()
+    {
+        var resolver = new TokenResolver();
+        var dict = new Dictionary<string, object> { ["Company"] = "Acme" };
+
+        var val = resolver.Resolve(CompanyToken, new List<object> { dict, new { Company = "FromObj" } });
+
+        val.ShouldBe("FromObj");
+    }
+
+    [Fact]
+    public void Resolve_EmptyListOrListOfNull_ReturnsNull()
+    {
+        var resolver = new TokenResolver();
+
+        resolver.Resolve(CompanyToken, new List<object>()).ShouldBeNull();
+        resolver.Resolve(CompanyToken, new List<object?> { null }).ShouldBeNull();
+    }
+
     [Fact]
     public void TestTokenResolverTokenNull()
     {
