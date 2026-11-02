@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Shouldly;
@@ -101,7 +102,7 @@ public class AnnotationFormattingTests
 
         var text = GeneratorTestHelper.GeneratedText(result);
         text.ShouldContain("'x', true");
-        text.ShouldContain("new[] { \"one\", \"two\" }");
+        text.ShouldContain("new string[] { \"one\", \"two\" }");
         // Alpha | Beta (= 3) matches no single named member, so the formatter falls back to a cast literal.
         text.ShouldContain("(global::System.ComponentModel.DataAnnotations.TagKinds)3");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
@@ -272,4 +273,137 @@ public class AnnotationFormattingTests
         text.ShouldContain("Rating(double.NaN, false)");
         output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
     }
+
+    [Fact]
+    public void Run_WithValueTypeParamsAnnotationArguments_SpreadsThemAsIndividualArguments()
+    {
+        var domain = DomainWithCreateParameter("[AllowedValues(1, 2)] int quantity");
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.AllowedValues(1, 2)]");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEnumParamsAnnotationArguments_SpreadsThemAsQualifiedMembers()
+    {
+        var domain = DomainWithCreateParameter("[AllowedValues(Status.A, Status.B)] Status status");
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain(
+            "[global::System.ComponentModel.DataAnnotations.AllowedValues(global::MyDomain.Status.A, global::MyDomain.Status.B)]");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEmptyParamsAnnotationArgument_RendersAttributeWithoutArrayLiteral()
+    {
+        var domain = DomainWithCreateParameter("[DeniedValues] string name");
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.DeniedValues]");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithEmptyNonParamsArrayAnnotationArgument_RendersTypedArrayLiteral()
+    {
+        var domain = DomainWithCreateParameter("[ProbeTags(new string[0])] string name", ProbeTagsAttribute);
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.ProbeTags(new string[] {  })]");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNullOnlyNonParamsArrayAnnotationArgument_RendersTypedArrayLiteralWithNullForgivingElement()
+    {
+        var domain = DomainWithCreateParameter("[ProbeTags(new string[] { null })] string name", ProbeTagsAttribute);
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.ProbeTags(new string[] { null! })]");
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithNullScalarAnnotationArgument_RendersNullForgivingLiteralWithoutNullableWarning()
+    {
+        var domain = DomainWithCreateParameter("[RegularExpression(null)] string name");
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.RegularExpression(null!)]");
+        GeneratedFileDiagnostics(output, result, DiagnosticSeverity.Warning).ShouldBeEmpty();
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void Run_WithExplicitNullParamsAnnotationArgument_RendersNullForgivingLiteralWithoutSpreading()
+    {
+        var domain = DomainWithCreateParameter("[AllowedValues(null)] string name");
+
+        var (output, _, result) = GeneratorTestHelper.Run(domain, ApiWithProductDto);
+
+        var text = GeneratorTestHelper.GeneratedText(result);
+        text.ShouldContain("[global::System.ComponentModel.DataAnnotations.AllowedValues(null!)]");
+        GeneratedFileDiagnostics(output, result, DiagnosticSeverity.Warning).ShouldBeEmpty();
+        output.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ShouldBeEmpty();
+    }
+
+    // A non-`params` string-array annotation, declared in the DataAnnotations namespace so the generator's
+    // namespace filter picks it up.
+    private const string ProbeTagsAttribute = """
+        public sealed class ProbeTagsAttribute : Attribute
+        {
+            public ProbeTagsAttribute(string[] tags) { }
+        }
+        """;
+
+    /// <summary>
+    /// A domain whose <c>[CrudCreate]</c> constructor takes the single annotated <paramref name="parameter"/>;
+    /// <paramref name="dataAnnotationsDeclarations"/> is placed in <c>System.ComponentModel.DataAnnotations</c>.
+    /// </summary>
+    private static string DomainWithCreateParameter(string parameter, string dataAnnotationsDeclarations = "") => $$"""
+        using System;
+        using DKNet.EfCore.Abstractions.Attributes;
+        using DKNet.EfCore.Abstractions.Entities;
+
+        namespace System.ComponentModel.DataAnnotations
+        {
+            {{dataAnnotationsDeclarations}}
+        }
+
+        namespace MyDomain
+        {
+            using System.ComponentModel.DataAnnotations;
+
+            public enum Status { A, B }
+
+            public class Product : IEntity<Guid>
+            {
+                [CrudCreate]
+                public Product({{parameter}})
+                {
+                }
+
+                public Guid Id { get; private set; }
+            }
+        }
+        """;
+
+    private static IEnumerable<Diagnostic> GeneratedFileDiagnostics(
+        Compilation output, GeneratorDriverRunResult result, DiagnosticSeverity minimumSeverity) =>
+        output.GetDiagnostics()
+            .Where(d => d.Severity >= minimumSeverity && d.Location.SourceTree is { } tree && result.GeneratedTrees.Contains(tree));
 }
