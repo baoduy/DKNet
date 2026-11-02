@@ -48,7 +48,7 @@ public class RegistrySafetyTests
             .ToArray();
     }
 
-    private static ServiceProvider BuildBusProvider(
+    internal static ServiceProvider BuildBusProvider(
         Action<IServiceCollection> configureDbContexts, bool perMessageScope = false)
     {
         var services = new ServiceCollection()

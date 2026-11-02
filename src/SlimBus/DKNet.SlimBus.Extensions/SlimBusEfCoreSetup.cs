@@ -41,20 +41,19 @@ public static class SlimBusEfCoreSetup
         ///     Adds SlimMessageBus and EF Core integration services required for auto-saving the DbContext after
         ///     request handlers run. Registers the <see cref="EfAutoSavePostInterceptor{TRequest,TResponse}" />
         ///     as an <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" /> to be executed by SlimMessageBus.
+        ///     The interceptor is registered once per service collection, however many <typeparamref name="TDbContext" />
+        ///     types are added, and regardless of any other <see cref="IRequestHandlerInterceptor{TRequest,TResponse}" />
+        ///     registrations made before or after this call.
         /// </summary>
+        /// <typeparam name="TDbContext">The <see cref="DbContext" /> type to save after each successful write request.</typeparam>
         /// <returns>The same <see cref="IServiceCollection" /> instance for chaining.</returns>
         public IServiceCollection AddSlimBusEfCoreInterceptor<TDbContext>()
             where TDbContext : DbContext
         {
             serviceCollection.TryAddEnumerable(
                 ServiceDescriptor.Singleton<IAutoSaveDbContextRegistration, AutoSaveDbContextRegistration<TDbContext>>());
-
-            if (serviceCollection.Any(serviceDescriptor =>
-                    serviceDescriptor.ServiceType == typeof(IRequestHandlerInterceptor<,>)))
-                return serviceCollection;
-
-            serviceCollection
-                .AddScoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostInterceptor<,>));
+            serviceCollection.TryAddEnumerable(
+                ServiceDescriptor.Scoped(typeof(IRequestHandlerInterceptor<,>), typeof(EfAutoSavePostInterceptor<,>)));
             return serviceCollection;
         }
     }
