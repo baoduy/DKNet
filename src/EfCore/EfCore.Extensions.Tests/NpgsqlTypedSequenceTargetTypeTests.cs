@@ -1,9 +1,9 @@
 namespace EfCore.Extensions.Tests;
 
 /// <summary>
-///     DRK-2523: the typed <c>NextSeqValue&lt;TEnum, TValue&gt;</c> converts to any integer type; a bool or
-///     floating-point <c>TValue</c> would reinterpret or round the value, so it still throws
-///     <see cref="InvalidCastException" />.
+///     DRK-2523: the typed <c>NextSeqValue&lt;TEnum, TValue&gt;</c> converts to any integer or decimal type; a
+///     bool, floating-point or enum <c>TValue</c> throws <see cref="InvalidCastException" /> before the sequence is
+///     read.
 /// </summary>
 public class NpgsqlTypedSequenceTargetTypeTests(PostgresFixture fixture) : IClassFixture<PostgresFixture>
 {
@@ -41,8 +41,28 @@ public class NpgsqlTypedSequenceTargetTypeTests(PostgresFixture fixture) : IClas
         var ex = await Should.ThrowAsync<InvalidCastException>(async () =>
             await _db.NextSeqValue<SequencesTest, bool>(SequencesTest.Payment));
 
-        ex.Message.ShouldBe(
-            "Sequence value of type System.Int64 cannot be converted to non-integer type System.Boolean.");
+        ex.Message.ShouldBe("Sequence values cannot be converted to System.Boolean; use an integer or decimal type.");
+    }
+
+    [Fact]
+    public async Task NextSeqValue_ReadAsEnum_ThrowsInvalidCastException()
+    {
+        var ex = await Should.ThrowAsync<InvalidCastException>(async () =>
+            await _db.NextSeqValue<SequencesTest, DayOfWeek>(SequencesTest.Payment));
+
+        ex.Message.ShouldBe("Sequence values cannot be converted to System.DayOfWeek; use an integer or decimal type.");
+    }
+
+    [Fact]
+    public async Task NextSeqValue_RejectedTargetType_DoesNotUseUpASequenceValue()
+    {
+        await _db.Database.ExecuteSqlRawAsync("SELECT setval('seq.\"Seq_Invoice\"', 299)");
+
+        await Should.ThrowAsync<InvalidCastException>(async () =>
+            await _db.NextSeqValue<SequencesTest, bool>(SequencesTest.Invoice));
+        var val = await _db.NextSeqValue<SequencesTest, int>(SequencesTest.Invoice);
+
+        val.ShouldBe(300);
     }
 
     [Fact]

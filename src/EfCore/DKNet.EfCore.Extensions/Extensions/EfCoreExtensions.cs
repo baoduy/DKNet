@@ -143,27 +143,33 @@ public static class EfCoreExtensions
         ///     <see cref="SqlSequenceAttribute" />.
         /// </returns>
         /// <remarks>
-        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked integer conversion,
+        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked integer or decimal
+        ///     conversion,
         ///     because its runtime type depends on the provider (SQL Server returns the sequence's declared type,
         ///     Postgres always returns <see cref="long" />).
         /// </remarks>
         /// <exception cref="OverflowException">The sequence value is outside the range of <typeparamref name="TValue" />.</exception>
-        /// <exception cref="InvalidCastException"><typeparamref name="TValue" /> is not an integer type.</exception>
+        /// <exception cref="InvalidCastException">
+        ///     <typeparamref name="TValue" /> is an enum or not an integer or <see cref="decimal" /> type. Thrown before
+        ///     the sequence is read, so no sequence value is used up.
+        /// </exception>
         public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
             where TValue : struct
         {
-            var value = await context.NextSeqValue(name, cancellationToken);
-            if (value is null) return null;
-
             // Convert.ChangeType also accepts bool, char and floating-point targets, which would silently
-            // reinterpret or round the sequence value; only integer targets get a checked conversion.
-            if (Type.GetTypeCode(typeof(TValue)) is not (TypeCode.SByte or TypeCode.Byte or TypeCode.Int16
-                or TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64))
+            // reinterpret or round the sequence value, and rejects enums; only integer and decimal targets get an
+            // exact, checked conversion. Checked before the read so a rejected TValue uses up no sequence value.
+            if (typeof(TValue).IsEnum || Type.GetTypeCode(typeof(TValue)) is not (TypeCode.SByte or TypeCode.Byte
+                    or TypeCode.Int16 or TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64
+                    or TypeCode.UInt64 or TypeCode.Decimal))
                 throw new InvalidCastException(
-                    $"Sequence value of type {value.GetType()} cannot be converted to non-integer type {typeof(TValue)}.");
+                    $"Sequence values cannot be converted to {typeof(TValue)}; use an integer or decimal type.");
 
-            return (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+            var value = await context.NextSeqValue(name, cancellationToken);
+            return value is null
+                ? null
+                : (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
         }
 
         /// <summary>
