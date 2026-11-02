@@ -294,6 +294,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   [DKNet.AspCore.Extensions](DKNet.AspCore.Extensions/index.md).
 
 ### Fixed
+- `DKNet.Svc.BlobStorage.AzureStorage` now stores the caller's `ContentType` when it saves a blob (DRK-2486). The
+  adapter used to drop it and Azure stored every blob as `application/octet-stream`, so `GetAsync` and
+  `ListItemsAsync` returned that instead of what was saved. Both `SaveAsync` overloads now send `ContentType` as the
+  blob's `Content-Type` header, the same as the S3 and Local adapters. A null, empty or whitespace `ContentType`
+  sends no header, so Azure keeps its `application/octet-stream` default. Overwrite and conflict behaviour is
+  unchanged: a save with `Overwrite = false` onto an existing blob still fails with `409 BlobAlreadyExists`.
 - `DKNet.EfCore.Extensions` no longer reuses a cached model built without a global model builder (DRK-1969).
   EF Core caches one model per internal service provider, and the builders registered with
   `AddGlobalModelBuilder<T>()` (for example `DataOwnerAuthQuery`, registered by `AddDataOwnerProvider`) were not

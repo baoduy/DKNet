@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using DKNet.Svc.BlobStorage.AzureStorage;
@@ -272,6 +273,50 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
 
         (await ReadContentTypesAsync(name)).ShouldBe(("application/json", "application/json"));
         (await _adapter.GetAsync(new BlobRequest(name) { Type = BlobTypes.File }))!.Data.ToString().ShouldBe("{}");
+    }
+
+    [Theory]
+    [InlineData("data.pdf", "application/pdf")]
+    [InlineData("data.unknownext", "application/octet-stream")]
+    public async Task SaveAsync_DefaultContentType_StoresExtensionContentType(string fileName, string expected)
+    {
+        var name = $"content-type-default-{Guid.NewGuid()}/{fileName}";
+
+        await _adapter.SaveAsync(new BlobDetails.BlobData(name, BinaryData.FromString("x")));
+
+        (await ReadContentTypesAsync(name)).ShouldBe((expected, expected));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SaveAsync_EmptyContentType_StoresAzureDefaultContentType(string? contentType)
+    {
+        // DRK-2486 R4: a null, empty or whitespace ContentType sends no header instead of an empty one.
+        var name = $"content-type-empty-{Guid.NewGuid()}/data.txt";
+
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("x")) { ContentType = contentType! });
+
+        (await ReadContentTypesAsync(name)).ShouldBe(("application/octet-stream", "application/octet-stream"));
+    }
+
+    [Fact]
+    public async Task SaveAsync_ExistingBlobWithoutOverwrite_ThrowsConflictAndKeepsFirstBlob()
+    {
+        // DRK-2486 R2: the Conditions rewrite keeps the 409 BlobAlreadyExists failure and leaves the blob untouched.
+        var name = $"content-type-conflict-{Guid.NewGuid()}/data.txt";
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("first")) { ContentType = "text/plain" });
+
+        var ex = await Should.ThrowAsync<RequestFailedException>(() => _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("{}")) { ContentType = "application/json" }));
+
+        ex.Status.ShouldBe(409);
+        ex.ErrorCode.ShouldBe("BlobAlreadyExists");
+        (await ReadContentTypesAsync(name)).ShouldBe(("text/plain", "text/plain"));
+        (await _adapter.GetAsync(new BlobRequest(name) { Type = BlobTypes.File }))!.Data.ToString().ShouldBe("first");
     }
 
     /// <summary>
