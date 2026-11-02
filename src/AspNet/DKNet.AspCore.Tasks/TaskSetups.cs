@@ -6,6 +6,7 @@
 using System.Reflection;
 using DKNet.AspCore.Tasks;
 using DKNet.AspCore.Tasks.Internals;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection;
@@ -28,9 +29,7 @@ public static class TaskSetups
         {
             services.AddHost();
 
-            if (!services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == typeof(TJob)))
-                services.AddScoped<IBackgroundTask, TJob>();
-
+            services.AddJob(typeof(TJob));
             return services;
         }
 
@@ -49,12 +48,21 @@ public static class TaskSetups
                 .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IBackgroundTask).IsAssignableFrom(t));
 
             foreach (var jobType in jobTypes)
-            {
-                if (!services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == jobType))
-                    services.AddScoped(typeof(IBackgroundTask), jobType);
-            }
+                services.AddJob(jobType);
 
             return services;
+        }
+
+        private void AddJob(Type jobType)
+        {
+            // Keyed on the registry, not on the IBackgroundTask mapping: a job a consumer already mapped by hand
+            // still gets its registry entry, and only registry entries run.
+            if (services.Any(s => s.ImplementationInstance is BackgroundJobRegistration r && r.JobType == jobType))
+                return;
+
+            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IBackgroundTask), jobType));
+            services.TryAddScoped(jobType);
+            services.AddSingleton(new BackgroundJobRegistration(jobType));
         }
 
         private IServiceCollection AddHost()
