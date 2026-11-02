@@ -2,6 +2,7 @@
 
 using DKNet.EfCore.Extensions.Extensions;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Microsoft.EntityFrameworkCore;
 
@@ -169,6 +170,10 @@ public static class EfCoreExtensions
             var sequenceName = SequenceExtensions.GetSequenceName(name);
 
             await using var command = context.Database.GetDbConnection().CreateCommand();
+
+            // SQL Server refuses a command on a connection with a pending local transaction unless the command is
+            // enlisted in it, so join EF's current transaction (null when there is none).
+            command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
             command.CommandText = context.IsSqlServer()
                 ? $"SELECT NEXT VALUE FOR {att.Schema}.{sequenceName}"
                 : context.IsNpgsql()
