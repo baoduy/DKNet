@@ -3,8 +3,8 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Text;
+using DKNet.Generators.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -1654,217 +1654,14 @@ public sealed class DtoGenerator : IIncrementalGenerator
             return null;
 
         var attributeName = attribute.AttributeClass.Name;
-        
+
         // Remove "Attribute" suffix if present
         if (attributeName.EndsWith("Attribute"))
         {
             attributeName = attributeName.Substring(0, attributeName.Length - "Attribute".Length);
         }
 
-        var builder = new StringBuilder();
-        builder.Append('[').Append(attributeName);
-
-        // A `params` constructor argument (e.g. SensitiveDataAttribute(params string[] roles)) arrives
-        // here as a single Array-kind TypedConstant. Spread its values as individual arguments — the
-        // natural attribute-usage form ("pricing", "audit") rather than an array-creation literal — and
-        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4). An
-        // explicit `null` array argument (e.g. [SensitiveData(null)]) is still Array-kind but its
-        // Values is default — spreading that throws, so route it through FormatAttributeArgument's own
-        // null handling instead (review finding, round 1). Only a genuinely `params` constructor
-        // parameter is spread — a plain (non-`params`) array parameter keeps its array-creation form,
-        // resolved positionally against the constructor actually bound (round-2 review finding).
-        var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
-        var constructorArgumentStrings = attribute.ConstructorArguments
-            .SelectMany((arg, i) => arg.Kind == TypedConstantKind.Array && !arg.IsNull &&
-                                     i < parameters.Length && parameters[i].IsParams
-                ? arg.Values.Select(FormatAttributeArgument)
-                : [FormatAttributeArgument(arg)])
-            .ToList();
-
-        bool hasArguments = constructorArgumentStrings.Count > 0 || attribute.NamedArguments.Length > 0;
-
-        if (hasArguments)
-        {
-            builder.Append('(');
-
-            // Add constructor arguments
-            for (int i = 0; i < constructorArgumentStrings.Count; i++)
-            {
-                if (i > 0)
-                    builder.Append(", ");
-
-                builder.Append(constructorArgumentStrings[i]);
-            }
-
-            // Add named arguments
-            if (attribute.NamedArguments.Length > 0)
-            {
-                if (constructorArgumentStrings.Count > 0)
-                    builder.Append(", ");
-
-                for (int i = 0; i < attribute.NamedArguments.Length; i++)
-                {
-                    if (i > 0)
-                        builder.Append(", ");
-
-                    var namedArg = attribute.NamedArguments[i];
-                    builder.Append(namedArg.Key)
-                           .Append(" = ")
-                           .Append(FormatAttributeArgument(namedArg.Value));
-                }
-            }
-            
-            builder.Append(')');
-        }
-
-        builder.Append(']');
-        return builder.ToString();
-    }
-
-    /// <summary>
-    /// Formats an attribute argument value for code generation.
-    /// </summary>
-    /// <param name="arg">The typed constant argument.</param>
-    /// <returns>The formatted argument string.</returns>
-    private static string FormatAttributeArgument(TypedConstant arg)
-    {
-        // The null-forgiving `!` keeps this a valid attribute-argument constant while suppressing every
-        // nullable warning at both the literal (CS8625) and the call site (CS8604) regardless of the
-        // target parameter's declared type — including a target `arg.Type` that is null or an error type,
-        // which a type-driven cast/`default` form could not handle uniformly (review finding, round 2).
-        if (arg.IsNull)
-            return "null!";
-
-        if (arg.Kind == TypedConstantKind.Array)
-        {
-            // An implicitly-typed `new[] { ... }` fails to compile for an empty array (CS0826: no best
-            // type found) or an array containing only a null element (CS1503 — a lone `null!` carries no
-            // inferable type) — both real shapes for a non-`params` array constructor argument (review
-            // finding, round 2). Naming the argument's own declared element type sidesteps inference
-            // entirely. The `?? null` fallback below is defensive rather than reachable: an attribute
-            // constructor whose array parameter has an unresolved element type never binds to an
-            // Array-kind TypedConstant in practice — Roslyn instead collapses the whole argument to
-            // TypedConstantKind.Error (undeclared element type), leaves AttributeConstructor/
-            // ConstructorArguments empty (missing-assembly-reference element type), or resolves cleanly
-            // with IsNull true (ambiguous overload picks the valid one) — verified empirically against
-            // five constructions (round-2 review finding, nit 1) rather than assumed.
-            // Fully qualified (not BuildCleanTypeName's simple name) because the generated file's usings
-            // are attribute-namespace-only (~1187-1191) — an element type from any other namespace would
-            // not resolve otherwise (§3 row 3). FullyQualifiedFormat sets UseSpecialTypes, so `string`
-            // still renders `string` and does not disturb the existing "new string[] {" assertions.
-            var elementTypeName = arg.Type is IArrayTypeSymbol { ElementType.TypeKind: not TypeKind.Error } arrayType
-                ? arrayType.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                : null;
-
-            var arrayBuilder = new StringBuilder();
-            if (elementTypeName is not null)
-                arrayBuilder.Append("new ").Append(elementTypeName).Append("[] { ");
-            else
-                arrayBuilder.Append("new[] { ");
-
-            for (int i = 0; i < arg.Values.Length; i++)
-            {
-                if (i > 0)
-                    arrayBuilder.Append(", ");
-                arrayBuilder.Append(FormatAttributeArgument(arg.Values[i]));
-            }
-
-            arrayBuilder.Append(" }");
-            return arrayBuilder.ToString();
-        }
-
-        // TypedConstant.Kind — not the parameter's declared SpecialType — is the only discriminator that
-        // reaches every typeof(...) shape: object-typed and array-element parameters share Kind.Type with
-        // a Type-typed parameter, but a SpecialType.System_Object guard only ever matches the object-typed
-        // case (§3 row 2, dead-code review finding). Full qualification is required because the generated
-        // file's usings are attribute-namespace-only (~1187-1191).
-        if (arg.Kind == TypedConstantKind.Type && arg.Value is ITypeSymbol typeSymbol)
-        {
-            return $"typeof({typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
-        }
-
-        if (arg.Kind == TypedConstantKind.Enum && arg.Type is not null)
-        {
-            // arg.Value is the boxed underlying integer and arg.Type.Name carries no namespace, so both
-            // resolving the actual member and qualifying the enum type are required for the emitted
-            // argument to compile outside the generated file's attribute-namespace-only usings (§3 row 1).
-            // A flags combination or an out-of-range value has no single matching field — fall back to a
-            // cast, which still compiles for any integral underlying type.
-            var qualifiedEnumType = arg.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var matchingMember = arg.Type.GetMembers()
-                .OfType<IFieldSymbol>()
-                .FirstOrDefault(f => f.HasConstantValue && Equals(f.ConstantValue, arg.Value));
-
-            return matchingMember is not null
-                ? $"{qualifiedEnumType}.{matchingMember.Name}"
-                : $"(({qualifiedEnumType}){arg.Value})";
-        }
-
-        if (arg.Value is string stringValue)
-        {
-            // SymbolDisplay.FormatPrimitive escapes '\' and control characters as well as '"' — a
-            // hand-rolled Replace("\"", "\\\"") missed both (review follow-up, DRK-1222 item 1).
-            return SymbolDisplay.FormatPrimitive(stringValue, quoteStrings: true, useHexadecimalNumbers: false);
-        }
-
-        // `System.Boolean` does not implement `IFormattable`, so this arm's position relative to the
-        // `IFormattable` arm below is immaterial — a boolean never reaches that arm either way. It exists
-        // because without it a boolean falls through to the default `arg.Value?.ToString()` and emits
-        // `True`/`False`, which do not bind to a `bool` attribute parameter. The BooleanArgument_* facts
-        // pin the emitted text and close the arm's 0-of-2 branch gap (R3 corrected; DRK-1222 item 4).
-        if (arg.Value is bool boolValue)
-        {
-            return boolValue ? "true" : "false";
-        }
-
-        if (arg.Value is char charValue)
-        {
-            // Same escaping gap as the string arm — a raw `'{c}'` breaks for `'`, `\`, and control
-            // characters (review follow-up, DRK-1222 item 1).
-            return SymbolDisplay.FormatPrimitive(charValue, quoteStrings: true, useHexadecimalNumbers: false);
-        }
-
-        // `float`/`decimal` and non-finite `float`/`double` need special handling ahead of the generic
-        // `IFormattable` arm below (both types implement it): an unsuffixed decimal-point literal binds
-        // to `double`, not `float`/`decimal` (CS0664), and `NaN`/`±Infinity` have no C# literal form at
-        // all (review follow-up, DRK-1222 items 2-3). Finite `double` is untouched — it already binds
-        // correctly unsuffixed and must keep emitting exactly that (R2).
-        if (arg.Value is float floatValue)
-        {
-            if (float.IsNaN(floatValue))
-                return "float.NaN";
-            if (float.IsPositiveInfinity(floatValue))
-                return "float.PositiveInfinity";
-            if (float.IsNegativeInfinity(floatValue))
-                return "float.NegativeInfinity";
-
-            return SymbolDisplay.FormatPrimitive(floatValue, quoteStrings: false, useHexadecimalNumbers: false) + "f";
-        }
-
-        if (arg.Value is double doubleValue)
-        {
-            if (double.IsNaN(doubleValue))
-                return "double.NaN";
-            if (double.IsPositiveInfinity(doubleValue))
-                return "double.PositiveInfinity";
-            if (double.IsNegativeInfinity(doubleValue))
-                return "double.NegativeInfinity";
-
-            // Finite: fall through to the `IFormattable` arm below, unchanged and unsuffixed (R2).
-        }
-
-        if (arg.Value is decimal decimalValue)
-        {
-            return SymbolDisplay.FormatPrimitive(decimalValue, quoteStrings: false, useHexadecimalNumbers: false) + "m";
-        }
-
-        if (arg.Value is IFormattable formattableValue)
-        {
-            return formattableValue.ToString(null, CultureInfo.InvariantCulture);
-        }
-
-        // Default: ToString
-        return arg.Value?.ToString() ?? "null";
+        return AttributeSourceFormatter.Format(attributeName, attribute);
     }
 
     /// <summary>

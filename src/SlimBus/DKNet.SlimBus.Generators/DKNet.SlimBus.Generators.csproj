@@ -19,6 +19,11 @@
         <InternalsVisibleTo Include="SlimBus.Generators.Tests"/>
     </ItemGroup>
     <ItemGroup>
+        <!-- Shared with DKNet.EfCore.DtoGenerator so both generators render attribute arguments identically.
+             A ProjectReference is not possible: analyzer projects cannot reference each other. -->
+        <Compile Include="..\..\EfCore\DKNet.EfCore.DtoGenerator\AttributeSourceFormatter.cs" Link="Shared\AttributeSourceFormatter.cs"/>
+    </ItemGroup>
+    <ItemGroup>
         <!-- Analyzers/generators must reference the LOWEST Roslyn they need to run under, not the
              newest: the running compiler must be >= the referenced version (CS9057). The IDE's csc
              (5.6) is older than the CLI SDK's, so pin down here rather than using the 5.9.0 CPM
