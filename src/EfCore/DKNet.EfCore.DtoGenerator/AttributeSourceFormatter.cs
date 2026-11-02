@@ -26,16 +26,19 @@ internal static class AttributeSourceFormatter
         // A `params` constructor argument (e.g. SensitiveDataAttribute(params string[] roles)) arrives
         // here as a single Array-kind TypedConstant. Spread its values as individual arguments — the
         // natural attribute-usage form ("pricing", "audit") rather than an array-creation literal — and
-        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }" (R4). An
+        // an empty array spreads to zero arguments instead of the uncompilable "new[] {  }". An
         // explicit `null` array argument (e.g. [SensitiveData(null)]) is still Array-kind but its
         // Values is default — spreading that throws, so route it through FormatArgument's own null
         // handling instead (review finding, round 1). Only a genuinely `params` constructor parameter
         // is spread — a plain (non-`params`) array parameter keeps its array-creation form, resolved
-        // positionally against the constructor actually bound (round-2 review finding).
+        // positionally against the constructor actually bound (round-2 review finding). A lone null
+        // element (e.g. [AllowedValues((object)null)]) keeps its array form: spread to a bare `null!` it
+        // would rebind to the whole params array being null, not to a one-element array holding null.
         var parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
         var arguments = attribute.ConstructorArguments
             .SelectMany((arg, i) => arg.Kind == TypedConstantKind.Array && !arg.IsNull &&
-                                     i < parameters.Length && parameters[i].IsParams
+                                     i < parameters.Length && parameters[i].IsParams &&
+                                     !(arg.Values.Length == 1 && arg.Values[0].IsNull)
                 ? arg.Values.Select(FormatArgument)
                 : [FormatArgument(arg)])
             .Concat(attribute.NamedArguments.Select(named => $"{named.Key} = {FormatArgument(named.Value)}"))
@@ -59,7 +62,7 @@ internal static class AttributeSourceFormatter
             // type found) or an array containing only a null element (CS1503 — a lone `null!` carries no
             // inferable type) — both real shapes for a non-`params` array constructor argument (review
             // finding, round 2). Naming the argument's own declared element type sidesteps inference
-            // entirely. The `?? null` fallback below is defensive rather than reachable: an attribute
+            // entirely. The untyped `new[] { ` fallback below is defensive rather than reachable: an attribute
             // constructor whose array parameter has an unresolved element type never binds to an
             // Array-kind TypedConstant in practice — Roslyn instead collapses the whole argument to
             // TypedConstantKind.Error (undeclared element type), leaves AttributeConstructor/
@@ -80,7 +83,7 @@ internal static class AttributeSourceFormatter
         // TypedConstant.Kind — not the parameter's declared SpecialType — is the only discriminator that
         // reaches every typeof(...) shape: object-typed and array-element parameters share Kind.Type with
         // a Type-typed parameter, but a SpecialType.System_Object guard only ever matches the object-typed
-        // case (§3 row 2, dead-code review finding). Fully qualified for the same reason as array elements.
+        // case (dead-code review finding). Fully qualified for the same reason as array elements.
         if (arg.Kind == TypedConstantKind.Type && arg.Value is ITypeSymbol typeSymbol)
         {
             return $"typeof({typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
@@ -114,7 +117,7 @@ internal static class AttributeSourceFormatter
         // `IFormattable` arm below is immaterial — a boolean never reaches that arm either way. It exists
         // because without it a boolean falls through to the default `arg.Value?.ToString()` and emits
         // `True`/`False`, which do not bind to a `bool` attribute parameter. The BooleanArgument_* facts
-        // pin the emitted text and close the arm's 0-of-2 branch gap (R3 corrected; DRK-1222 item 4).
+        // pin the emitted text and close the arm's 0-of-2 branch gap (DRK-1222 item 4).
         if (arg.Value is bool boolValue)
         {
             return boolValue ? "true" : "false";
@@ -131,7 +134,7 @@ internal static class AttributeSourceFormatter
         // `IFormattable` arm below (both types implement it): an unsuffixed decimal-point literal binds
         // to `double`, not `float`/`decimal` (CS0664), and `NaN`/`±Infinity` have no C# literal form at
         // all (review follow-up, DRK-1222 items 2-3). Finite `double` is untouched — it already binds
-        // correctly unsuffixed and must keep emitting exactly that (R2).
+        // correctly unsuffixed and must keep emitting exactly that.
         if (arg.Value is float floatValue)
         {
             if (float.IsNaN(floatValue))
@@ -153,7 +156,7 @@ internal static class AttributeSourceFormatter
             if (double.IsNegativeInfinity(doubleValue))
                 return "double.NegativeInfinity";
 
-            // Finite: fall through to the `IFormattable` arm below, unchanged and unsuffixed (R2).
+            // Finite: fall through to the `IFormattable` arm below, unchanged and unsuffixed.
         }
 
         if (arg.Value is decimal decimalValue)
