@@ -143,19 +143,27 @@ public static class EfCoreExtensions
         ///     <see cref="SqlSequenceAttribute" />.
         /// </returns>
         /// <remarks>
-        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked numeric conversion,
+        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked integer conversion,
         ///     because its runtime type depends on the provider (SQL Server returns the sequence's declared type,
         ///     Postgres always returns <see cref="long" />).
         /// </remarks>
         /// <exception cref="OverflowException">The sequence value is outside the range of <typeparamref name="TValue" />.</exception>
+        /// <exception cref="InvalidCastException"><typeparamref name="TValue" /> is not an integer type.</exception>
         public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
             where TValue : struct
         {
             var value = await context.NextSeqValue(name, cancellationToken);
-            return value is null
-                ? null
-                : (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+            if (value is null) return null;
+
+            // Convert.ChangeType also accepts bool, char and floating-point targets, which would silently
+            // reinterpret or round the sequence value; only integer targets get a checked conversion.
+            if (Type.GetTypeCode(typeof(TValue)) is not (TypeCode.SByte or TypeCode.Byte or TypeCode.Int16
+                or TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64))
+                throw new InvalidCastException(
+                    $"Sequence value of type {value.GetType()} cannot be converted to non-integer type {typeof(TValue)}.");
+
+            return (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
         }
 
         /// <summary>
