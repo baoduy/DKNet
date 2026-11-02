@@ -26,6 +26,16 @@ public class NpgsqlTypedSequenceTargetTypeTests(PostgresFixture fixture) : IClas
     }
 
     [Fact]
+    public async Task NextSeqValue_ReadAsDecimal_ReturnsValue()
+    {
+        await _db.Database.ExecuteSqlRawAsync("SELECT setval('seq.\"Seq_Payment\"', 199)");
+
+        var val = await _db.NextSeqValue<SequencesTest, decimal>(SequencesTest.Payment);
+
+        val.ShouldBe(200m);
+    }
+
+    [Fact]
     public async Task NextSeqValue_ReadAsBool_ThrowsInvalidCastException()
     {
         var ex = await Should.ThrowAsync<InvalidCastException>(async () =>
