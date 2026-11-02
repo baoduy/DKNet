@@ -74,6 +74,16 @@ public class SlimBusEventPublisherTests(Fixture fixture) : IClassFixture<Fixture
         regularEvent.Message.ShouldBe("test message");
     }
 
+    [Fact]
+    public void AddSlimBusEventPublisher_OnEmptyCollection_RegistersSlimBusEventPublisherScoped()
+    {
+        var services = new ServiceCollection().AddSlimBusEventPublisher<TestDbContext>();
+
+        var publisher = services.Single(d => d.ServiceType == typeof(IEventPublisher));
+        publisher.ImplementationType.ShouldBe(typeof(SlimBusEventPublisher));
+        publisher.Lifetime.ShouldBe(ServiceLifetime.Scoped);
+    }
+
     #endregion
 
     private record RegularEvent
