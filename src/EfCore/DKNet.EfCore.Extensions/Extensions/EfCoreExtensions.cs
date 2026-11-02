@@ -138,11 +138,25 @@ public static class EfCoreExtensions
         /// <typeparam name="TValue">The type of the value returned by the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
-        /// <returns>The next value of the sequence.</returns>
+        /// <returns>
+        ///     The next value of the sequence, or <see langword="null" /> when <typeparamref name="TEnum" /> has no
+        ///     <see cref="SqlSequenceAttribute" />.
+        /// </returns>
+        /// <remarks>
+        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked numeric conversion,
+        ///     because its runtime type depends on the provider (SQL Server returns the sequence's declared type,
+        ///     Postgres always returns <see cref="long" />).
+        /// </remarks>
+        /// <exception cref="OverflowException">The sequence value is outside the range of <typeparamref name="TValue" />.</exception>
         public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
-            where TValue : struct =>
-            (TValue?)await context.NextSeqValue(name, cancellationToken);
+            where TValue : struct
+        {
+            var value = await context.NextSeqValue(name, cancellationToken);
+            return value is null
+                ? null
+                : (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+        }
 
         /// <summary>
         ///     Gets the Next Sequence value
