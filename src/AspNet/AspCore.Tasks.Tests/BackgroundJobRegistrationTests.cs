@@ -8,19 +8,38 @@ using Shouldly;
 
 namespace AspCore.Tasks.Tests;
 
+/// <summary>
+///     A job the consumer already registered by hand still runs exactly once once it is added through
+///     <c>AddBackgroundJob</c>.
+/// </summary>
 public class BackgroundJobRegistrationTests
 {
     #region Methods
 
     [Fact]
-    public async Task AddBackgroundJob_JobAlreadyRegisteredAsItself_StillRuns()
+    public async Task AddBackgroundJob_JobAlreadyRegisteredAsItself_RunsOnce()
+    {
+        var probe = await RunHostAsync(s => s.AddScoped<SelfRegisteredTask>());
+
+        probe.OnceRuns.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task AddBackgroundJob_JobAlreadyMappedToIBackgroundTask_RunsOnce()
+    {
+        var probe = await RunHostAsync(s => s.AddScoped<IBackgroundTask, SelfRegisteredTask>());
+
+        probe.OnceRuns.ShouldBe(1);
+    }
+
+    private static async Task<BackgroundJobScopeTests.Probe> RunHostAsync(Action<IServiceCollection> registerByHand)
     {
         var probe = new BackgroundJobScopeTests.Probe();
         using var host = new HostBuilder()
             .ConfigureServices(s =>
             {
                 s.AddSingleton(probe);
-                s.AddScoped<SelfRegisteredTask>();
+                registerByHand(s);
                 s.AddBackgroundJob<SelfRegisteredTask>();
             })
             .Build();
@@ -29,8 +48,7 @@ public class BackgroundJobRegistrationTests
         await host.Services.GetServices<IHostedService>().OfType<BackgroundJobHost>().Single().ExecuteTask!
             .WaitAsync(TimeSpan.FromSeconds(5));
         await host.StopAsync();
-
-        probe.OnceRuns.ShouldBe(1);
+        return probe;
     }
 
     #endregion

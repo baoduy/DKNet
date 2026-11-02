@@ -55,10 +55,12 @@ public static class TaskSetups
 
         private void AddJob(Type jobType)
         {
-            if (services.Any(s => s.ServiceType == typeof(IBackgroundTask) && s.ImplementationType == jobType))
+            // Keyed on the registry, not on the IBackgroundTask mapping: a job a consumer already mapped by hand
+            // still gets its registry entry, and only registry entries run.
+            if (services.Any(s => s.ImplementationInstance is BackgroundJobRegistration r && r.JobType == jobType))
                 return;
 
-            services.AddScoped(typeof(IBackgroundTask), jobType);
+            services.TryAddEnumerable(ServiceDescriptor.Scoped(typeof(IBackgroundTask), jobType));
             services.TryAddScoped(jobType);
             services.AddSingleton(new BackgroundJobRegistration(jobType));
         }
