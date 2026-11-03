@@ -5,7 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace DKNet.AspCore.Tasks.Internals;
 
-internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServiceProvider provider)
+internal sealed class BackgroundJobHost(
+    ILogger<BackgroundJobHost> logger,
+    IServiceProvider provider,
+    IEnumerable<BackgroundJobRegistration> registrations)
     : BackgroundService
 {
     #region Methods
@@ -13,27 +16,24 @@ internal sealed class BackgroundJobHost(ILogger<BackgroundJobHost> logger, IServ
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Background job host started");
-        await using var scope = provider.CreateAsyncScope();
-        var jobs = scope.ServiceProvider.GetServices<IBackgroundTask>();
-        await Task.WhenAll(jobs.Select(j => ExecuteJobAsync(j, stoppingToken)));
+        await Task.WhenAll(registrations.Select(r => ExecuteJobAsync(r.JobType, stoppingToken)));
         logger.LogInformation("Background job host finished");
     }
 
+    // Each job gets its own scope. Resolution sits outside the try, so a job that cannot be constructed
+    // faults ExecuteAsync instead of being logged as a job failure.
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
-    private async Task ExecuteJobAsync(IBackgroundTask task, CancellationToken cancellationToken = default)
+    private async Task ExecuteJobAsync(Type jobType, CancellationToken cancellationToken)
     {
+        await using var scope = provider.CreateAsyncScope();
+        var task = (IBackgroundTask)scope.ServiceProvider.GetRequiredService(jobType);
         try
         {
             await task.RunAsync(cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!(ex is OperationCanceledException && cancellationToken.IsCancellationRequested))
         {
-            if (logger.IsEnabled(LogLevel.Error))
-            {
-                var jobType = task.GetType().FullName;
-                // Use the precompiled delegate to reduce allocations.
-                logger.LogError(ex, $"{jobType} job failed");
-            }
+            logger.LogError(ex, "{JobType} job failed", jobType.FullName);
         }
     }
 

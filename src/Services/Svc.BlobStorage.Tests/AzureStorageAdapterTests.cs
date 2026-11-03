@@ -1,3 +1,4 @@
+using Azure;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using DKNet.Svc.BlobStorage.AzureStorage;
@@ -230,6 +231,106 @@ public class AzureStorageBlobServiceTest(AzureStorageBlobServiceFixture fixture)
             .Select(i => service.CheckExistsAsync(new BlobRequest($"concurrent-probe-{i}-{Guid.NewGuid()}.txt"))));
 
         buildCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task SaveAsync_BlobDataWithExplicitContentType_GetAndListReturnCallerContentType()
+    {
+        // DRK-2486: the Azure adapter dropped the caller's ContentType and stored application/octet-stream.
+        var name = $"content-type-data-{Guid.NewGuid()}/data.txt";
+
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("{}")) { ContentType = "application/json" });
+
+        (await ReadContentTypesAsync(name)).ShouldBe(("application/json", "application/json"));
+    }
+
+    [Fact]
+    public async Task SaveAsync_BlobStreamDataWithExplicitContentType_GetAndListReturnCallerContentType()
+    {
+        // DRK-2486: same defect through the stream overload, which the BlobData overload delegates to.
+        var name = $"content-type-stream-{Guid.NewGuid()}/data.txt";
+
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobStreamData(name, new MemoryStream("{}"u8.ToArray()))
+                { ContentType = "application/json" });
+
+        (await ReadContentTypesAsync(name)).ShouldBe(("application/json", "application/json"));
+    }
+
+    [Fact]
+    public async Task SaveAsync_OverwriteWithDifferentContentType_ReplacesContentAndContentType()
+    {
+        // DRK-2486 R3: an overwrite replaces both the content and the stored ContentType.
+        var name = $"content-type-overwrite-{Guid.NewGuid()}/data.txt";
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("first")) { ContentType = "text/plain" });
+        (await ReadContentTypesAsync(name)).ShouldBe(("text/plain", "text/plain"));
+
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("{}"))
+                { ContentType = "application/json", Overwrite = true });
+
+        (await ReadContentTypesAsync(name)).ShouldBe(("application/json", "application/json"));
+        (await _adapter.GetAsync(new BlobRequest(name) { Type = BlobTypes.File }))!.Data.ToString().ShouldBe("{}");
+    }
+
+    [Theory]
+    [InlineData("data.pdf", "application/pdf")]
+    [InlineData("data.unknownext", "application/octet-stream")]
+    public async Task SaveAsync_DefaultContentType_StoresExtensionContentType(string fileName, string expected)
+    {
+        var name = $"content-type-default-{Guid.NewGuid()}/{fileName}";
+
+        await _adapter.SaveAsync(new BlobDetails.BlobData(name, BinaryData.FromString("x")));
+
+        (await ReadContentTypesAsync(name)).ShouldBe((expected, expected));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public async Task SaveAsync_EmptyContentType_StoresAzureDefaultContentType(string? contentType)
+    {
+        // DRK-2486 R4: a null, empty or whitespace ContentType sends no header instead of an empty one.
+        var name = $"content-type-empty-{Guid.NewGuid()}/data.txt";
+
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("x")) { ContentType = contentType! });
+
+        (await ReadContentTypesAsync(name)).ShouldBe(("application/octet-stream", "application/octet-stream"));
+    }
+
+    [Fact]
+    public async Task SaveAsync_ExistingBlobWithoutOverwrite_ThrowsConflictAndKeepsFirstBlob()
+    {
+        // DRK-2486 R2: the Conditions rewrite keeps the 409 BlobAlreadyExists failure and leaves the blob untouched.
+        var name = $"content-type-conflict-{Guid.NewGuid()}/data.txt";
+        await _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("first")) { ContentType = "text/plain" });
+
+        var ex = await Should.ThrowAsync<RequestFailedException>(() => _adapter.SaveAsync(
+            new BlobDetails.BlobData(name, BinaryData.FromString("{}")) { ContentType = "application/json" }));
+
+        ex.Status.ShouldBe(409);
+        ex.ErrorCode.ShouldBe("BlobAlreadyExists");
+        (await ReadContentTypesAsync(name)).ShouldBe(("text/plain", "text/plain"));
+        (await _adapter.GetAsync(new BlobRequest(name) { Type = BlobTypes.File }))!.Data.ToString().ShouldBe("first");
+    }
+
+    /// <summary>
+    ///     Reads a saved blob's ContentType back through both <see cref="IBlobService.GetAsync" /> and
+    ///     <see cref="IBlobService.ListItemsAsync" />; <paramref name="name" /> must be the only blob in its folder.
+    /// </summary>
+    private async Task<(string? Get, string? List)> ReadContentTypesAsync(string name)
+    {
+        var got = await _adapter.GetAsync(new BlobRequest(name) { Type = BlobTypes.File });
+        var folder = name[..name.LastIndexOf('/')];
+        var listed = await _adapter.ListItemsAsync(new BlobRequest(folder) { Type = BlobTypes.Directory })
+            .ToListAsync();
+
+        return (got!.Details!.ContentType, listed.ShouldHaveSingleItem().Details!.ContentType);
     }
 
     #endregion

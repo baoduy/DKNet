@@ -302,6 +302,10 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
     /// <param name="blob">The blob name, stream content and metadata to save.</param>
     /// <param name="cancellationToken">Cancellation token for the async operation.</param>
     /// <returns>The name/path of the stored blob.</returns>
+    /// <remarks>
+    ///     <see cref="BlobDetails.BlobStreamData.ContentType" /> is stored as the blob's <c>Content-Type</c> header;
+    ///     a null or whitespace value sends none, so Azure stores <c>application/octet-stream</c>.
+    /// </remarks>
     public override async Task<string> SaveAsync(BlobDetails.BlobStreamData blob,
         CancellationToken cancellationToken = default)
     {
@@ -309,7 +313,16 @@ public sealed class AzureStorageBlobService(IOptions<AzureStorageOptions> option
 
         var client = await GetClient();
         var location = GetBlobLocation(blob);
-        await client.GetBlobClient(location).UploadAsync(content, blob.Overwrite, cancellationToken);
+        var options = new BlobUploadOptions
+        {
+            HttpHeaders = string.IsNullOrWhiteSpace(blob.ContentType)
+                ? null
+                : new BlobHttpHeaders { ContentType = blob.ContentType },
+
+            // Same conflict check UploadAsync(stream, overwrite: false) applies: fail if the blob already exists.
+            Conditions = blob.Overwrite ? null : new BlobRequestConditions { IfNoneMatch = ETag.All }
+        };
+        await client.GetBlobClient(location).UploadAsync(content, options, cancellationToken);
         return blob.Name;
     }
 

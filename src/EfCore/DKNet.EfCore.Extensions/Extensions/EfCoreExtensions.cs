@@ -2,6 +2,7 @@
 
 using DKNet.EfCore.Extensions.Extensions;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Microsoft.EntityFrameworkCore;
 
@@ -137,11 +138,39 @@ public static class EfCoreExtensions
         /// <typeparam name="TValue">The type of the value returned by the sequence.</typeparam>
         /// <param name="name">The name of the sequence.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
-        /// <returns>The next value of the sequence.</returns>
+        /// <returns>
+        ///     The next value of the sequence, or <see langword="null" /> when <typeparamref name="TEnum" /> has no
+        ///     <see cref="SqlSequenceAttribute" />.
+        /// </returns>
+        /// <remarks>
+        ///     The provider's value is converted to <typeparamref name="TValue" /> with a checked integer or decimal
+        ///     conversion,
+        ///     because its runtime type depends on the provider (SQL Server returns the sequence's declared type,
+        ///     Postgres always returns <see cref="long" />).
+        /// </remarks>
+        /// <exception cref="OverflowException">The sequence value is outside the range of <typeparamref name="TValue" />.</exception>
+        /// <exception cref="InvalidCastException">
+        ///     <typeparamref name="TValue" /> is an enum or not an integer or <see cref="decimal" /> type. Thrown before
+        ///     the sequence is read, so no sequence value is used up.
+        /// </exception>
         public async ValueTask<TValue?> NextSeqValue<TEnum, TValue>(TEnum name, CancellationToken cancellationToken = default)
             where TEnum : struct
-            where TValue : struct =>
-            (TValue?)await context.NextSeqValue(name, cancellationToken);
+            where TValue : struct
+        {
+            // Convert.ChangeType also accepts bool, char and floating-point targets, which would silently
+            // reinterpret or round the sequence value, and rejects enums; only integer and decimal targets get an
+            // exact, checked conversion. Checked before the read so a rejected TValue uses up no sequence value.
+            if (typeof(TValue).IsEnum || Type.GetTypeCode(typeof(TValue)) is not (TypeCode.SByte or TypeCode.Byte
+                    or TypeCode.Int16 or TypeCode.UInt16 or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64
+                    or TypeCode.UInt64 or TypeCode.Decimal))
+                throw new InvalidCastException(
+                    $"Sequence values cannot be converted to {typeof(TValue)}; use an integer or decimal type.");
+
+            var value = await context.NextSeqValue(name, cancellationToken);
+            return value is null
+                ? null
+                : (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
+        }
 
         /// <summary>
         ///     Gets the Next Sequence value
@@ -169,6 +198,10 @@ public static class EfCoreExtensions
             var sequenceName = SequenceExtensions.GetSequenceName(name);
 
             await using var command = context.Database.GetDbConnection().CreateCommand();
+
+            // SQL Server refuses a command on a connection with a pending local transaction unless the command is
+            // enlisted in it, so join EF's current transaction (null when there is none).
+            command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
             command.CommandText = context.IsSqlServer()
                 ? $"SELECT NEXT VALUE FOR {att.Schema}.{sequenceName}"
                 : context.IsNpgsql()

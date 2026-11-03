@@ -3,10 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using DKNet.Generators.Shared;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -537,7 +537,11 @@ internal static class CrudModelBuilder
         {
             var ns = attribute.AttributeClass?.ContainingNamespace?.ToDisplayString();
             if (ns is null || !ns.StartsWith(DataAnnotationsNamespace, StringComparison.Ordinal)) continue;
-            annotations.Add(BuildAttributeSource(attribute));
+            var name = attribute.AttributeClass!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            // Conventional C# attribute usage drops the "Attribute" suffix (e.g. [Required], not [RequiredAttribute]).
+            if (name.EndsWith("Attribute", StringComparison.Ordinal))
+                name = name.Substring(0, name.Length - "Attribute".Length);
+            annotations.Add(AttributeSourceFormatter.Format(name, attribute));
         }
 
         // Nullable reference type (NullableAnnotation.Annotated) or nullable value type (Nullable<T>) is
@@ -550,76 +554,6 @@ internal static class CrudModelBuilder
 
     private static string ToPascalCase(string name) =>
         string.IsNullOrEmpty(name) ? name : char.ToUpperInvariant(name[0]) + name.Substring(1);
-
-    private static string BuildAttributeSource(AttributeData attribute)
-    {
-        var name = attribute.AttributeClass!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        // Conventional C# attribute usage drops the "Attribute" suffix (e.g. [Required], not [RequiredAttribute]).
-        if (name.EndsWith("Attribute", StringComparison.Ordinal))
-            name = name.Substring(0, name.Length - "Attribute".Length);
-        var args = new List<string>();
-        foreach (var arg in attribute.ConstructorArguments)
-            args.Add(FormatTypedConstant(arg));
-        foreach (var arg in attribute.NamedArguments)
-            args.Add($"{arg.Key} = {FormatTypedConstant(arg.Value)}");
-
-        return args.Count == 0 ? $"[{name}]" : $"[{name}({string.Join(", ", args)})]";
-    }
-
-    private static string FormatTypedConstant(TypedConstant constant)
-    {
-        if (constant.IsNull) return "null";
-        switch (constant.Kind)
-        {
-            case TypedConstantKind.Type:
-                var typeArg = (ITypeSymbol)constant.Value!;
-                return $"typeof({typeArg.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
-            case TypedConstantKind.Enum:
-                return FormatEnumConstant(constant);
-            case TypedConstantKind.Array:
-                return "new[] { " + string.Join(", ", constant.Values.Select(FormatTypedConstant)) + " }";
-            default:
-                // Mirrors DtoGenerator.FormatAttributeArgument (DRK-1222 items 1-3): `string`/`char` route
-                // through SymbolDisplay.FormatPrimitive for control-character coverage. `bool` does not
-                // implement `IFormattable`, so its position here is immaterial — it exists only because
-                // without it a boolean falls through to `ToString()` and emits `True`/`False`, which does
-                // not compile (R3 corrected). `float`/`decimal` get their required literal suffix and
-                // non-finite `float`/`double` become constant references — finite `double` is untouched
-                // and keeps falling through to the `IFormattable` arm, unsuffixed (R2).
-                return constant.Value switch
-                {
-                    string s => SymbolDisplay.FormatPrimitive(s, quoteStrings: true, useHexadecimalNumbers: false),
-                    bool b => b ? "true" : "false",
-                    char c => SymbolDisplay.FormatPrimitive(c, quoteStrings: true, useHexadecimalNumbers: false),
-                    float.NaN => "float.NaN",
-                    float f when float.IsPositiveInfinity(f) => "float.PositiveInfinity",
-                    float f when float.IsNegativeInfinity(f) => "float.NegativeInfinity",
-                    float f => SymbolDisplay.FormatPrimitive(f, quoteStrings: false, useHexadecimalNumbers: false) + "f",
-                    double.NaN => "double.NaN",
-                    double d when double.IsPositiveInfinity(d) => "double.PositiveInfinity",
-                    double d when double.IsNegativeInfinity(d) => "double.NegativeInfinity",
-                    decimal m => SymbolDisplay.FormatPrimitive(m, quoteStrings: false, useHexadecimalNumbers: false) + "m",
-                    IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
-                    _ => constant.Value?.ToString() ?? "null"
-                };
-        }
-    }
-
-    private static string FormatEnumConstant(TypedConstant constant)
-    {
-        var enumTypeName = constant.Type?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "int";
-        if (constant.Type is INamedTypeSymbol enumType && constant.Value is not null)
-        {
-            foreach (var member in enumType.GetMembers().OfType<IFieldSymbol>())
-            {
-                if (member.HasConstantValue && Equals(member.ConstantValue, constant.Value))
-                    return $"{enumTypeName}.{member.Name}";
-            }
-        }
-
-        // Combined flags or an unmatched value: cast the underlying literal.
-        return $"({enumTypeName}){constant.Value}";
-    }
 
     private static string? ResolveKeyFullName(INamedTypeSymbol type)
     {

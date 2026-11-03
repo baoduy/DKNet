@@ -22,6 +22,9 @@ public class BackgroundJobTests
         var services = new ServiceCollection();
         services.AddSingleton(new Counter());
         services.AddSingleton(new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously));
+        services.AddSingleton(new BackgroundJobScopeTests.Probe());
+        services.AddScoped<BackgroundJobScopeTests.ScopedMarker>();
+        services.AddSingleton(new BackgroundJobScopeTests.UnregisteredDependency());
         services.AddBackgroundJobFrom([typeof(BackgroundJobTests).Assembly]);
 
         var provider = services.BuildServiceProvider();
