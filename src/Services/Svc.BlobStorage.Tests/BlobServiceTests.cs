@@ -131,6 +131,19 @@ public class BlobServiceTests
     }
 
     [Fact]
+    public void ValidateFile_WithEmptyIncludedExtensionsAndNoExtension_ShouldNotThrow()
+    {
+        // Arrange — an empty allow-list disables the extension check, so a name without an extension is accepted.
+        var options = new BlobServiceOptions();
+        var service = new TestBlobService(options);
+        var data = BinaryData.FromString("test content");
+        var blobData = new BlobDetails.BlobData("testfile", data);
+
+        // Act & Assert
+        Should.NotThrow(() => service.TestValidateFile(blobData));
+    }
+
+    [Fact]
     public void ValidateFile_WithNoMaximumLimits_ShouldOnlyCheckExtension()
     {
         // Arrange

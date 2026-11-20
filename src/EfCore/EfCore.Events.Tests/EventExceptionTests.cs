@@ -29,6 +29,14 @@ public class EventExceptionTests
     }
 
     [Fact]
+    public void MessageFallsBackToDefaultWhenStatusHasNoErrors()
+    {
+        var exception = new EventException(Result.Ok());
+
+        Assert.Equal("An error occurred during event processing.", exception.Message);
+    }
+
+    [Fact]
     public void MessageMatchesStatusToString()
     {
         var status = Result.Fail("Validation error")
