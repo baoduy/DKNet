@@ -16,6 +16,8 @@ public sealed class MinimumPrice : Specification<Product>
 }
 ```
 
+None — a specification needs no DI registration; it is a plain class you construct and pass to the repository that `AddSpecRepo<TDbContext>()` registers.
+
 ![A Specification stores its filter, includes and ordered clauses, and ApplySpecs folds them into an IQueryable before applying tracking and offset-window flags.](diagrams/compose-specifications.svg)
 
 Derive from `Specification<TEntity>` and use the protected builders in your constructor. `WithFilter` replaces the previous `FilterQuery`; combine predicates yourself when several conditions belong together. `CreatePredicate` returns a LinqKit starter, optionally initialized with an expression.

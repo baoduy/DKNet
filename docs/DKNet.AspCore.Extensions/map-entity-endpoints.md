@@ -16,6 +16,8 @@ public sealed class Item : IEntity<int> { public int Id { get; set; } }
 public sealed class ItemModel { public int Id { get; set; } }
 ```
 
+Registration: `services.AddSpecRepo<TDbContext>()` from DKNet.EfCore.Specifications registers the `IRepositorySpec` these mappers resolve, plus your own `DbContext` registration. See [Query and save through a repository](../DKNet.EfCore.Specifications/query-and-save.md).
+
 ![The delete mapper looks up an entity, returns 404 when absent, or deletes and saves through the repository with a 409 save-failure branch.](diagrams/entity-delete.svg)
 
 `MapGetById<TEntity,TKey,TModel>` defaults to `{id}` and returns a projected model (200) or 404. `MapGetList<TEntity,TKey,TModel>` defaults to `/` and returns a paged projection or 400 for an unusable list query. `MapDeleteById<TEntity,TKey>` defaults to `{id}`, loads the entity, deletes through the repository and calls `SaveChangesAsync`; it returns 204, 404 for no match, or 409 on `DbUpdateException` from saving.

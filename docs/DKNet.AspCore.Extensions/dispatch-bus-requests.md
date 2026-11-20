@@ -14,6 +14,8 @@ public sealed record CreateOrder : Fluents.Requests.IWitResponse<OrderModel>;
 public sealed record OrderModel(Guid Id);
 ```
 
+Registration: these mappers need an `IMessageBus` in DI. Register it with SlimMessageBus `services.AddSlimMessageBus(...)`, as the [DKNet.SlimBus.Extensions Quick Start](../DKNet.SlimBus.Extensions/index.md#-quick-start) shows, together with the handlers for your requests.
+
 ![The fluent mapper binds a command, assigns any route key, sends it through IMessageBus and converts the returned result.](diagrams/bus-dispatch.svg)
 
 | Mapper | Contract and binding | Success |

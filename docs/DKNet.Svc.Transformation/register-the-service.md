@@ -29,6 +29,10 @@ There is no `IConfiguration`/`appsettings.json` binding path for `TransformOptio
 
 `AddTransformerService` is the host's one entry point into the package: it owns both the `TransformOptions` the other features read ([token syntax](choose-token-syntax.md), [value formatting](format-resolved-values.md)) and the `ITransformerService` registration the host calls into. See the package [🏗️ Architecture](index.md#-architecture) diagram for how the registered service relates to the host application.
 
+None — no other DKNet package calls `ITransformerService`; you call it from your own code.
+
+**Entry point in your app:** `services.AddTransformerService(...)` in `Program.cs` registers `ITransformerService` as transient; inject it where you fill a template.
+
 ## ⚠️ Gotchas & limits
 
 - **Only the first `AddTransformerService` call configures the service.** Calling it twice from different startup extensions (e.g. a shared library and the app itself) silently drops the second call's options — there is no error or warning.

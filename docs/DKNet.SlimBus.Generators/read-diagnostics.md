@@ -4,6 +4,31 @@ Part of [DKNet.SlimBus.Generators](index.md). Every diagnostic shares the `DKNet
 
 None — no DI registration needed; diagnostics are compile-time build output, not something you call or register.
 
+With the packages from the [Quick Start](index.md#-quick-start), this entity marks two constructors `[CrudCreate]`, so `dotnet build` stops with `error DKCRUDGEN003: Entity 'Product' has more than one member marked [CrudCreate]; only one is allowed`. Remove one `[CrudCreate]` to fix it.
+
+```csharp
+using DKNet.EfCore.Abstractions.Attributes;
+using DKNet.EfCore.Abstractions.Entities;
+using DKNet.EfCore.DtoGenerator;
+
+public class Product : Entity
+{
+    private Product() { }
+
+    [CrudCreate]
+    public Product(string name) => Name = name;
+
+    [CrudCreate] // error DKCRUDGEN003: only one [CrudCreate] member is allowed
+    public Product(string name, decimal price) : this(name) => Price = price;
+
+    public string Name { get; private set; } = null!;
+    public decimal Price { get; private set; }
+}
+
+[GenerateDto(typeof(Product))]
+public partial record ProductDto;
+```
+
 | Id | Severity | Message | Effect |
 |---|---|---|---|
 | `DKCRUDGEN001` | Error | `Entity '{0}' has [CrudCreate]/[CrudUpdate] members but no [GenerateDto(typeof({0}))] DTO was found in the compiling project` | Entity is skipped. |

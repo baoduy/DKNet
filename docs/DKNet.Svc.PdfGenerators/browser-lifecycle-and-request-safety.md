@@ -57,6 +57,10 @@ Both [Convert Markdown to a PDF](convert-markdown-to-pdf.md) and [Convert HTML t
 go through this same browser and guard on every call. Generating a PDF is slow and CPU-bound — reach for
 `DKNet.AspCore.Tasks` to run it as a background job rather than inside a request when the document is large.
 
+None — no other DKNet package calls `IPdfGenerator`; you call it from your own code.
+
+**Entry point in your app:** `services.AddPdfGenerator(...)` in `Program.cs` registers `IPdfGenerator` as a singleton; inject it where you build the document.
+
 ## ⚠️ Gotchas & limits
 
 - **DNS-rebinding is not closed.** The address `RequestGuard` resolves is checked separately from the one Chromium actually connects to, so a host that answers a public address to the guard and a private one to the browser slips through. Closing that window needs routing the browser through a proxy that pins the resolved address.

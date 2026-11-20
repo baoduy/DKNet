@@ -70,7 +70,7 @@ public sealed class IgnoreConflictsHandler : IEfCoreExceptionHandler
 
 | `EfConcurrencyResolution` member | Effect on the retry loop |
 |---|---|
-| `RetrySaveChanges` | Calls `SaveChangesAsync` again, up to `MaxRetryCount` attempts after the first. |
+| `RetrySaveChanges` | Calls `SaveChangesAsync` again, up to `MaxRetryCount` attempts after the first. When the budget is spent, the loop returns `0` instead of throwing. |
 | `IgnoreChanges` | Stops the loop and returns `0`. Your handler owns detaching or adjusting any entries; the loop does not do this for you. |
 | `RethrowException` | Stops the loop and rethrows the original `DbUpdateConcurrencyException`. |
 
@@ -93,5 +93,5 @@ The shipped default, `EfCoreExceptionHandler`, rethrows when `exception.Entries`
 - **A second `AddEfCoreExceptionHandler<TDbContext, _>()` call for the same `TDbContext` is silently ignored.** The first registration wins; a later call with a different `TExceptionHandler` for the same context type does not replace it.
 - **`MaxRetryCount` is read from the handler instance, not from configuration.** There is no options object; override the property on your implementation.
 - **The key is the runtime type, not the type you registered against.** Both consumers key their keyed lookup off `db.GetType().FullName` — the concrete `DbContext` instance DI resolved — while `AddEfCoreExceptionHandler<TDbContext, _>()` keys off the `TDbContext` you passed at compile time. Register against a base `DbContext` type while a derived type is what gets resolved, and the keys will not match.
-- **An out-of-range `EfConcurrencyResolution` loops forever.** The retry loop's `switch` has no `default` case; a handler that returns a value outside the three declared members (only reachable through an invalid cast) falls through doing nothing — the retry counter never advances and the loop retries the same save indefinitely.
+- **An out-of-range `EfConcurrencyResolution` can retry without limit.** The retry loop's `switch` has no `default` case; a handler that returns a value outside the three declared members (only reachable through an invalid cast) falls through doing nothing — the retry counter never advances and the loop keeps retrying the save for as long as it conflicts.
 - **Calling `SaveChangesWithConcurrencyHandlingAsync` directly bypasses both registrations.** Pass your handler explicitly, or resolve it yourself from a keyed/unkeyed service, when not going through `EfAutoSavePostInterceptor` or `RepositorySpec`.

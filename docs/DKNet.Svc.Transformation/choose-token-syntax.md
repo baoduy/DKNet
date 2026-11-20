@@ -33,6 +33,10 @@ This does not show what happens once a token is matched — see [fill a template
 
 Token syntax is purely an extraction-time concern: [`TransformerService`](register-the-service.md) builds one internal `TokenExtractor` per entry in `DefaultDefinitions` when it is constructed, and every active definition is tried against the full template on every call. See the package [🏗️ Architecture](index.md#-architecture) for where extraction sits between the host call and resolution.
 
+None — no other DKNet package calls `ITransformerService`; you call it from your own code.
+
+**Entry point in your app:** `services.AddTransformerService(...)` in `Program.cs` registers `ITransformerService` as transient; inject it where you fill a template.
+
 ## ⚠️ Gotchas & limits
 
 - **A candidate only counts as a token when its inner text is non-empty and contains no character from either tag.** `[Total (USD)]` resolves but `[a[b]` does not.
