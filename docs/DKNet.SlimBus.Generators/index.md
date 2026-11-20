@@ -2,6 +2,8 @@
 
 Roslyn incremental source generator that turns `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`-attributed entity members into a full CRUD vertical slice — request records, SlimBus handlers, and minimal-API endpoint registration — for .NET developers building SlimBus-based services.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - **The entity method is the only feature code you write.** Mark a constructor or method, and the request record, the handler, and the route appear at compile time.

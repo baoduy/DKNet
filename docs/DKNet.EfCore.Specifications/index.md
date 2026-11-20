@@ -2,6 +2,8 @@
 
 Compose reusable EF Core queries, runtime predicates and paging through one repository for .NET developers.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Name reusable filter, include and ordering logic in a specification.

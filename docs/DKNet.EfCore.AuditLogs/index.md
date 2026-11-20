@@ -2,6 +2,8 @@
 
 Capture entity changes and audit identity for .NET developers who supply their own audit-log publisher.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Record create, update and delete operations without repeating a ChangeTracker walk.

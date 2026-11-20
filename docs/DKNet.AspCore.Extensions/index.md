@@ -2,6 +2,8 @@
 
 Endpoint discovery, request binding and HTTP helpers for .NET developers building DKNet minimal APIs.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Map feature-owned route groups with consistent version and policy metadata.

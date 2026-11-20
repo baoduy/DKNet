@@ -81,7 +81,7 @@ public sealed class MinimumPrice : Specification<Product>
 Run with `dotnet run`. Prints `Coffee`.
 
 Not sure which packages you need? The
-[**Which package do I need?**](docs/README.md#which-package-do-i-need) table maps problems to packages. For a complete
+[**Which package do I need?**](https://baoduy.github.io/DKNet/#which-package-do-i-need) table maps problems to packages. For a complete
 reference application, see the [SlimBus.ApiEndpoints template](https://github.com/baoduy/DKNet.Templates).
 
 ## Documentation
@@ -90,7 +90,7 @@ reference application, see the [SlimBus.ApiEndpoints template](https://github.co
 
 | Guide | Read when |
 |---|---|
-| [Package index](docs/README.md) | Find a package by area or by problem: all 28 published packages plus the source-only `Aspire.Hosting.ServiceBus`, each linking its own docs folder. |
+| [Package index](https://baoduy.github.io/DKNet/#package-index) | Find a package by area or by problem: all 28 published packages plus the source-only `Aspire.Hosting.ServiceBus`, each linking its own docs folder. |
 | [Getting Started](docs/Getting-Started.md) | Install the first packages and wire up a first working setup. |
 | [Architecture Guide](docs/Architecture.md) | See the onion rings, the package dependency graph, and a request and a domain event traced end to end. |
 | [Configuration](docs/Configuration.md) | Learn the registration conventions the packages share and read a worked `Program.cs`. |

@@ -2,6 +2,8 @@
 
 Domain-event collection and publishing during successful async saves for .NET developers using entity event queues or RaisesEvent declarations.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Keep transport calls out of domain methods by collecting queued event objects on save.

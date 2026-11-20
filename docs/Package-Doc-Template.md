@@ -20,7 +20,7 @@ src/<Area>/<Package>/README.md   the package README, packed into the NuGet packa
 
 - One capability per feature page. A package with a single capability still gets `index.md`
   plus one feature page.
-- Every `docs/<Package>/index.md` is listed in the package index, [`docs/README.md`](README.md).
+- Every `docs/<Package>/index.md` is listed in the package index, [`docs/index.md`](index.md#package-index).
 - `docs/diagrams/` holds only the four diagrams shared by the cross-cutting guides; a package's
   own diagrams live in `docs/<Package>/diagrams/`.
 
@@ -53,6 +53,8 @@ src/<Area>/<Package>/README.md   the package README, packed into the NuGet packa
 # DKNet.<Area>.<PackageName>
 
 One sentence: what the package does and for whom — concrete, not marketing.
+
+[← All packages](../index.md#package-index)
 
 ## ✨ Why use it?
 
@@ -214,6 +216,6 @@ Rules:
       `archify validate` passes at `showcase`; alt text narrates the diagram; no mermaid fences;
       no hand-edited SVGs.
 - [ ] Every feature page is listed in `index.md` 🧩 Features and links back to it.
-- [ ] `docs/<Package>/index.md` is linked from the package index, [`docs/README.md`](README.md).
+- [ ] `docs/<Package>/index.md` is linked from the package index, [`docs/index.md`](index.md#package-index).
 - [ ] The package `README.md` Documentation table links every page in the folder.
 - [ ] Related-packages links resolve and carry a routing rule each.

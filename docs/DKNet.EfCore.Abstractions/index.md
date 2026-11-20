@@ -2,6 +2,8 @@
 
 Entity identities, event contracts and policy attributes for .NET developers modelling a domain without the EF Core runtime.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Give domain entities a consistent identity and event queue without depending on a transport.

@@ -2,6 +2,8 @@
 
 A hosted startup batch for .NET developers who implement once-per-start background work.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Run small startup jobs without a hosted service for every job.

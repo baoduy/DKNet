@@ -2,6 +2,8 @@
 
 Filter owned rows and stamp ownership for .NET developers building tenant-aware EF Core applications.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Apply ownership checks to queries without repeating a Where clause.

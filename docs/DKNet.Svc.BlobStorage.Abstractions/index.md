@@ -3,6 +3,8 @@
 Provider-agnostic blob storage contract for .NET developers — application code depends on `IBlobService` and the
 shared models, and a provider package (AWS S3, Azure Storage, or the local filesystem) supplies the implementation.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Swap storage backends with a single DI registration change — business logic only ever sees `IBlobService`.

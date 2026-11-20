@@ -5,7 +5,7 @@ Index into the per-package API documentation. Each package below has its own can
 it points to them, sorted by area, and lists all 28 published packages plus the one source-only one.
 
 Looking for a package by the problem you have rather than by name? Use the
-[**Which package do I need?**](README.md#which-package-do-i-need) table on the documentation hub.
+[**Which package do I need?**](index.md#which-package-do-i-need) table on the documentation hub.
 
 ## 🔧 Core Framework
 

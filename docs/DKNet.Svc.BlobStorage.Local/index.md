@@ -3,6 +3,8 @@
 Local-filesystem implementation of `IBlobService` for .NET developers, storing blobs under a configured root folder
 with path-traversal protection.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Run a real `IBlobService` in local development, unit tests, and CI with nothing to provision and nothing to clean

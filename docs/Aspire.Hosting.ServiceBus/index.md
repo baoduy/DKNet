@@ -2,6 +2,8 @@
 
 Hosting integration that adds the Azure Service Bus **emulator** as a resource inside a .NET Aspire AppHost, for developers wiring a message-driven workflow into local orchestration.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - **No shared cloud namespace for local work.** Every developer's AppHost spins up its own emulator instead of pointing at a real Azure Service Bus namespace.

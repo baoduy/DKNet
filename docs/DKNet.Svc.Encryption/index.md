@@ -9,6 +9,8 @@ Explicitly-invoked cryptography toolkit for .NET developers — AES-GCM and RSA 
 > `DKNet.EfCore.Encryption` when you want a column encrypted transparently, without the code that reads and writes
 > the entity knowing. The two packages don't share implementation.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - **Authenticated encryption without the ceremony.** `IAesGcmEncryption` handles nonce generation, tag handling, and
