@@ -311,6 +311,13 @@ For critical bugs requiring immediate release:
 
 ## Documentation Guidelines
 
+### Package docs under `docs/`
+
+Every package has one folder, `docs/<Package>/`, with an `index.md` and one page per feature.
+Write and update those pages with the [Package Documentation Template](Package-Doc-Template.md):
+it fixes the folder layout, the section headers, the diagram rules and the three mandatory parts of
+every feature page (how to use it, how to customise it, where DKNet uses it).
+
 ### README Structure
 
 Each package should have a README.md with:

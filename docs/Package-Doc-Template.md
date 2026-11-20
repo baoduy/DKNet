@@ -100,9 +100,10 @@ ordering and timing the diagram cannot show.
 ```markdown
 # Capability, phrased as what it does
 
-Part of [DKNet.<Area>.<PackageName>](index.md). What it is, the smallest code showing it, then the
-behaviour worth knowing (defaults, order, what happens on the unhappy path). Then this
-capability's diagram, right after its example, with 1–2 sentences on what it cannot show.
+Part of [DKNet.<Area>.<PackageName>](index.md). What it is, then the runnable example: the DI
+registration the feature needs and one real use. Then the behaviour worth knowing (defaults,
+order, what happens on the unhappy path). Then this capability's diagram, right after its
+example, with 1–2 sentences on what it cannot show.
 
 ## ⚙️ Configuration reference
 
@@ -110,10 +111,18 @@ capability's diagram, right after its example, with 1–2 sentences on what it c
 |---|---|---|---|
 | ... | ... | ... | ... |
 
+| Override point | How you customise it |
+|---|---|
+| `IMyExtension` | Implement it and register with `services.AddX<TYourImpl>()`. |
+
 ## 🧱 Where it fits
 
-How this capability sits against the other packages and the runtime around it — with an
-architecture diagram when it spans more than one.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `ConsumerType` | [DKNet.<Sibling>](../DKNet.<Sibling>/<page>.md) | Resolves / calls / wraps it to ... |
+
+**Entry point in your app:** where the reader meets it (`Program.cs` registration, a
+`DbContext` option, an endpoint call).
 
 ## ⚠️ Gotchas & limits
 
@@ -121,6 +130,34 @@ architecture diagram when it spans more than one.
   the source and the test suite — real footguns (thread-safety scope, silent no-ops, ordering
   requirements, things that throw), never restatements of the happy path.
 ```
+
+### The three mandatory parts of every feature page
+
+Every feature page answers three questions for a .NET developer who consumes the package from
+NuGet. All three parts are **mandatory**. When a part has nothing to say, write one line that
+starts with `None —` and says why (for example, `None — this helper reads no options and has no
+override point.`). Never leave a part out.
+
+| Reader's question | Where it lives on the page | Must contain |
+|---|---|---|
+| **How do I use it?** | The page body, before the first `##` | A runnable example and the DI registration the feature needs. When the feature needs no registration (a static or extension method), say so in one `None —` line. |
+| **How do I customise it?** | `## ⚙️ Configuration reference` | Every option with its default. Every override point: an interface you implement, a virtual or default member (such as a retry count), and enum values that change behaviour. How to register your own implementation. |
+| **Where does DKNet use it?** | `## 🧱 Where it fits` | Every DKNet package and component that calls or resolves the feature, named by type, each with a relative link to the page that documents it, and what each one does with it. Then the app-level entry point where the reader meets the feature. |
+
+Navigation rules, because the GitHub Pages theme has no sidebar and readers move only by links:
+
+- Every feature page links back to its package `index.md` in its first line (`Part of [DKNet.…](index.md)`).
+- Every type named under 🧱 Where it fits links to the page that documents it.
+- Related feature pages link to each other where one refers to the other.
+- Links are relative `.md` links (GitHub Pages rewrites them). No absolute site URLs between pages.
+
+### Extension-point pages
+
+A public extension point that a consumer implements, registers or configures gets its **own
+feature page** when no existing page has it as its subject. Plain marker interfaces (such as
+`IEntity`) stay on the page that uses them. An extension-point page follows the feature page
+skeleton above, with its own archify diagram and a compile-ready example, and is listed in the
+package `index.md` under 🧩 Features.
 
 ## Package `README.md` skeleton
 
@@ -199,9 +236,9 @@ Rules:
 | `index.md` | 🔄 How it works | Flow diagram of the Quick Start call, including its failure path | Invented steps |
 | `index.md` | 🧩 Features | Every feature page in the folder, one line each | Method signatures restated |
 | `index.md` | 🔗 Related packages | Every sibling it composes with + routing rule | Bare links without the "reach for it when" |
-| feature page | Title + body | Back-link to `index.md`, one capability, a runnable example, its diagram | A second capability, mermaid fences |
-| feature page | ⚙️ Configuration reference | Exhaustive table of every knob this capability reads, with defaults | Behaviour explanations |
-| feature page | 🧱 Where it fits | Composition with sibling packages, a diagram when it spans several | Restating the feature |
+| feature page | Title + body (**How do I use it?**) | Back-link to `index.md`, one capability, a runnable example with its DI registration (or a `None —` line), its diagram | A second capability, mermaid fences |
+| feature page | ⚙️ Configuration reference (**How do I customise it?**) | Every option with its default; every override point (interface, virtual or default member, behaviour-changing enum value) and how to register your own implementation; or a `None —` line | Behaviour explanations |
+| feature page | 🧱 Where it fits (**Where does DKNet use it?**) | Every DKNet consumer by type, each linked to its documenting page, with what it does; the app-level entry point; or a `None —` line | Restating the feature, unlinked type names |
 | feature page | ⚠️ Gotchas & limits | Source-verified footguns with workarounds | Generic advice ("remember to test") |
 
 ## Checklist before committing a package's docs
@@ -215,7 +252,13 @@ Rules:
       own, each with archify JSON IR + rendered SVG committed in `docs/<Package>/diagrams/`;
       `archify validate` passes at `showcase`; alt text narrates the diagram; no mermaid fences;
       no hand-edited SVGs.
+- [ ] Every feature page has all three mandatory parts (body example with DI registration,
+      ⚙️ Configuration reference, 🧱 Where it fits), each filled or carrying a `None —` line.
+- [ ] Every public extension point a consumer implements, registers or configures is the subject
+      of a feature page.
 - [ ] Every feature page is listed in `index.md` 🧩 Features and links back to it.
+- [ ] Every type under 🧱 Where it fits links to the page that documents it; related pages link
+      to each other.
 - [ ] `docs/<Package>/index.md` is linked from the package index, [`docs/index.md`](index.md#package-index).
 - [ ] The package `README.md` Documentation table links every page in the folder.
 - [ ] Related-packages links resolve and carry a routing rule each.
