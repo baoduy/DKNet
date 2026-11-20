@@ -8,6 +8,8 @@ await db.SaveChangesAsync();
 Console.WriteLine(invoice.OwnedBy); // tenant-a: reverted without throwing
 ```
 
+Registration: the same `AddDataOwnerProvider<TDbContext, TProvider>()` and `AddDbContextWithHook<TDbContext>()` calls as the [Quick Start](index.md#-quick-start); the former attaches `DataOwnerHook` as the keyed scoped save hook that does this stamping.
+
 ![DataOwnerHook sets a blank owner on added rows and checks modified ownership against accessible keys, reverting blank or inaccessible replacements before saving.](diagrams/stamp-ownership.svg)
 
 `IOwnedBy` exposes a getter-only `string OwnedBy`; EF-mapped accessors can reach a private setter. An existing non-empty owner on an added entity is preserved. A modified owner is accepted only when unchanged or non-empty and present in `GetAccessibleKeys()`.
@@ -30,7 +32,9 @@ Both hooks decide from provider values, independently of registration order. A b
 
 ## 🧱 Where it fits
 
-[Stamp the current user](../DKNet.EfCore.AuditLogs/stamp-current-user.md) describes the optional audit provider. The [package architecture](index.md#-architecture) shows this composition. `AddDbContextWithHook` attaches the runner; plain `AddDbContext` needs explicit hook wiring.
+None — no other DKNet package calls `IDataOwnerProvider`/`IOwnedBy`; `DataOwnerHook` reads [AuditLogs'](../DKNet.EfCore.AuditLogs/stamp-current-user.md) `ICurrentUserProvider` to decide the audit-field split described above, but no DKNet package in turn calls this ownership-stamping feature. The [package architecture](index.md#-architecture) shows this composition.
+
+**Entry point in your app:** implement `IDataOwnerProvider`/`IOwnedBy` and register with `AddDataOwnerProvider<TDbContext, TProvider>()`. `AddDbContextWithHook` attaches the runner; plain `AddDbContext` needs explicit hook wiring.
 
 ## ⚠️ Gotchas & limits
 

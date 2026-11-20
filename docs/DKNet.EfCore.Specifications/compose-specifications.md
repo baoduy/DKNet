@@ -16,6 +16,8 @@ public sealed class MinimumPrice : Specification<Product>
 }
 ```
 
+None — a specification needs no DI registration; it is a plain class you construct and pass to the repository that `AddSpecRepo<TDbContext>()` registers.
+
 ![A Specification stores its filter, includes and ordered clauses, and ApplySpecs folds them into an IQueryable before applying tracking and offset-window flags.](diagrams/compose-specifications.svg)
 
 Derive from `Specification<TEntity>` and use the protected builders in your constructor. `WithFilter` replaces the previous `FilterQuery`; combine predicates yourself when several conditions belong together. `CreatePredicate` returns a LinqKit starter, optionally initialized with an expression.
@@ -33,11 +35,22 @@ Derive from `Specification<TEntity>` and use the protected builders in your cons
 | `Skip(count)` / `Take(count)` | Positive `int` | Unset | Offset/limit applied during query composition; `count <= 0` throws. |
 | `AddOrderBy(name, direction)` | `string`, `ListSortDirection` | No order | Normalize a runtime property name and construct an ordering expression. |
 
+| Override point | How you customise it |
+|---|---|
+| `ISpecification<TEntity>` / `Specification<TEntity>` | Derive from `Specification<TEntity>` (as `MinimumPrice` does above) and call its protected builders in your constructor; implement `ISpecification<TEntity>` directly only if you need a shape `Specification<TEntity>` does not already give you. |
+
 There is no options object. A null specification is rejected by query composition.
 
 ## 🧱 Where it fits
 
 The [query architecture](index.md#-architecture) shows the repository applying these inert declarations. [DataAuthorization](../DKNet.EfCore.DataAuthorization/filter-owned-rows.md) marks ownership filters non-ignorable, so the specification bypass flag preserves them.
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Generated `<Entity>ByIdCrudSpec` | [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-handlers.md) | `CrudGenerator` emits a `Specification<TEntity>` subclass per `[CrudAction]` entity to look the row up by id. |
+| `EntityByIdSpecification<TEntity, TKey>` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md) | Derives from `Specification<TEntity>` to look an entity up by id for a mapped delete endpoint. |
+
+**Entry point in your app:** derive your own `Specification<TEntity>` and pass it to `IRepositorySpec.Query`/materialization helpers, as in the [Quick Start](index.md#-quick-start).
 
 ## ⚠️ Gotchas & limits
 

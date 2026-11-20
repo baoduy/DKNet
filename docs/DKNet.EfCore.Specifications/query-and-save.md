@@ -41,7 +41,14 @@ Despite its name, `CreateAsync<TDbContext>()` returns `IRepositorySpecProvider` 
 
 ## 🧱 Where it fits
 
-The [repository architecture](index.md#-architecture) shows query and persistence paths. Registered context interceptors still run during tracked saves. The save helper resolves a keyed `IEfCoreExceptionHandler` when available; this package does not install one.
+The [repository architecture](index.md#-architecture) shows query and persistence paths. Registered context interceptors still run during tracked saves. The save helper resolves a keyed `IEfCoreExceptionHandler` when available; this package does not install one — see [Customise how concurrency conflicts are resolved](../DKNet.EfCore.Extensions/customise-concurrency-handling.md) to register one.
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Generated CRUD handlers | [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-handlers.md) | A generated `[CrudCreate]` handler calls `IRepositorySpec.AddAsync`; a generated update/action handler calls `FirstOrDefaultAsync` to load the entity, then mutates it directly (no explicit `UpdateAsync` call — the auto-save interceptor persists the tracked change). |
+| `MapGetById`, `MapGetList`, `MapDeleteById` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md) | Inject `IRepositorySpec` into their mapped minimal-API endpoints to query and persist directly. |
+
+**Entry point in your app:** inject `IRepositorySpec` (or resolve it through `IRepositorySpecFactory`) wherever your own code needs to query or save.
 
 ## ⚠️ Gotchas & limits
 

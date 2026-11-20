@@ -1,0 +1,171 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Resolving which IEfCoreExceptionHandler handles a conflict",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "c33e97629e2e8b28da4f90100fdeaddf223c558c"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Registration"
+        },
+        "backend": {
+          "label": "Resolves the handler"
+        },
+        "security": {
+          "label": "Your override"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "register",
+      "label": "Register per DbContext"
+    },
+    {
+      "id": "call",
+      "label": "Who resolves it"
+    },
+    {
+      "id": "decide",
+      "label": "What decides the outcome"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s3",
+    "s4"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "register",
+      "col": 0,
+      "type": "external",
+      "label": "AddEfCoreExceptionHandler<TDbContext, THandler>()",
+      "sublabel": "keyed transient, no-op if already registered",
+      "width": 340,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/EfCoreSetup.cs",
+          "line": 74,
+          "end_line": 86
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "call",
+      "col": 1,
+      "type": "backend",
+      "label": "EfAutoSavePostInterceptor",
+      "sublabel": "keyed handler, else unkeyed",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/SlimBus/DKNet.SlimBus.Extensions/Interceptors/EfAutoSavePostInterceptor.cs",
+          "line": 61,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "call",
+      "col": 1,
+      "type": "backend",
+      "label": "RepositorySpec.SaveChangesAsync",
+      "sublabel": "keyed handler only",
+      "width": 225,
+      "yOffset": 90,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Specifications/Repositories/IRepositorySpec.cs",
+          "line": 213,
+          "end_line": 218
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "decide",
+      "col": 2,
+      "type": "backend",
+      "label": "SaveChangesWithConcurrencyHandlingAsync",
+      "sublabel": "handler arg, or a new default",
+      "width": 270,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Extensions/EfSaveChangesExtension.cs",
+          "line": 38,
+          "end_line": 65
+        }
+      ]
+    },
+    {
+      "id": "s4",
+      "lane": "decide",
+      "col": 3,
+      "type": "security",
+      "label": "Your HandlingAsync override",
+      "sublabel": "returns an EfConcurrencyResolution",
+      "width": 200,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Extensions/Extensions/EfCoreExceptionHandler.cs",
+          "line": 34,
+          "end_line": 50
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s0",
+      "to": "s2",
+      "label": "same registration",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s1",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "s3",
+      "to": "s4",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "RepositorySpec has no unkeyed fallback; EfAutoSavePostInterceptor does.",
+        "SaveChangesWithConcurrencyHandlingAsync itself never reads DI."
+      ]
+    }
+  ]
+}

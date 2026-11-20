@@ -31,6 +31,16 @@ An in-flight duplicate still gets 409 in replay mode because it has no completed
 
 These options are configured through the core or selected provider registration. Startup validators are added once. The reservation timeout has no positive-value validator in this registration.
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `IdempotencyRedisStore` | [RedisStore](../DKNet.AspCore.Idempotency.RedisStore/reserve-redis-keys.md) | Reads `InFlightReservationTimeout` and `Expiration` as the reservation and completed-record Redis TTLs, and `JsonSerializerOptions` to serialize the cached record. |
+| `IdempotencyRelationalStore<TContext>` | [Relational](../DKNet.AspCore.Idempotency.Relational/reserve-relational-keys.md) | Reads `InFlightReservationTimeout` to decide when an expired reservation row can be reclaimed. |
+| Endpoint filter (internal; shown on [Protect endpoints and route groups](protect-endpoints.md)) | DKNet.AspCore.Idempotency | Applies `ConflictHandling`, the cacheable status-code range, and `AdditionalCacheableStatusCodes` to decide whether and how to retain a response. |
+
+**Entry point in your app:** set these options on the `config` delegate of whichever `AddIdempotentKey`/`AddIdempotencyWith…Store` call you use in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - Noncacheable results, thrown handlers, and failed serialization leave the reservation until it expires; immediate retries can still get 409.

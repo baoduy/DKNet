@@ -61,11 +61,26 @@ public sealed class ReportHook : HookAsync
 | `UseHooks<TDbContext>(provider)` | explicit options call | Attach an already registered keyed runner when using plain AddDbContext. |
 | Hook runner | keyed Singleton | One interceptor per registered context type. |
 
+| Override point | How you customise it |
+|---|---|
+| `IBeforeSaveHookAsync.BeforeSaveAsync(SnapshotContext, CancellationToken)` | Implement it to run before the save hits the database. |
+| `IAfterSaveHookAsync.AfterSaveAsync(SnapshotContext, CancellationToken)` | Implement it to run after a successful save. |
+| `IHookAsync` | Implement both members in one type when a hook needs both phases. |
+| `HookAsync` | Derive from it and override only the phase(s) you need; the other stays a no-op. |
+
 Manual setup must both register hooks and call UseHooks inside a provider-aware AddDbContext options callback. AddHook alone does not attach the interceptor.
 
 ## 🧱 Where it fits
 
-Custom hooks share the same interceptor and snapshot with EventHook, EfCoreAuditHook and DataOwnerHook. See [who fills CreatedBy/UpdatedBy](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) when combining the audit and ownership hooks. Keep domain operations on entities and use these infrastructure hooks for work tied to persistence.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `EventHook` | [DKNet.EfCore.Events](../DKNet.EfCore.Events/publish-domain-events.md) | Derives from `HookAsync` to dispatch captured domain events after a successful save. |
+| `EfCoreAuditHook` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/capture-changes.md) | Derives from `HookAsync` to turn the shared snapshot into `AuditLogEntry` records. |
+| `DataOwnerHook` | [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/stamp-ownership.md) | Implements `IBeforeSaveHookAsync` to stamp ownership and audit fields; see [who fills CreatedBy/UpdatedBy](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) when combining with your own hooks. |
+
+Your custom hooks share the same interceptor and snapshot as all three. Keep domain operations on entities and use these infrastructure hooks for work tied to persistence.
+
+**Entry point in your app:** `services.AddHook<TDbContext, THook>()` in your composition root, next to `AddDbContextWithHook<TDbContext>()`.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

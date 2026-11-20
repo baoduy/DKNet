@@ -39,6 +39,16 @@ public sealed class PingEndpoints : IEndpointConfig
 | `ConfigureGroup` | `Action<RouteGroupBuilder, IEndpointConfig>?` | null | Host setup after population filter registration and before authorization and `Map`. |
 | `assemblies` | `params Assembly[]` | loaded assemblies | Limits discovery when supplied. |
 
+See [Configure endpoint registration](configure-endpoint-registration.md) for the full `EndpointRegistrationOptions` reference, its defaults restated by option, and its gotchas.
+
+## 🧱 Where it fits
+
+None — no other DKNet package implements `IEndpointConfig` or calls `UseEndpointConfigs`; you implement the interface and call the extension method from your own code.
+
+Discovery itself calls [Fw Extensions](../DKNet.Fw.Extensions/scan-assemblies.md)' type-extraction helpers (`Extract().NotGeneric().NotAbstract().Classes().IsInstanceOf<IEndpointConfig>()`) to find your implementations, and installs this package's own [contextual request population](bind-contextual-members.md) filter on every created group before your `ConfigureGroup` and `Map` run.
+
+**Entry point in your app:** `app.UseEndpointConfigs(...)` in `Program.cs`, after the host builds its `WebApplication`.
+
 ## ⚠️ Gotchas & limits
 
 - Config objects are constructed through `Activator.CreateInstance`, not DI. Inject dependencies into handlers instead.

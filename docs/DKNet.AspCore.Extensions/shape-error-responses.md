@@ -41,6 +41,21 @@ Without registration, `Response` failures still have the standard command-error 
 
 `StatusCode` overrides the body callback's status when non-null. The shared finalizer updates `type` when that callback selects a status, then calls `Customize`.
 
+| Override point | How you customise it |
+|---|---|
+| `ErrorResponseExceptionHandler.CreateProblemDetails` | Protected virtual, class not sealed. Derive from it to replace only the body-building step while keeping its abandoned-request guard, then register your derived type with `services.AddExceptionHandler<TYourHandler>()` **before** calling `AddErrorResponses`, so ASP.NET Core tries your handler first. Still call `AddErrorResponses` — it is the only place that registers `ErrorResponseOptions`, the FluentValidation result factory, `AddProblemDetails()` and the `UseExceptionHandler()` startup filter. |
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| [`Response()`](convert-results.md) | DKNet.AspCore.Extensions (same package) | Resolves the registered `ErrorResponseOptions` from `HttpContext.RequestServices` to shape a failed `FluentResults.Result`'s problem response. |
+| [Dispatch HTTP requests through SlimMessageBus](dispatch-bus-requests.md)'s `ProducesCommons()` filter | DKNet.AspCore.Extensions (same package) | Resolves `ErrorResponseOptions` to shape the body of an exception caught while dispatching a mapped request. |
+
+None outside this package — no other DKNet package calls `AddErrorResponses` or resolves `ErrorResponseOptions`.
+
+**Entry point in your app:** `builder.Services.AddErrorResponses(o => ...)` in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - The default unhandled body exposes the exception message only in Development. Elsewhere it uses a fixed message and trace ID; never put secret exception details into custom output.

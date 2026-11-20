@@ -10,6 +10,8 @@ public sealed class DemoOwner : IDataOwnerProvider
 }
 ```
 
+Registration: the same `AddDataOwnerProvider<TDbContext, TProvider>()` and `AddDbContextWithHook<TDbContext>()` calls as the [Quick Start](index.md#-quick-start) — the former registers the scoped `IDataOwnerProvider` and the global model builder this filter reads.
+
 ![DataOwnerAuthQuery checks each IOwnedBy hierarchy root, rejects unfilterable models, and applies the context unrestricted flag or accessible-key membership on each query.](diagrams/filter-owned-rows.svg)
 
 The predicate is `IsUnrestrictedAccess || AccessibleKeys.Contains(entity.OwnedBy)`. Empty keys deny every owned row unless unrestricted access is explicitly enabled. `DataOwnerAuthQuery.IsIgnorable` is `false`, so a specification's `IgnoreQueryFilters()` does not bypass it.
@@ -26,7 +28,9 @@ The predicate is `IsUnrestrictedAccess || AccessibleKeys.Contains(entity.OwnedBy
 
 ## 🧱 Where it fits
 
-The [ownership architecture](index.md#-architecture) shows the read and write paths; [the audit-field split](stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) explains which provider fills identity fields. The filter is installed on hierarchy roots only, covering TPH, TPT and TPC descendants. A derived `IOwnedBy` type below a root that does not implement `IOwnedBy` throws during model building: move the contract to the root.
+None — no other DKNet package calls `IDataOwnerDbContext`, `IDataOwnerProvider` or `IOwnedBy`; `DataOwnerAuthQuery` applies the filter inside this package only. The [ownership architecture](index.md#-architecture) shows the read and write paths; [the audit-field split](stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) explains which provider fills identity fields. The filter is installed on hierarchy roots only, covering TPH, TPT and TPC descendants. A derived `IOwnedBy` type below a root that does not implement `IOwnedBy` throws during model building: move the contract to the root.
+
+**Entry point in your app:** implement `IDataOwnerProvider` and `IOwnedBy`, register with `AddDataOwnerProvider<TDbContext, TProvider>()`, and call `UseAutoConfigModel<TDbContext>()` on your context options.
 
 ## ⚠️ Gotchas & limits
 

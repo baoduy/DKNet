@@ -19,6 +19,8 @@ var decrypted = signer.Decrypt(cipherText);
 Console.WriteLine(decrypted); // payload
 ```
 
+Registration: `services.AddRsaEncryption(privateKeyBase64)` registers `IRsaEncryption` as a singleton over that key — or construct `RsaEncryption` directly, as above.
+
 `new RsaEncryption(int keySize = 2048)` generates a fresh key pair; `new RsaEncryption(string privateKeyBase64)`
 loads an existing PKCS#1 DER private key and derives the public key from it. `PublicKey` and `PrivateKey` are Base64
 of the raw PKCS#1 structures — not PEM, so don't paste them into a `-----BEGIN` block without re-encoding.
@@ -42,9 +44,14 @@ raw PKCS#1 DER (not PEM) for both exported keys.
 
 ## 🧱 Where it fits
 
+None — no other DKNet package calls `IRsaEncryption`/`RsaEncryption`; you call it from your own code.
+
 `AddRsaEncryption` is the other key-bearing cipher registration in the [package architecture](index.md) — like
 `AddAesGcmEncryption`, it produces one singleton over the key you pass in, separate from the keyless hashing
 services.
+
+**Entry point in your app:** inject `IRsaEncryption` after `services.AddRsaEncryption(privateKeyBase64)`, or
+construct `new RsaEncryption()`/`RsaEncryption.FromPublicKey(...)` directly, as above.
 
 ## ⚠️ Gotchas & limits
 

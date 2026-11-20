@@ -27,7 +27,9 @@ The environment variable in the example is application code, not a configuration
 
 ## 🧱 Where it fits
 
-The [package architecture](index.md#-architecture) shows key sourcing in the host. EF model caching means a changed provider value does not update an already-built converter.
+None — no other DKNet package calls `IEncryptionKeyProvider`; `ModelBuilderExtensions` reads it inside this package only. The [package architecture](index.md#-architecture) shows key sourcing in the host. EF model caching means a changed provider value does not update an already-built converter.
+
+**Entry point in your app:** implement `IEncryptionKeyProvider` and register it with `AddEfCoreEncryption<TKeyServiceImplementation>()`.
 
 ## ⚠️ Gotchas & limits
 

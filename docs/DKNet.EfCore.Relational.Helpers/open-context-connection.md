@@ -34,6 +34,18 @@ public sealed class Item
 
 The cancellation token is passed to OpenAsync only when opening is necessary. This helper does not create an independent connection or close it afterward.
 
+None — no DI registration needed; `GetDbConnection` is an extension method you call directly on a `DbContext`.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no override point.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls this `GetDbConnection` extension; you call it from your own ADO.NET code. It is distinct from EF Core's own synchronous `context.Database.GetDbConnection()`, which [Read and format a database sequence value](../DKNet.EfCore.Extensions/read-sequences.md) calls without opening the connection for you.
+
+**Entry point in your app:** call `await dbContext.GetDbConnection()` from your own ADO.NET code that needs the context's connection already open.
+
 ## ⚠️ Gotchas & limits
 
 - Manage connection state deliberately; do not dispose a connection owned by the context merely because this helper returned it.

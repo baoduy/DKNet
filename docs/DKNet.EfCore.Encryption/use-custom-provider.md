@@ -14,11 +14,23 @@ modelBuilder.Entity<Customer>().Property(c => c.Secret).HasConversion(
 
 Implement that interface to substitute another algorithm in the explicit `HasConversion` path. The example uses the bundled AES-GCM provider to show the same wiring without inventing an algorithm.
 
+None — no DI registration needed; pass your `IColumnEncryptionProvider` instance directly into `ColumnEncryptionConverter` inside `OnModelCreating`.
+
+## ⚙️ Configuration reference
+
+| Override point | How you customise it |
+|---|---|
+| `IColumnEncryptionProvider` | Implement `Encrypt(string?)` and `Decrypt(string?)`, then pass an instance to `new ColumnEncryptionConverter(yourProvider)` and attach it with `HasConversion`. |
+
 ## 🧱 Where it fits
+
+None — no other DKNet package calls `IColumnEncryptionProvider`; `ColumnEncryptionConverter` uses whichever implementation you pass it, inside this package only.
 
 ![The host selects an IColumnEncryptionProvider and attaches its ColumnEncryptionConverter directly to an EF property.](diagrams/provider-components.svg)
 
 Automatic `[Encrypted]` scanning hardcodes `AesGcmColumnEncryptionProvider`; registering another algorithm in DI does not replace it.
+
+**Entry point in your app:** implement `IColumnEncryptionProvider` and pass it to `new ColumnEncryptionConverter(yourProvider)` in an explicit `HasConversion` call.
 
 ## ⚠️ Gotchas & limits
 

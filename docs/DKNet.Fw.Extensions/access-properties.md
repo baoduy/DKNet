@@ -2,6 +2,8 @@
 
 Part of [DKNet.Fw.Extensions](index.md). Use `PropertyExtensions` for case-insensitive instance-property lookup, dotted reads and converted writes.
 
+None — no DI registration needed; `PropertyExtensions` is a static extension method class you call directly.
+
 ```csharp
 using System;
 using DKNet.Fw.Extensions.Reflection;
@@ -31,6 +33,16 @@ public sealed class Owner { public string Name { get; set; } = ""; }
 | Option | Type | Default | Effect |
 |---|---|---|---|
 | `GetProperty` `flags` | `BindingFlags` | `IgnoreCase \| Public \| NonPublic \| Instance` | Controls reflection lookup. Dotted reads and named writes use this default. |
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AuditPropertyStamper` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/index.md) | Calls the `PropertyInfo` overload of `SetPropertyValue` to stamp an owned "created by"/"updated by" property that EF's own metadata does not expose. |
+
+`AuditPropertyStamper` is internal, so `DKNet.EfCore.AuditLogs` has no page naming it; the link above goes to that package's index. [Check attributes on types and properties](check-attributes.md) resolves the same property with `HasAttributeOnProperty`, reusing this page's default lookup.
+
+**Entry point in your app:** calling `PropertyExtensions.GetPropertyValue`/`SetPropertyValue`/`TrySetPropertyValue` directly on any object in your own code.
 
 ## ⚠️ Gotchas & limits
 

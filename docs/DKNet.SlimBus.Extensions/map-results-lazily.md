@@ -5,7 +5,11 @@ Part of [DKNet.SlimBus.Extensions](index.md). `ILazyMap<T>` and the `LazyMapExte
 that never inspects `Value` never pays for the mapping. Both extensions need an `IMapper` (Mapster). This package
 references `Mapster` but not `Mapster.DependencyInjection`, so `MapsterMapper.ServiceMapper` — the implementation
 that reads a registered `TypeAdapterConfig` from DI — is not available unless the host also adds that package;
-construct an `IMapper` directly instead. Use a .NET 10 console project, then replace `Program.cs` with this example:
+construct an `IMapper` directly instead.
+
+None — no DI registration needed; `LazyMap<T>`/`ResultOf<T>` are extension methods you call directly on any `IMapper` instance.
+
+Use a .NET 10 console project, then replace `Program.cs` with this example:
 
 ```bash
 dotnet new console -f net10.0 -n LazyMapDemo
@@ -70,8 +74,15 @@ mapping needs no configuration for this example.
 
 ## 🧱 Where it fits
 
-Used from inside a [write](send-commands.md) or [query](run-queries.md) handler that returns a DTO mapped from an
-entity — the mapping defers past auto-save, so it runs only if and when the caller reads the value.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Generated handlers (emitted by `CrudGenerator`) | [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-handlers.md) | Every generated create/update/action handler returns `LazyMapExtensions.ResultOf<TDto>(mapper, entity)` instead of mapping eagerly. |
+
+You can do the same from a hand-written [write](send-commands.md) or [query](run-queries.md) handler that returns a
+DTO mapped from an entity — the mapping defers past auto-save, so it runs only if and when the caller reads the
+value.
+
+**Entry point in your app:** calling `mapper.LazyMap<T>(...)`/`mapper.ResultOf<T>(...)` directly inside a handler that holds an `IMapper`.
 
 ## ⚠️ Gotchas & limits
 

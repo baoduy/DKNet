@@ -44,10 +44,20 @@ Publish with `IMessageBus.Publish(...)` from anywhere that holds an `IMessageBus
 
 ![IMessageBus.Publish routes the event by type to the registered Fluents.EventsConsumers.IHandler<TEvent>, whose OnHandle runs and returns no response.](diagrams/consume-events.svg)
 
+## ⚙️ Configuration reference
+
+There is no options type and no `IConfiguration` section.
+
+| Override point | How you customise it |
+|---|---|
+| `Fluents.EventsConsumers.IHandler<TEvent>` | Implement it for the event type you want to react to; `AddServicesFromAssembly(...)` (shown above) discovers and registers it as a SlimMessageBus `IConsumer<TEvent>`. |
+
 ## 🧱 Where it fits
 
 [Publish domain events onto the bus](publish-domain-events.md) is the usual source of events this handler consumes
 when the host uses EF Core — `SlimBusEventPublisher` calls the same `IMessageBus.Publish` shown above.
+
+**Entry point in your app:** implement `Fluents.EventsConsumers.IHandler<TEvent>` and let `AddServicesFromAssembly(...)` discover it; no explicit registration call is needed beyond that.
 
 ## ⚠️ Gotchas & limits
 

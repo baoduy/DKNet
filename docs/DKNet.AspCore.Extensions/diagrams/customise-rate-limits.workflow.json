@@ -1,0 +1,120 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Supply your own IRateLimitOptionsProvider",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "c33e97629e2e8b28da4f90100fdeaddf223c558c"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "DKNet rate-limit pipeline"
+        },
+        "external": {
+          "label": "Code you write"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Implement the interface",
+      "sublabel": "Two methods, per HttpContext",
+      "width": 190,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/IRateLimitOptionsProvider.cs",
+          "line": 18,
+          "end_line": 29
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "external",
+      "label": "Register it",
+      "sublabel": "AddSingleton, either order",
+      "width": 175,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitConfig.cs",
+          "line": 39,
+          "end_line": 39
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "backend",
+      "label": "Resolved on first use",
+      "sublabel": "GetRequiredService, per key",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitConfig.cs",
+          "line": 75,
+          "end_line": 76
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Builds both limiters",
+      "sublabel": "Replaces the default",
+      "width": 160,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/RateLimits/RateLimitConfig.cs",
+          "line": 44,
+          "end_line": 50
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis"
+    }
+  ]
+}

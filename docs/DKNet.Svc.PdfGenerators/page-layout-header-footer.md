@@ -65,6 +65,10 @@ This options surface applies to both [Convert Markdown to a PDF](convert-markdow
 `Theme`, `TableOfContents`, `CodeHighlightTheme` and `ModuleOptions` fields on the same `PdfGeneratorOptions` do
 **not** reach this render — see [Inert options and serialization](inert-options-and-serialization.md).
 
+None — no other DKNet package calls `IPdfGenerator`; you call it from your own code.
+
+**Entry point in your app:** `services.AddPdfGenerator(...)` in `Program.cs` registers `IPdfGenerator` as a singleton; inject it where you build the document.
+
 ## ⚠️ Gotchas & limits
 
 - **Two types are named `MarginOptions`.** `PdfGeneratorOptions.MarginOptions` is this package's `DKNet.Svc.PdfGenerators.Options.MarginOptions`; PuppeteerSharp declares its own in `PuppeteerSharp.Media`. Importing both namespaces makes the bare name ambiguous (`CS0104`) — alias the PuppeteerSharp types you need instead of importing the whole namespace.

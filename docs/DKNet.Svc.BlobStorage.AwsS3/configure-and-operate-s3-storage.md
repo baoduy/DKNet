@@ -62,6 +62,10 @@ the composition root knows this package exists. Pair it with
 [DKNet.Svc.BlobStorage.Local](../DKNet.Svc.BlobStorage.Local/index.md) for tests and local runs when a MinIO
 container is not wanted.
 
+None — no other DKNet package calls `S3BlobService`; your own code reaches it through `IBlobService`.
+
+**Entry point in your app:** `services.AddS3BlobService(...)` in `Program.cs`, then inject `IBlobService` where you read or write blobs.
+
 ## ⚠️ Gotchas & limits
 
 - **`RegionEndpointName` is inert.** It exists on `S3Options` but is never applied to the client configuration —

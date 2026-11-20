@@ -2,6 +2,8 @@
 
 Part of [DKNet.Fw.Extensions](index.md). Use `EnumExtensions` and `EnumInfo` to build display labels from enum fields.
 
+None — no DI registration needed; `EnumExtensions` is a static extension method class you call directly.
+
 ```csharp
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -23,6 +25,16 @@ public enum State
 ![GetEnumInfos reads public static enum fields, retrieves DisplayAttribute, and falls back to the field name when Display.Name is absent.](diagrams/enum-metadata.svg)
 
 `EnumInfo` is a record with required `Key` and `Name`, plus nullable `Description` and `GroupName`. `GetEnumInfos<T>()` enumerates public static fields, using their names as keys. The instance `GetAttribute<T>()` looks up a field by the value's text; `GetEnumInfo()` uses that attribute's name, description and group without a name fallback.
+
+## ⚙️ Configuration reference
+
+None — these helpers read no options and expose no override point; `DisplayAttribute` on each enum field is the only input.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `GetAttribute`, `GetEnumInfo` or `GetEnumInfos`; you call them from your own code.
+
+**Entry point in your app:** calling `EnumExtensions.GetAttribute`/`GetEnumInfo`/`GetEnumInfos` directly on an enum value or type in your own code.
 
 ## ⚠️ Gotchas & limits
 

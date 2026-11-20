@@ -2,6 +2,8 @@
 
 Part of [DKNet.Fw.Extensions](index.md). Use `StringExtensions` for permissive character filtering and numeric-looking text checks.
 
+None — no DI registration needed; `ExtractDigits`/`IsNumber` are static extension methods you call directly.
+
 ```csharp
 using System;
 using DKNet.Fw.Extensions.Primitives;
@@ -17,6 +19,16 @@ Console.WriteLine(".".IsNumber()); // True
 `ExtractDigits` rents a buffer from `ArrayPool<char>.Shared` and returns it in `finally`. It retains every character accepted by `char.IsDigit`, plus `.`, `,` and `-`, across the whole input.
 
 `IsNumber` returns false for null or whitespace, non-digit characters outside those separators, adjacent commas, more than one dot, or a minus sign after the first position. It does not parse a numeric value.
+
+## ⚙️ Configuration reference
+
+None — `ExtractDigits`/`IsNumber` read no options and expose no override point.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `ExtractDigits` or `IsNumber`; you call them from your own code.
+
+**Entry point in your app:** calling `StringExtensions.ExtractDigits`/`IsNumber` directly on a `string` in your own code.
 
 ## ⚠️ Gotchas & limits
 

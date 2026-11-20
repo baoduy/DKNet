@@ -36,6 +36,12 @@ Each `RunAsync` exception is caught and logged with the exception attached. Its 
 
 There are no ordering, retry, concurrency-limit, or per-task-timeout settings.
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls into `BackgroundJobHost`; the generic host starts it automatically once you register a task (see [Register startup tasks](register-startup-tasks.md)).
+
+**Entry point in your app:** nothing to call directly — `BackgroundJobHost` runs as a hosted service once you register a task and call `host.RunAsync()` (or `app.RunAsync()`) in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - Tasks run concurrently in one shared scope by default. Two tasks can receive the same scoped `DbContext`; open private scopes for non-thread-safe dependencies.

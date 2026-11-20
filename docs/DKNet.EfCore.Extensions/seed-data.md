@@ -34,6 +34,8 @@ public sealed class Item
 }
 ```
 
+None — no DI registration needed; `UseAutoDataSeeding(assemblies)` is a `DbContextOptionsBuilder` extension method you call directly, as above.
+
 ![UseAutoDataSeeding discovers ItemSeed, hooks EF Core seeding, compares candidate primary keys and adds only missing rows before SaveChangesAsync.](diagrams/seed-data.svg)
 
 `DataSeedingConfiguration<TEntity>` loads existing primary-key projections, including composite and shadow keys. Explicit non-default keys are compared by values, independent of entity equality. Empty candidates or no missing rows cause no save.
@@ -46,6 +48,16 @@ public sealed class Item
 | `Order` | `int` | `0` | Metadata only; discovery does not sort it. |
 | `EntityType` | `Type` | `typeof(TEntity)` | Exposes the targeted CLR type. |
 | `SeedAsync` | nullable callback on interface | base implementation | Base loads GetDataAsync and inserts missing keys. Null callbacks are skipped. |
+
+| Override point | How you customise it |
+|---|---|
+| `IDataSeedingConfiguration` / `DataSeedingConfiguration<TEntity>.GetDataAsync` | Derive from `DataSeedingConfiguration<TEntity>` (as `ItemSeed` does above) and override `GetDataAsync` to supply the candidate rows; let assembly scanning discover it. |
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `UseAutoDataSeeding` or implements `IDataSeedingConfiguration`; you call it from your own code. Seeding is wired independently of `UseAutoConfigModel` — see [Apply model configurations and entity conventions](configure-model.md) — so registering one does not register the other.
+
+**Entry point in your app:** `optionsBuilder.UseAutoDataSeeding([...])` in your `AddDbContext` configuration callback.
 
 ## ⚠️ Gotchas & limits
 

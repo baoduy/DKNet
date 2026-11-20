@@ -24,6 +24,8 @@ public sealed class Customer : Entity
 
 `EventOperations` is a flags enum: `Created = 1`, `Updated = 2`, `Deleted = 4`. `EventNameComposer` appends entity, optional label, distinct ordinal-sorted properties, operations in Created/Updated/Deleted order, then `Event`.
 
+None — no DI registration needed; `[RaisesEvent]` is a declarative attribute that `RaisesEventValidator` (DtoGenerator) reads at compile time and `EventHook` (Events) reads at save time.
+
 ## ⚙️ Configuration reference
 
 | Form | Example | Payload owner |
@@ -43,7 +45,14 @@ A nonempty `Include` overrides global `DtoGeneratorExclusions`; navigations are 
 
 ## 🧱 Where it fits
 
-DtoGenerator validates declarations and emits convention payloads at build time. Events reads the same declarations through the save hook at runtime and maps entities to payloads. EventNameComposer is shared as linked source between the two assemblies.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `RaisesEventValidator` | [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/generate-event-payloads.md) | Validates `[RaisesEvent]` declarations at compile time and generates the convention-named payload record. |
+| `EventHook` | [DKNet.EfCore.Events](../DKNet.EfCore.Events/publish-declared-events.md) | Evaluates qualifying declarations before the write and maps/publishes payloads from the entity after a successful save. |
+
+`EventNameComposer` is shared as linked source between the two assemblies above, so both resolve the same composed name.
+
+**Entry point in your app:** declare `[RaisesEvent]` on your entity; reference [DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) to generate convention payloads and [Events](../DKNet.EfCore.Events/index.md) to dispatch them.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

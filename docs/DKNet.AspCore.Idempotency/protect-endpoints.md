@@ -26,6 +26,12 @@ The group overload defaults to POST. Pass explicit verbs, such as `RequiredIdemp
 
 Header and key settings are owned by [key validation](validate-keys.md).
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `RequiredIdempotentKey`; you declare it on your own endpoints and route groups.
+
+**Entry point in your app:** `Program.cs`, on each `MapPost`/`MapGroup` call, via `.RequiredIdempotentKey()`.
+
 ## ⚠️ Gotchas & limits
 
 - A verb-less `Map(...)` endpoint has no method metadata to match and remains unprotected by a group declaration.

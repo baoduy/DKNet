@@ -9,6 +9,8 @@ var stored = (string)inspect.ExecuteScalar()!;
 Console.WriteLine(Convert.FromBase64String(stored).Length); // 38: 28 overhead + 10 UTF-8 bytes
 ```
 
+Registration: the same `AddEfCoreEncryption<TKeyServiceImplementation>()` call as the [Quick Start](index.md#-quick-start) registers `IEncryptionKeyProvider` as a singleton; `UseColumnEncryption` itself is a `ModelBuilder` extension method you call directly from `OnModelCreating`, as above.
+
 ![UseColumnEncryption refuses an [Encrypted] mark on a complex-type member, a non-string member, a primary key or a foreign key, then attaches a ColumnEncryptionConverter to each marked string on an entity or owned type.](diagrams/encrypt-columns.svg)
 
 `EncryptedAttribute` is a property marker without options. `UseColumnEncryption` checks the mapped members of every entity and owned type for the attribute, asks `IEncryptionKeyProvider.GetKey` for each marked string's declaring type, and installs the AES-GCM converter. It throws `ArgumentNullException` for null builder/provider arguments, and `InvalidOperationException` for a mark it cannot honour (see [Gotchas & limits](#-gotchas--limits)).
@@ -24,7 +26,13 @@ The AES-GCM format is Base64 of a 12-byte random IV, 16-byte authentication tag,
 
 ## 🧱 Where it fits
 
-See the [column architecture](index.md#-architecture) for the model-to-database boundary. [AuditLogs](../DKNet.EfCore.AuditLogs/redact-sensitive-values.md) recognizes `EncryptedAttribute` by name and redacts its field values without a project dependency on this package.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AuditLogExtensions` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/redact-sensitive-values.md) | Matches an attribute named `EncryptedAttribute` by name (not by a compile reference to this package) and redacts that field's audit value. |
+
+See the [column architecture](index.md#-architecture) for the model-to-database boundary.
+
+**Entry point in your app:** mark a string property `[Encrypted]` and call `modelBuilder.UseColumnEncryption(keys)` from `OnModelCreating`.
 
 ## ⚠️ Gotchas & limits
 

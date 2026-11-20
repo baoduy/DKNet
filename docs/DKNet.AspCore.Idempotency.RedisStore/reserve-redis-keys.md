@@ -1,9 +1,16 @@
 # Reserve Redis keys and retain response values
 
-Part of [DKNet.AspCore.Idempotency.RedisStore](index.md). After provider registration, the filter uses the public core contract. This sample constructs the identity you would pass to that contract:
+Part of [DKNet.AspCore.Idempotency.RedisStore](index.md). After provider registration, the filter uses the public core contract. This sample registers the store, then constructs the identity you would pass to that contract:
 
 ```csharp
 using DKNet.AspCore.Idempotency.Filtering;
+using DKNet.AspCore.Idempotency.RedisStore;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+services.AddLogging();
+services.AddIdempotencyWithRedisStore("localhost:6379");
+
 var key = new IdempotentKeyInfo
 {
     Scope = "user:demo", Method = "POST", Endpoint = "/ORDERS", IdempotentKey = "order-1"
@@ -30,9 +37,13 @@ The store reuses core options; the linked pages own their types and defaults.
 
 ## 🧱 Where it fits
 
-The package overview shows the host registrations and dependencies behind this capability. The core filter and selected store have separate responsibilities.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Endpoint filter (internal; contract documented in [Implement a custom reservation store](../DKNet.AspCore.Idempotency/implement-store.md)) | DKNet.AspCore.Idempotency | Resolves this store as `IIdempotencyKeyStore` and calls `IsKeyProcessedAsync` then `MarkKeyAsProcessedAsync` around each protected handler. |
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
+
+**Entry point in your app:** register this provider via `AddIdempotencyWithRedisStore` in `Program.cs`, then protect an endpoint with `.RequiredIdempotentKey()`; the filter then uses the store transparently.
 
 ## ⚠️ Gotchas & limits
 

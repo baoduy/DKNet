@@ -33,6 +33,12 @@ The config file passed as `configFilePath` is the same `Config.json` format the 
 
 Fixed by the extension and not configurable through parameters: the image (`mcr.microsoft.com/azure-messaging/servicebus-emulator:latest`), `ACCEPT_EULA=Y`, and both AMQP endpoints (`tcp` on port `5672`, `tcp2` on port `5671`).
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddServiceBus` or references `ServiceBusResource`; you call it from your own AppHost project.
+
+**Entry point in your app:** your AppHost's `Program.cs`, via `builder.AddServiceBus(sql, configFilePath)`.
+
 ## ⚠️ Gotchas & limits
 
 - **SQL Server is mandatory.** The emulator image itself requires a SQL Server backing store; `AddServiceBus` always requires a `SqlServer` resource and always waits on it — there is no way to run the emulator without one.

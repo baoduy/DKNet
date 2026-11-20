@@ -77,6 +77,7 @@ The default assembly is the context assembly. Configuration classes introduce th
 - [Read keys and tracked property values](inspect-entries.md) — Inspect model keys and original/current entry values without repeating metadata lookups.
 - [Stage new entities found in collection navigations](discover-navigation-entities.md) — Walk collection navigations from possible updating roots and add discovered new children in one batch.
 - [Retry a save after a concurrency conflict](handle-concurrency.md) — Wrap an async save in a bounded retry loop using `IEfCoreExceptionHandler`.
+- [Customise how concurrency conflicts are resolved](customise-concurrency-handling.md) — Implement `IEfCoreExceptionHandler` and register it per `DbContext` type to replace the default reload-and-retry decision.
 - [Capture a save-time snapshot for hooks](capture-save-snapshot.md) — Keep the entries and their pre-save states available after EF Core has changed tracking state.
 - [Withhold sensitive properties from unauthorised callers](filter-sensitive-responses.md) — Opt a `JsonSerializerOptions` instance into role-aware omission for properties declared `[SensitiveData]`.
 

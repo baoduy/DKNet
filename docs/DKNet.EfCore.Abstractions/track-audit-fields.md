@@ -22,15 +22,25 @@ public sealed class Invoice : AuditedEntity
 
 `IAuditedEntity<TKey>` combines identity with `IAuditedProperties`: `CreatedBy`, `CreatedOn`, `UpdatedBy` and `UpdatedOn`. `LastModifiedBy` and `LastModifiedOn` fall back to creation values and are not mapped.
 
+None — no DI registration needed; `AuditedEntity<TKey>` is a base class you derive from, and `IAuditedProperties`/`IAuditedEntity<TKey>` are interfaces you can implement directly instead.
+
 ## ⚙️ Configuration reference
 
-| Argument | Type | Default | Effect |
+| Argument / Override point | Type | Default | Effect |
 |---|---|---|---|
 | `createdOn` / `updatedOn` | `DateTimeOffset?` | `null` | Use `DateTimeOffset.UtcNow` when accepted. |
+| `IAuditedProperties` | Interface | — | Implement it yourself (without `AuditedEntity<TKey>`) to expose `CreatedBy`, `CreatedOn`, `UpdatedBy`, `UpdatedOn` on your own base type. |
 
 ## 🧱 Where it fits
 
-AuditedEntity stores domain-supplied identity. AuditLogs can supply the signed-in user on save; DataAuthorization supplies ownership-based audit identity when no current-user value is available. Those hooks run in the host, rather than in the entity base class.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AuditLogExtensions` / `EfCoreAuditHook` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/capture-changes.md) | Reads `CreatedBy`/`CreatedOn`/`UpdatedBy`/`UpdatedOn` to build each `AuditLogEntry`, and [stamps the current user](../DKNet.EfCore.AuditLogs/stamp-current-user.md) into them before capture. |
+| `DataOwnerHook` | [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/stamp-ownership.md) | Fills the same fields from the ownership key when no current-user value is available (see the [audit-field split](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split)). |
+| `FluentsEntityEndpointMapperExtensions` / `ListQuery` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md) | Reads `IAuditedProperties`/`IAuditedEntity<TKey>` to offer activity-window filtering on generated list endpoints. |
+| `DefaultEntityTypeConfiguration` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/configure-model.md) | Recognizes the audited contracts while applying default entity model configuration. |
+
+**Entry point in your app:** derive from `AuditedEntity<TKey>` (or implement `IAuditedProperties` yourself); register [AuditLogs](../DKNet.EfCore.AuditLogs/index.md) and/or [DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) hooks to fill the fields automatically.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

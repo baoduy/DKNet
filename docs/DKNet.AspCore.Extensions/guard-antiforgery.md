@@ -30,6 +30,12 @@ A refused request returns fixed 400 `application/problem+json`, with an `Antifor
 
 The secret cookie is HttpOnly, Secure Always and SameSite Strict. Configure options with `AddAntiforgeryConfig(Action<AntiforgeryGuardOptions>?)`.
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddAntiforgeryConfig` or `UseAntiforgeryConfig`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddAntiforgeryConfig(...)` and `app.UseAntiforgeryConfig()`, placed after `app.UseRouting()`, in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - This is a header-based guard, not a body-token fallback. A checked mutation without the configured header is refused.

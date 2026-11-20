@@ -23,11 +23,24 @@ Console.WriteLine(matches.Single().Name); // Coffee
 
 Paths normalize camelCase, snake_case and kebab-case segments to PascalCase, including dotted paths. Scalar conversion supports numeric types, booleans, date/time types, Guid and enums. String collections for In/NotIn are converted element by element; already-typed collections must match the target, and unknown enum names are rejected. Out-of-range numeric strings pass `Enum.TryParse` and are not rejected. Typed filter values are parameterized for EF query-plan reuse.
 
+None — no DI registration needed; `TryBuildPredicate`, `DynamicAnd` and `DynamicOr` are static/extension methods you call directly.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no implementable override point. `Ops` (above) is the enum whose member you pass to select behaviour; it is not something you override.
+
 ## 🧱 Where it fits
 
 ![A validated predicate enters a specification or an expandable DbSet query, then EF composes it into SQL when materialized.](diagrams/predicate-components.svg)
 
-Repository queries already call `AsExpandable()`. Raw `DbSet`/`IQueryable` paths must call it themselves when composing LinqKit expressions.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `ListQuery.TryValidate` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/query-list-endpoints.md) | Calls `DynamicPredicateExtensions.TryBuildPredicate` to turn each caller-supplied `(field, Ops, value)` filter condition into a validated predicate for a list endpoint. |
+| `ListFilter` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/query-list-endpoints.md) | Parses the `Ops` member out of a colon-separated query-string filter (`IParsable<ListFilter>`); its JSON converter delegates to the same parse. |
+
+[Query and save through a repository](query-and-save.md)'s `IRepositorySpec.Query` already calls `AsExpandable()`. Raw `DbSet`/`IQueryable` paths must call it themselves when composing LinqKit expressions.
+
+**Entry point in your app:** call `TryBuildPredicate` (or the typed `DynamicAnd`/`DynamicOr` overloads) yourself wherever a caller-supplied filter needs validating before it becomes a predicate.
 
 ## ⚠️ Gotchas & limits
 

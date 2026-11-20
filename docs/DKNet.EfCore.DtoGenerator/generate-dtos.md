@@ -14,9 +14,17 @@ public partial record ProductDto
 
 Candidate properties must be public instance properties with public getters and no index parameters. Base-type properties are included and de-duplicated by name. A `partial class` or `partial record struct` also receives a matching partial declaration.
 
+None — no DI registration needed; `[GenerateDto]` is a declarative attribute the `DtoGenerator` compile-time analyzer reads to emit your partial DTO.
+
+## ⚙️ Configuration reference
+
+None — property generation itself reads no option; see [Choose DTO properties](configure-exclusions.md#-configuration-reference) for `Include`/`Exclude`/`IgnoreComplexType` and the project-wide MSBuild switches.
+
 ## 🧱 Where it fits
 
-The [compiler component diagram](index.md#-architecture) shows the analyzer boundary. `GenerateDtoAttribute` is internal source compiled into your project; `GlobalDtoConfiguration` is a documentation marker inside the analyzer, not a runtime configuration API.
+None — no other DKNet package calls `[GenerateDto]` itself; your own code and [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) project queries use the DTO it generates. The [compiler component diagram](index.md#-architecture) shows the analyzer boundary. `GenerateDtoAttribute` is internal source compiled into your project; `GlobalDtoConfiguration` is a documentation marker inside the analyzer, not a runtime configuration API.
+
+**Entry point in your app:** declare `[GenerateDto(typeof(TEntity))]` on a public partial record/class/struct.
 
 ## ⚠️ Gotchas & limits
 

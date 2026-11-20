@@ -2,6 +2,8 @@
 
 Part of [DKNet.SlimBus.Generators](index.md). Everything the generator names is derived, never configurable beyond the attribute's `Name` (or, for `[CrudAction]`, its `Route`):
 
+None — no DI registration needed; these are compile-time naming rules `CrudGenerator` applies while emitting code, not something you call or register.
+
 | Thing | Rule | From the example below |
 |---|---|---|
 | Namespace | `{AssemblyName}.Crud`, or `Generated.Crud` when the compilation has no assembly name | `MyApi.Crud`, for a compiling project whose assembly is named `MyApi` |
@@ -106,9 +108,15 @@ ChangePrice
 
 ![A [CrudUpdate]/[CrudAction] member derives three independent names at once: the request type name, the route segment, and the route name — renaming or re-segmenting one never touches the others.](diagrams/name-requests-and-routes.svg)
 
+## ⚙️ Configuration reference
+
+None — naming is fixed by the entity's attributed members and the `Name`/`Route` values already covered on [Generate CRUD requests](generate-crud-requests.md) and [Expose domain actions](expose-domain-actions.md); this page adds no option or override point of its own.
+
 ## 🧱 Where it fits
 
 `Map{Entity}Crud`, generated only when the project references [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md), is what turns these names and segments into live routes — see [Map CRUD endpoints](map-crud-endpoints.md) for the registration and exclusion mechanics, and `CrudMapOptions.Configure`/`Exclude` for consuming a route's name at the call site.
+
+**Entry point in your app:** none directly — these names surface wherever you consume a generated request/handler/route, and as the string you pass to `CrudMapOptions.Configure`/`Exclude` (see [Map CRUD endpoints](map-crud-endpoints.md)).
 
 ## ⚠️ Gotchas & limits
 

@@ -24,6 +24,18 @@ public sealed class Item { public int Id { get; set; } }
 
 Schema resolution uses `GetSchema()`, then `GetDefaultSchema()`, then `dbo` for SQL Server only. Table resolution uses `GetTableName()` then `GetDefaultTableName()`.
 
+None — no DI registration needed; `GetTableName<TEntity>` is an extension method you call directly on a `DbContext`.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no override point.
+
+## 🧱 Where it fits
+
+`GetTableName<TEntity>` calls `IsSqlServer()` from [Read keys and tracked property values](../DKNet.EfCore.Extensions/inspect-entries.md) to pick the `dbo` schema fallback. Inside this package, [Check whether a mapped table exists](check-table-existence.md)'s `TableExistsAsync<TEntity>` calls `GetTableName<TEntity>` to find the table and schema to query. No other DKNet package calls `GetTableName<TEntity>` directly.
+
+**Entry point in your app:** call `dbContext.GetTableName<TEntity>()` from your own infrastructure or diagnostics code.
+
 ## ⚠️ Gotchas & limits
 
 - A type absent from the model returns `(null, null)`; the existence checker instead throws for that case.

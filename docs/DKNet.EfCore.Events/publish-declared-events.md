@@ -59,7 +59,9 @@ Declaration forms and defaults live in [Declare events for persistence operation
 
 ## 🧱 Where it fits
 
-Abstractions owns the declaration, DtoGenerator validates and can generate the payload, and Hooks supplies the save phases. This package decides which declarations qualify and publishes the resulting mapped objects.
+None — no other DKNet package calls this declared-event dispatch; only your own `IMapper` profile and `IEventPublisher` implementation see the mapped payload. [Abstractions](../DKNet.EfCore.Abstractions/declare-save-events.md) owns the `[RaisesEvent]` declaration, [DtoGenerator](../DKNet.EfCore.DtoGenerator/generate-event-payloads.md) validates it and can generate the payload, and [Hooks](../DKNet.EfCore.Hooks/index.md) supplies the save phases this package runs in.
+
+**Entry point in your app:** declare `[RaisesEvent]` on your entity and register your `IEventPublisher` with `AddEventPublisher<TDbContext, TPublisher>()`.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

@@ -2,6 +2,8 @@
 
 Part of [DKNet.SlimBus.Generators](index.md). A `[CrudAction]` method is a named operation on the entity at its own `{id}/{segment}` route — it never claims the plain `{id}` route, whatever verb it uses:
 
+None — no DI registration needed; `[CrudAction]` is a compile-time attribute read by `CrudGenerator`. The route it produces is wired up automatically by the `Map{Entity}Crud()` call already shown in the [Quick Start](index.md#-quick-start).
+
 ```csharp
 [CrudAction("approval")]
 public void Approve([Required] string approver) { /* … */ AddEvent<OrderApproved>(); }
@@ -36,6 +38,8 @@ Host: localhost
 ## 🧱 Where it fits
 
 An action request is structurally identical to an update request — implementing `IWitResponse<TDto>` and `IWithKey<TKey>` — see [Generate CRUD requests](generate-crud-requests.md). Its route is registered by `Map{Entity}Crud` from [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md); see [Map CRUD endpoints](map-crud-endpoints.md) for `CrudOp.Action` exclusion and configuration.
+
+**Entry point in your app:** mark the method `[CrudAction]`; the route appears automatically when you call `Map{Entity}Crud()` (see [Map CRUD endpoints](map-crud-endpoints.md)).
 
 ## ⚠️ Gotchas & limits
 

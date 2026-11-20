@@ -31,6 +31,18 @@ public sealed class Item
 
 The scalar query names its projected column `Value` for EF composition and uses SingleAsync with the caller cancellation token. It does not query entity rows.
 
+None — no DI registration needed; `TableExistsAsync` is an extension method you call directly on a `DbContext`.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no override point.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `TableExistsAsync`; you call it from your own infrastructure code. Inside this package, [Create a model schema behind one table gate](create-model-tables.md)'s `CreateTableAsync<TEntity>` calls it as the existence gate before deciding whether to create the whole model schema.
+
+**Entry point in your app:** call `dbContext.TableExistsAsync<TEntity>()` directly from your own startup or migration code.
+
 ## ⚠️ Gotchas & limits
 
 - A type absent from the model throws InvalidOperationException before querying. A valid table with zero entity rows still exists.

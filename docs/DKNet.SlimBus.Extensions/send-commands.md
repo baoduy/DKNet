@@ -59,18 +59,34 @@ calls `SaveChangesAsync`.
 ![A command implementing INoResponse or IWitResponse<T> is sent through IMessageBus, the matching IHandler runs and returns a FluentResults value, and the caller inspects IsSuccess; a lookup miss returns Result.Fail(new NotFoundError(...)).](diagrams/send-commands.svg)
 
 `NotFoundError` is a `FluentResults.Error` subclass for "the thing you addressed doesn't exist" — return it from
-`Result.Fail` so an API layer (see `DKNet.AspCore.Extensions`' response mapping) can translate it to HTTP 404.
+`Result.Fail` so an API layer (see [DKNet.AspCore.Extensions' response mapping](../DKNet.AspCore.Extensions/convert-results.md)) can translate it to HTTP 404.
 
 `Fluents.Requests.IWithKey<TKey>` is a small companion interface (`TKey Id { get; set; }`) for requests addressed by
-an identifier. [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/index.md) puts it on the update and action
-requests it emits, so shared code can read the key generically.
+an identifier. [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-crud-requests.md) puts it on the
+update and action requests it emits, so shared code can read the key generically.
+
+## ⚙️ Configuration reference
+
+There is no options type and no `IConfiguration` section.
+
+| Override point | How you customise it |
+|---|---|
+| `Fluents.Requests.IHandler<TRequest>` / `IHandler<TRequest, TResponse>` | Implement it for your command; `AddServicesFromAssembly(...)` (see the [Quick Start](index.md#-quick-start)) discovers and registers it. |
+| `Fluents.Requests.INoResponse` / `IWitResponse<TResponse>` | Implement one on your request record to mark it a write; which one decides the handler's return shape. |
+| `Fluents.Requests.IWithKey<TKey>` | Implement it (`TKey Id { get; set; }`) on a request addressed by an identifier, so `*ById` endpoint mappers can bind the route key onto it. |
 
 ## 🧱 Where it fits
 
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `FluentsEndpointMapperExtensions` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/dispatch-bus-requests.md) | Maps `INoResponse`/`IWitResponse<T>` to `MapPost`/`MapPut`/`MapPatch`/`MapDelete`, and the `*ById` forms (`MapPutById`, `MapActionById`, `MapParameterlessActionById`) to the same contracts plus `IWithKey<TKey>`. |
+| `FluentsEntityEndpointMapperExtensions` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md) | Its three-type `MapDeleteById<TEntity,TKey,TRequest>` binds a request implementing `IWithKey<TKey>` so a host validation filter can refuse a delete before the shared save helper runs. |
+| Generated requests (emitted by `CrudGenerator`) | [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-crud-requests.md) | Implements `IWitResponse<TDto>` for every create/update/action request, and `IWithKey<TKey>` for update/action/delete requests. |
+
 A write request is the trigger [auto-save](auto-save-dbcontext.md) keys off: only types implementing
-`Fluents.Requests.INoResponse` or `IWitResponse<T>` are ever saved for you. `DKNet.AspCore.Extensions` maps these
-same contracts to minimal-API endpoints (`MapPost`, `MapPut`, `MapDelete`, and the `*ById` forms for `IWithKey<TKey>`
-requests) and turns a failed `IResultBase`/`IResult<T>` into a `ProblemDetails` response.
+`Fluents.Requests.INoResponse` or `IWitResponse<T>` are ever saved for you.
+
+**Entry point in your app:** implement `Fluents.Requests.IHandler<TRequest[, TResponse]>` and let `AddServicesFromAssembly(...)` discover it; map it to HTTP with `MapPost`/`MapPut`/`MapPatch`/`MapDelete` from `DKNet.AspCore.Extensions`, or call `IMessageBus.Send(...)` yourself.
 
 ## ⚠️ Gotchas & limits
 

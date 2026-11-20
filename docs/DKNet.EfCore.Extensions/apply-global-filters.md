@@ -49,7 +49,22 @@ public sealed class VisibleItems : GlobalQueryFilter
 | `IsIgnorable` | `bool` | `true` | Includes the key in static `IgnorableFilterKeys` for specification bypass. |
 | `AddGlobalModelBuilder<T>()` | type registration | none | Merge an extra type with scanned types, distinct by type. |
 
+| Override point | How you customise it |
+|---|---|
+| `IGlobalModelBuilder.Apply(ModelBuilder, DbContext)` | Implement it directly for a model-wide change that is not a named query filter (such as adding extra entities to the model). Derive from `GlobalQueryFilter` instead when the change is a per-entity named filter. |
+| `GlobalQueryFilter.GetEntityTypes(ModelBuilder)` / `HasQueryFilter<TEntity>(DbContext)` | Override both in your `GlobalQueryFilter` subclass to select entity types and build each one's filter expression. |
+| `GlobalQueryFilter.IsIgnorable` | `virtual`, defaults to `true`. Override to `false` for a filter that must never be bypassed by `ISpecification.IsIgnoreQueryFilters`. |
+
 Use [DataAuthorization](../DKNet.EfCore.DataAuthorization/index.md) for the existing ownership filter; it sets `IsIgnorable = false`.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `DataOwnerAuthQuery` | [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/filter-owned-rows.md) | Derives from `GlobalQueryFilter` for its row-ownership filter and overrides `IsIgnorable` to `false` so specifications cannot bypass it. |
+| `SpecificationExtensions.ApplySpecs` | [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/compose-specifications.md) | Reads `GlobalQueryFilter.IgnorableFilterKeys` to decide which named filters `IgnoreQueryFilters()` is allowed to bypass. |
+
+**Entry point in your app:** derive from `GlobalQueryFilter` (or implement `IGlobalModelBuilder` directly), then either let assembly scanning during `UseAutoConfigModel` (see [Apply model configurations and entity conventions](configure-model.md)) discover it, or call `AddGlobalModelBuilder<T>()` explicitly.
 
 ## ⚠️ Gotchas & limits
 

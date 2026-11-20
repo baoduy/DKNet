@@ -2,6 +2,8 @@
 
 Part of [DKNet.Fw.Extensions](index.md). Use `DateTimeExtensions` for calendar quarter numbers and the last day of the same month.
 
+None — no DI registration needed; `DateTimeExtensions` is a static extension method class you call directly.
+
 ```csharp
 using System;
 using DKNet.Fw.Extensions.Primitives;
@@ -15,6 +17,16 @@ Console.WriteLine(((DateTime?)null).LastDayOfMonth() is null); // True
 ![LastDayOfMonth calculates DaysInMonth minus the current day, then adds that many days to the original DateTime.](diagrams/calendar-dates.svg)
 
 `InQuarter()` computes `((Month - 1) / 3) + 1`. `LastDayOfMonth()` uses `DateTime.AddDays`, preserving the original time, subsecond precision and `Kind`. Its nullable overload returns null for null input.
+
+## ⚙️ Configuration reference
+
+None — `InQuarter`/`LastDayOfMonth` read no options and expose no override point.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `InQuarter` or `LastDayOfMonth`; you call them from your own code.
+
+**Entry point in your app:** calling `DateTimeExtensions.InQuarter`/`LastDayOfMonth` directly on a `DateTime` in your own code.
 
 ## ⚠️ Gotchas & limits
 

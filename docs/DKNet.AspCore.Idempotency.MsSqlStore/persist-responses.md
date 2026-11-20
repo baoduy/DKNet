@@ -32,9 +32,13 @@ Migrations run during host startup through `IdempotencyMigrationHostedService<TC
 
 ## 🧱 Where it fits
 
-The package overview shows the host registrations and dependencies behind this capability. The core filter and selected store have separate responsibilities.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Endpoint filter (internal; contract documented in [Implement a custom reservation store](../DKNet.AspCore.Idempotency/implement-store.md)) | DKNet.AspCore.Idempotency | Resolves this store as `IIdempotencyKeyStore` and calls `IsKeyProcessedAsync` then `MarkKeyAsProcessedAsync` around each protected handler. |
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/idempotency-mssql-composition.svg)
+
+**Entry point in your app:** register this provider via `AddIdempotencyWithMsSqlStore` in `Program.cs`, then protect an endpoint with `.RequiredIdempotentKey()`; the filter then uses the store transparently.
 
 ## ⚠️ Gotchas & limits
 
