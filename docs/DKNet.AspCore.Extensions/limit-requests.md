@@ -25,6 +25,16 @@ Console.WriteLine("RateLimitConfig pipeline configured.");
 
 Both default limiter option objects set `QueueLimit = 0`.
 
+| Override point | How you customise it |
+|---|---|
+| `IRateLimitOptionsProvider` | Implement `GetRateLimiterOptions(HttpContext)` and `GetConcurrencyLimiterOptions(HttpContext)`, then register with `services.AddSingleton<IRateLimitOptionsProvider, TYourProvider>()`. Registering it before or after `AddRateLimitConfig` both work: an earlier registration blocks the helper's `TryAddSingleton` default, a later one wins when the single provider is resolved. Full reference: [Supply your own rate-limit provider](customise-rate-limits.md). |
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddRateLimitConfig`, `UseRateLimitConfig` or implements `IRateLimitOptionsProvider`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddRateLimitConfig(builder.Configuration)` and `app.UseRateLimitConfig()` in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - Partitions are local to the host process; this is not a distributed rate ledger.

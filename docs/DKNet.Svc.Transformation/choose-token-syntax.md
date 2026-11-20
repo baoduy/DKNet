@@ -31,7 +31,7 @@ This does not show what happens once a token is matched — see [fill a template
 
 ## 🧱 Where it fits
 
-Token syntax is purely an extraction-time concern: `TransformerService` builds one internal `TokenExtractor` per entry in `DefaultDefinitions` when it is constructed, and every active definition is tried against the full template on every call. See the package [🏗️ Architecture](index.md#-architecture) for where extraction sits between the host call and resolution.
+Token syntax is purely an extraction-time concern: [`TransformerService`](register-the-service.md) builds one internal `TokenExtractor` per entry in `DefaultDefinitions` when it is constructed, and every active definition is tried against the full template on every call. See the package [🏗️ Architecture](index.md#-architecture) for where extraction sits between the host call and resolution.
 
 ## ⚠️ Gotchas & limits
 

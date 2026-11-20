@@ -32,6 +32,8 @@ public sealed class Item
 
 The default `EfCoreExceptionHandler` rethrows conflicts with no entries. Otherwise it reloads database values into OriginalValues while preserving CurrentValues, then requests another save. It uses the structured Entries collection, not message matching.
 
+None — no DI registration needed; `SaveChangesWithConcurrencyHandlingAsync` is an extension method you call directly on a `DbContext`.
+
 ## ⚙️ Configuration reference
 
 | Option | Type | Default | Effect |
@@ -41,7 +43,18 @@ The default `EfCoreExceptionHandler` rethrows conflicts with no entries. Otherwi
 | `cancellationToken` | `CancellationToken` | `default` | Forwarded to save and handler. |
 | Default handler logger | `ILogger<EfCoreExceptionHandler>?` | `null` | Log conflict warning when supplied. |
 
-`EfConcurrencyResolution` contains `RethrowException`, `IgnoreChanges` and `RetrySaveChanges`. Pass a custom handler explicitly for direct calls.
+`EfConcurrencyResolution` contains `RethrowException`, `IgnoreChanges` and `RetrySaveChanges`. Pass a custom handler explicitly for direct calls. See [Customise how concurrency conflicts are resolved](customise-concurrency-handling.md) to implement your own `IEfCoreExceptionHandler` and register it per `DbContext` type.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `EfAutoSavePostInterceptor` | [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md) | Calls this helper after a successful write, passing the keyed or unkeyed handler it resolved from DI. |
+| `RepositorySpec<TDbContext>` | [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/query-and-save.md) | `SaveChangesAsync` calls this helper, passing the keyed handler it resolved from DI (or `null`). |
+
+Both consumers resolve their handler from DI before calling this helper — see [Customise how concurrency conflicts are resolved](customise-concurrency-handling.md) for how. This helper itself never reads DI.
+
+**Entry point in your app:** call `dbContext.SaveChangesWithConcurrencyHandlingAsync()` yourself when you are not going through either consumer above.
 
 ## ⚠️ Gotchas & limits
 

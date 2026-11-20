@@ -12,6 +12,8 @@ var matches = shaHashing.VerifySha256("hello world", hash);
 Console.WriteLine(matches); // True
 ```
 
+Registration: `services.AddEncryptionServices()` registers `IShaHashing` as transient — or construct `ShaHashing` directly, as above.
+
 Output is lower-case hex unless `upperCase` is set. Verification is hex-only (`expectedHex`), constant-time, and
 returns `false` — instead of throwing — when the expected value isn't valid hex. Empty string input is allowed;
 `null` throws `ArgumentNullException`.
@@ -29,6 +31,12 @@ first half of the diagram: UTF-8 bytes in, hex string out, no comparison involve
 | `VerifySha256`/`VerifySha512` | `ignoreCase` | `true` | No effect — comparison runs on decoded bytes, which are already case-insensitive. |
 
 `IShaHashing` has no DI-level configuration: `AddEncryptionServices()` registers it as transient with no arguments.
+
+## 🧱 Where it fits
+
+None — no other DKNet package or feature calls `IShaHashing`; you resolve it from DI or construct `ShaHashing`
+directly and call it from your own code. **Entry point in your app:** resolve `IShaHashing` after
+`AddEncryptionServices()`, or `new ShaHashing()` outside DI.
 
 ## ⚠️ Gotchas & limits
 

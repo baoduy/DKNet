@@ -42,9 +42,19 @@ A refused delete never reaches `SaveChanges`, so the row survives and no audit e
 
 **Name collision.** If a `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` member already resolves to the name `Delete{Entity}Request` (for example a `[CrudUpdate] public void Delete()`), the generator emits neither the delete record nor the three-argument map call, and falls back to `MapDeleteById<{Entity}, {Key}>()`. That entity's DELETE route keeps working unchanged, but there is no delete request left to guard — rename the member if you need the rule. The generator reports the skip as `DKCRUDGEN010` (Info), naming the entity, the colliding member and the request name it took; Info never fails a build.
 
+## ⚙️ Configuration reference
+
+There is no options type of its own — validation is opt-in through the host's validation pipeline.
+
+| Override point | How you customise it |
+|---|---|
+| `AbstractValidator<Delete{Entity}Request>` | Write one against the generated `IWithKey<TKey>` request, register it with `AddValidatorsFromAssemblyContaining<T>()`, and call `AddFluentValidationAutoValidation()` on the group so it is actually consulted. |
+
 ## 🧱 Where it fits
 
-`MapDeleteById` and its two overloads live in [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md); the delete goes through [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md)'s `IRepositorySpec`, never through a generated handler. See [Read the generator's diagnostics](read-diagnostics.md) for `DKCRUDGEN010`'s severity and build effect.
+`MapDeleteById` and its two overloads live in [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md); the delete goes through [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/query-and-save.md)'s `IRepositorySpec`, never through a generated handler. See [Read the generator's diagnostics](read-diagnostics.md) for `DKCRUDGEN010`'s severity and build effect.
+
+**Entry point in your app:** write an `AbstractValidator<Delete{Entity}Request>`, register it with `AddValidatorsFromAssemblyContaining<T>()`, and call `.AddFluentValidationAutoValidation()` on the route group.
 
 ## ⚠️ Gotchas & limits
 

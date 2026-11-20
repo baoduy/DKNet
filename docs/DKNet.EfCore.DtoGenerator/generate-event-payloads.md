@@ -27,6 +27,8 @@ public sealed class Product
 
 Convention names combine entity name, optional label, sorted narrowing properties, operations in Created/Updated/Deleted order, then `Event`. `EventNameComposer` is compile-linked from Abstractions and shared with the runtime. Convention payloads accept `Include`/`Exclude` and project exclusions but omit navigation properties: navigation classes and collections shaped as an array, `List<T>`, `IList<T>`, `ICollection<T>` or `IEnumerable<T>`. Read-only and set collections (`IReadOnlyCollection<T>`, `IReadOnlyList<T>`, `HashSet<T>`) are not recognised and stay in the payload. A compatible handwritten partial record without `[GenerateDto]` can extend the emitted record.
 
+None — no DI registration needed; `RaisesEventValidator` validates and generates at compile time. Dispatching the generated payload at runtime needs [Events'](../DKNet.EfCore.Events/publish-declared-events.md) hook registration.
+
 ## ⚙️ Configuration reference
 
 | Diagnostic | Severity | Meaning |
@@ -52,7 +54,13 @@ All use category `DKNet.EfCore.DtoGenerator`. Standard MSBuild `EmitCompilerGene
 
 ## 🧱 Where it fits
 
-The [compiler architecture](index.md#-architecture) separates generation from [runtime event dispatch](../DKNet.EfCore.Events/index.md). The latter needs its own hook, mapper and publisher registration.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `EventHook` | [DKNet.EfCore.Events](../DKNet.EfCore.Events/publish-declared-events.md) | Evaluates the same `[RaisesEvent]` rules at save time and maps/publishes the payload this generator validated or emitted. |
+
+The [compiler architecture](index.md#-architecture) separates generation from runtime event dispatch; the latter needs its own hook, mapper and publisher registration.
+
+**Entry point in your app:** declare `[RaisesEvent]` on your entity (see [Declare events for persistence operations](../DKNet.EfCore.Abstractions/declare-save-events.md)); reference [Events](../DKNet.EfCore.Events/index.md) to dispatch the payload.
 
 ## ⚠️ Gotchas & limits
 

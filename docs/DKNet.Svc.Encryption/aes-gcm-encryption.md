@@ -12,6 +12,8 @@ var plain = aes.DecryptString(package);
 Console.WriteLine(plain); // secret-value
 ```
 
+Registration: `services.AddAesGcmEncryption(base64Key)` registers `IAesGcmEncryption` as a singleton over that key — or construct `AesGcmEncryption` directly, as above.
+
 `new AesGcmEncryption()` generates a random 256-bit key; `new AesGcmEncryption(existingBase64Key)` reconstructs an
 instance from a previously persisted key (128/192/256-bit), rejecting a key containing `:` — that shape belonged to
 the removed AES-CBC type's `key:iv` format. The returned package is Base64 of `nonce:tag:cipher` (each part itself
@@ -53,9 +55,14 @@ package layout `base64(nonce):base64(tag):base64(cipher)`.
 
 ## 🧱 Where it fits
 
+None — no other DKNet package calls `IAesGcmEncryption`/`AesGcmEncryption`; you call it from your own code.
+
 `AddAesGcmEncryption` is one of two key-bearing cipher registrations shown in the [package architecture](index.md);
 only the registration that receives a key produces a singleton cipher. A hand-built `new AesGcmEncryption()` with no
 key sits outside DI entirely and generates its own throwaway key.
+
+**Entry point in your app:** inject `IAesGcmEncryption` after `services.AddAesGcmEncryption(base64Key)`, or construct
+`new AesGcmEncryption()`/`new AesGcmEncryption(existingBase64Key)` directly, as above.
 
 ## ⚠️ Gotchas & limits
 

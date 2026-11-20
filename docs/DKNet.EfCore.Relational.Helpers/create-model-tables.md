@@ -31,6 +31,8 @@ public sealed class Item
 
 `TEntity` chooses only the existence gate. If that table exists the method returns even when other model tables are absent. Otherwise EF Core creates the full model schema, not just this entity table.
 
+None — no DI registration needed; `CreateTableAsync` is an extension method you call directly on a `DbContext`.
+
 ## ⚙️ Configuration reference
 
 | Argument | Type | Default | Effect |
@@ -40,7 +42,9 @@ public sealed class Item
 
 ## 🧱 Where it fits
 
-DbContextHelpers calls EF Core relational database-creator services and the configured database catalog. The package uses Extensions for the SQL Server provider-name check; schema creation is owned by the provider.
+None — no other DKNet package calls `CreateTableAsync`; you call it from your own one-shot provisioning code. It calls [Check whether a mapped table exists](check-table-existence.md)'s `TableExistsAsync<TEntity>` as its existence gate before deciding whether to run EF Core's whole-model schema creation.
+
+**Entry point in your app:** call `dbContext.CreateTableAsync<TEntity>()` once, from your own startup or provisioning code, against a database that has none of the model's tables yet.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

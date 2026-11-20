@@ -33,9 +33,24 @@ public sealed class Item
 
 `SnapshotEntityEntry` retains the live `Entry` and `Entity` references plus the copied `OriginalState`. Disposal clears the captured list and leaves the DbContext and its tracker settings untouched.
 
+None — no DI registration needed; `new SnapshotContext(db)` is a plain constructor call you make directly.
+
+## ⚙️ Configuration reference
+
+None — `SnapshotContext` reads no options and exposes no override point; it captures whatever the `DbContext`'s change tracker reports.
+
 ## 🧱 Where it fits
 
-Hooks creates one SnapshotContext per save. EventHook, EfCoreAuditHook and DataOwnerHook inspect its entries through their hook callbacks; they do not each build a separate capture.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `HookContext` / `IHookBaseAsync` family | [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/write-save-hooks.md) | Creates one `SnapshotContext` per save and passes it to every before/after hook. |
+| `EventHook` | [DKNet.EfCore.Events](../DKNet.EfCore.Events/publish-domain-events.md) | Derives from `HookAsync` to read the shared snapshot's entries and dispatch their domain events. |
+| `EfCoreAuditHook` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/capture-changes.md) | Derives from `HookAsync` to turn the shared snapshot's entries into `AuditLogEntry` records. |
+| `DataOwnerHook` | [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/stamp-ownership.md) | Reads the shared snapshot's entries to stamp ownership and audit fields. |
+
+Every hook inspects the same `SnapshotContext` through its hook callbacks; none of them build a separate capture.
+
+**Entry point in your app:** you rarely construct `SnapshotContext` yourself — [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md)'s `HookRunnerInterceptor` creates and shares it automatically once you register hooks.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

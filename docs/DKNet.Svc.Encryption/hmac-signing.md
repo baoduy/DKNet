@@ -14,6 +14,8 @@ var trusted = hmacHashing.VerifySha256("raw-body", "webhook-secret", signature);
 Console.WriteLine(trusted); // True
 ```
 
+Registration: `services.AddEncryptionServices()` registers `IHmacHashing` as transient — or construct `HmacHashing` directly, as above.
+
 Set `asBase64 = false` to get upper-case hex instead of Base64, and match that choice with `signatureIsBase64` on the
 verify call — a mismatched encoding returns `false` rather than throwing. Blank `message`, `secretKey`, or
 `expectedSignature` throws `ArgumentException`.
@@ -31,6 +33,12 @@ after every `ComputeSha256`/`ComputeSha512` call, whether verification follows o
 | `VerifySha256`/`VerifySha512` | `signatureIsBase64` | `true` | Must match how the signature was produced; a mismatch returns `false`. |
 
 `IHmacHashing` has no DI-level configuration: `AddEncryptionServices()` registers it as transient with no arguments.
+
+## 🧱 Where it fits
+
+None — no other DKNet package or feature calls `IHmacHashing`; you resolve it from DI or construct `HmacHashing`
+directly and call it from your own code. **Entry point in your app:** resolve `IHmacHashing` after
+`AddEncryptionServices()`, or `new HmacHashing()` outside DI.
 
 ## ⚠️ Gotchas & limits
 

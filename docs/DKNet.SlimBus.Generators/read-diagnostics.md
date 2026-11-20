@@ -2,6 +2,8 @@
 
 Part of [DKNet.SlimBus.Generators](index.md). Every diagnostic shares the `DKNet.SlimBus.Generators` category and the `DKCRUDGEN0xx` id scheme. Only three ids stop an entity from emitting anything at all — the rest are scoped to the one member or route that triggered them, or are purely informational. The message column is the exact `messageFormat` from `CrudDiagnostics`, with `{0}`/`{1}`/… left as placeholders for the entity, member or request name the generator substitutes in:
 
+None — no DI registration needed; diagnostics are compile-time build output, not something you call or register.
+
 | Id | Severity | Message | Effect |
 |---|---|---|---|
 | `DKCRUDGEN001` | Error | `Entity '{0}' has [CrudCreate]/[CrudUpdate] members but no [GenerateDto(typeof({0}))] DTO was found in the compiling project` | Entity is skipped. |
@@ -17,9 +19,15 @@ Part of [DKNet.SlimBus.Generators](index.md). Every diagnostic shares the `DKNet
 
 ![DKCRUDGEN001/002/006 fail the build and skip the whole entity; DKCRUDGEN003/004/007/008/009 fail the build but only the offending member or route is affected; DKCRUDGEN005/010 are informational and never fail the build.](diagrams/read-diagnostics.svg)
 
+## ⚙️ Configuration reference
+
+None — diagnostics have no options and no override point; every id is `isEnabledByDefault: true` and not suppressible through this generator's own surface (see Gotchas).
+
 ## 🧱 Where it fits
 
 001/002/006 are raised while resolving an entity's DTO and key — see [Generate CRUD requests](generate-crud-requests.md). 003/004/007/008/009 are raised per member or per route while building that entity's model, so a single bad member never takes down the rest of the entity's slice. 005 comes from [Generate handlers](generate-handlers.md); 010 comes from [Refuse a delete](refuse-a-delete.md).
+
+**Entry point in your app:** none to call — diagnostics appear in your build output/IDE error list whenever `CrudGenerator` runs over an attributed entity.
 
 ## ⚠️ Gotchas & limits
 

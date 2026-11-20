@@ -23,6 +23,8 @@ public enum InvoiceSequences
 
 The metadata declares no database objects itself. [Extensions](../DKNet.EfCore.Extensions/read-sequences.md) registers `Seq_<Member>` on SQL Server or Npgsql models and reads the next value.
 
+None — no DI registration needed; `[SqlSequence]`/`[Sequence]` are declarative attributes read by [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/read-sequences.md) model building.
+
 ## ⚙️ Configuration reference
 
 | Option | Type | Default | Effect |
@@ -36,7 +38,11 @@ The metadata declares no database objects itself. [Extensions](../DKNet.EfCore.E
 
 ## 🧱 Where it fits
 
-The domain carries enum metadata. Extensions reads that metadata during supported-provider model building and uses it again when the host asks for a sequence value.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `SequenceExtensions` / `EfCoreExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/read-sequences.md) | Reads `[SqlSequence]`/`[Sequence]` during supported-provider model building to register `Seq_<Member>`, then reads the next value when the host asks for one. |
+
+**Entry point in your app:** put the attributes on an enum; call into [Extensions' sequence APIs](../DKNet.EfCore.Extensions/read-sequences.md) from your `DbContext` or repository code.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

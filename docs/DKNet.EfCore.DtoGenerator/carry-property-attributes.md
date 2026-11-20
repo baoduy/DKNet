@@ -17,9 +17,21 @@ public sealed class Product
 
 Attributes in `System.ComponentModel.DataAnnotations` and `DKNet.EfCore.Abstractions.Attributes.SensitiveDataAttribute` are carried with best-effort constructor/named argument serialization. Other namespaces, including JSON and custom validation attributes, are not copied.
 
+None — no DI registration needed; attribute carrying runs inside the `DtoGenerator` compile-time analyzer.
+
+## ⚙️ Configuration reference
+
+None — attribute carrying reads no option and exposes no override point; it copies whatever `System.ComponentModel.DataAnnotations` or `[SensitiveData]` attributes your source property already has.
+
 ## 🧱 Where it fits
 
-[Withhold sensitive properties from unauthorised callers](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers) describes the opt-in runtime response filter. The generator carries the role declaration; it does not authorize requests. Role-less `[SensitiveData]` is emitted as a bare attribute.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `SensitiveDataJsonExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers) | Reads the `[SensitiveData]` attribute this generator carried onto the DTO property to withhold it from an unauthorised caller at runtime, once the host opts in. |
+
+The generator only carries the role declaration; it does not authorize requests. Role-less `[SensitiveData]` is emitted as a bare attribute.
+
+**Entry point in your app:** declare `[SensitiveData]` on the source entity property; the generated DTO carries it automatically.
 
 ## ⚠️ Gotchas & limits
 

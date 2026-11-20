@@ -22,6 +22,8 @@ public sealed class Product
 
 `[AuditLog]` and `[IgnoreAuditLog]` target classes or properties; `[SensitiveData]` targets properties. These sealed attributes are non-inherited. They do not encrypt stored values.
 
+None — no DI registration needed; `[AuditLog]`, `[IgnoreAuditLog]` and `[SensitiveData]` are declarative attributes read by AuditLogs, DtoGenerator and the opt-in JSON serializer.
+
 ## ⚙️ Configuration reference
 
 | Marker | Default | Consumer effect |
@@ -35,7 +37,15 @@ A null role array is normalized to an empty list. Read [AuditLogs](../DKNet.EfCo
 
 ## 🧱 Where it fits
 
-AuditLogs and the opted-in JSON serializer read the same SensitiveData declaration independently. Audit capture redacts unconditionally, while response serialization checks the host-supplied current principal.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AuditLogExtensions` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/redact-sensitive-values.md) | Reads `[AuditLog]`/`[IgnoreAuditLog]` to decide which entities and properties are captured, and unconditionally redacts `[SensitiveData]` values. |
+| `SensitiveDataJsonExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/filter-sensitive-responses.md) | Reads `[SensitiveData]` role names to withhold a property from a response after an explicit host opt-in, checking the current principal. |
+| `DtoGenerator` / `AttributeSourceFormatter` | [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/carry-property-attributes.md) | Copies a `[SensitiveData]` declaration onto the generated DTO property. |
+
+AuditLogs and the opted-in JSON serializer read the same `[SensitiveData]` declaration independently: audit capture redacts unconditionally, while response serialization checks the host-supplied current principal.
+
+**Entry point in your app:** put the attributes on your entity class/properties; register [AuditLogs](../DKNet.EfCore.AuditLogs/index.md) and/or the [response filter](../DKNet.EfCore.Extensions/filter-sensitive-responses.md) to act on them.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

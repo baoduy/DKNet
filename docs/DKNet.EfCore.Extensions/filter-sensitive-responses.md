@@ -34,6 +34,10 @@ public sealed class Product
 
 `UseRoleAwareSensitiveData` composes with the current resolver, or a default reflection resolver when absent. Its modifier replaces the sensitive property ShouldSerialize callback; each serialization rechecks `accessor.Current`. The example accessor is for a single console process.
 
+None — no DI registration needed; `UseRoleAwareSensitiveData` is an extension method you call directly on a `JsonSerializerOptions` instance.
+
+`[SensitiveData]` itself comes from [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/declare-audit-policy.md); [DtoGenerator](../DKNet.EfCore.DtoGenerator/carry-property-attributes.md) can carry it onto a generated DTO property so this same check applies to the response model.
+
 ## ⚙️ Configuration reference
 
 | Setting | Type | Default | Effect |
@@ -42,13 +46,23 @@ public sealed class Product
 | `ISensitiveDataPrincipalAccessor.Current` | `ClaimsPrincipal?` | host-supplied | Read at serialization time. |
 | Attribute Roles | `IReadOnlyList<string>` | empty | Authenticated caller required; a nonempty list also requires one role. |
 
-For minimal APIs configure `Microsoft.AspNetCore.Http.Json.JsonOptions.SerializerOptions`; for controllers configure `Microsoft.AspNetCore.Mvc.JsonOptions.JsonSerializerOptions`. Supply an accessor that reads `IHttpContextAccessor.HttpContext?.User` and configure each options instance once.
+| Override point | How you customise it |
+|---|---|
+| `ISensitiveDataPrincipalAccessor` | Implement it (as `PrincipalAccessor` does above) and pass your instance to `UseRoleAwareSensitiveData(accessor)`. [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/resolve-sensitive-principal.md) ships `AddSensitiveDataPrincipalAccessor()` as a ready-made registration. |
+
+For minimal APIs configure `Microsoft.AspNetCore.Http.Json.JsonOptions.SerializerOptions`; for controllers configure `Microsoft.AspNetCore.Mvc.JsonOptions.JsonSerializerOptions`. [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/resolve-sensitive-principal.md) ships a ready-made `IHttpContextAccessor`-backed accessor instead of writing your own; configure each options instance once.
 
 ## 🧱 Where it fits
 
-Abstractions owns SensitiveDataAttribute, DtoGenerator can carry it to response DTOs, and this package installs the JSON metadata modifier. The host supplies the current-principal accessor and configures its response serializer.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `HttpContextSensitiveDataPrincipalAccessor` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/resolve-sensitive-principal.md) | Implements `ISensitiveDataPrincipalAccessor.Current` by reading the signed-in user of the current `HttpContext`, registered through `AddSensitiveDataPrincipalAccessor()`. |
+
+This package installs the JSON metadata modifier; the host supplies the current-principal accessor (or the one above) and configures its response serializer.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
+
+**Entry point in your app:** call `new JsonSerializerOptions().UseRoleAwareSensitiveData(accessor)` wherever your host configures its JSON serializer options.
 
 ## ⚠️ Gotchas & limits
 

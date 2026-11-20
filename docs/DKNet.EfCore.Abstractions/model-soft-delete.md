@@ -31,15 +31,20 @@ public sealed class Document : Entity, ISoftDeletableEntity
 
 The interface declares the fields and `Delete` contract; your method decides whether deletion succeeds. `DeletedBy` carries `[MaxLength(250)]` on the interface.
 
+None — no DI registration needed; `ISoftDeletableEntity` is an interface you implement on your entity.
+
 ## ⚙️ Configuration reference
 
-| Argument | Type | Default | Effect |
+| Option / Override point | Type | Default | Effect |
 |---|---|---|---|
+| `ISoftDeletableEntity` | Interface | — | Implement it on your entity to declare `IsDeleted`, `DeletedOn`, `DeletedBy`, and write your own `Delete` logic. |
 | `deletedOn` | `DateTimeOffset?` | `null` | Your implementation decides how to handle an omitted time. |
 
 ## 🧱 Where it fits
 
-The domain decides whether deletion is allowed and records the deletion state. The host must supply filtering and save behavior; implementing this interface alone installs neither.
+None — no other DKNet package calls `ISoftDeletableEntity`; you call it from your own code.
+
+**Entry point in your app:** implement it on your entity and call `Delete` from your own domain method or application service. Add your own [global filter](../DKNet.EfCore.Extensions/apply-global-filters.md) if deleted rows must be hidden from queries.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

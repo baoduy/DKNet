@@ -22,9 +22,21 @@ public sealed class Account : Entity, IConcurrencyEntity<byte[]>
 
 The interface decorates `RowVersion` with `[Timestamp]`, `[Column(Order = 1000)]` and `[IgnoreAuditLog]`. The implementation owns storage; the interface has no setter implementation.
 
+None — no DI registration needed; `IConcurrencyEntity<TType>` is an interface you implement on your entity.
+
+## ⚙️ Configuration reference
+
+| Override point | How you customise it |
+|---|---|
+| `IConcurrencyEntity<TType>` | Implement it on your entity; expose `RowVersion` and `SetRowVersion(TType)`. `TType` is whatever your storage uses (for example `byte[]` or `uint`). |
+
 ## 🧱 Where it fits
 
-The domain exposes IConcurrencyEntity; Extensions reads it when applying DefaultEntityTypeConfiguration. The configured EF provider performs conflict checks when the host saves.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `DefaultEntityTypeConfiguration` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/configure-model.md) | Recognizes `IConcurrencyEntity<TType>` while applying default entity configuration and configures a generated row-version concurrency token. |
+
+**Entry point in your app:** implement `IConcurrencyEntity<TType>` on your entity; [DefaultEntityTypeConfiguration](../DKNet.EfCore.Extensions/configure-model.md) configures it when your `DbContext` builds its model through `UseAutoConfigModel`. Once EF Core detects a conflict, handle it with [Customise concurrency handling](../DKNet.EfCore.Extensions/customise-concurrency-handling.md).
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

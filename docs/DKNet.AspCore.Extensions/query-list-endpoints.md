@@ -48,6 +48,16 @@ For `IAuditedProperties`, omitted bounds apply a lower bound of UTC now minus th
 
 `AddListQueryOptions(Action<ListQueryOptions>?)` binds no configuration automatically. It adds data-annotation validation on start: sizes at least 1 and months at least 0. Combined `Configure` registrations affect the final validated options.
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| [`MapGetList`](map-entity-endpoints.md) | DKNet.AspCore.Extensions (same package) | Binds `ListQueryRequest` from query parameters, resolves `IOptions<ListQueryOptions>`, and applies filter/search/order/paging to the specification query. |
+
+None outside this package — no other DKNet package resolves `ListQueryOptions` or parses a `ListFilter`.
+
+**Entry point in your app:** query parameters (`filter`, `search`, `orderBy`, `pageNumber`, ...) on a route mapped by [`MapGetList`](map-entity-endpoints.md), or calling `ListFilter.Parse`/`TryParse` directly from your own code.
+
 ## ⚠️ Gotchas & limits
 
 - Date window detection uses `IAuditedProperties`; default ordering uses the narrower `IAuditedEntity<TKey>` contract.

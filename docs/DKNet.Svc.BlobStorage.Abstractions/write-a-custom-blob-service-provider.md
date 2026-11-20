@@ -43,6 +43,8 @@ public sealed class InMemoryBlobService(BlobServiceOptions options) : BlobServic
 }
 ```
 
+None — this package provides no DI helper for a custom provider; register it yourself with a plain call, e.g. `services.AddSingleton<IBlobService, InMemoryBlobService>()` (match the lifetime to your backend — each shipped provider registers itself the same way: singleton for `S3BlobService`/`AzureStorageBlobService`, scoped for `LocalBlobService`).
+
 ![ValidateFile's three independent, opt-in checks — name length, extension allow-list, and size — each throw FileLoadException on their own violation; a provider's SaveAsync calls ValidateFile once and then writes to its own backing store.](diagrams/write-a-custom-blob-service-provider.svg)
 
 The diagram does not show the stream-based overload: `ValidateFile(BlobDetails.BlobStreamData)` returns the stream a
@@ -67,10 +69,14 @@ one; override it to change how a name becomes a provider path.
 ## 🧱 Where it fits
 
 `BlobService` and `BlobServiceOptions` live in this package; every shipped provider —
-[AwsS3](../DKNet.Svc.BlobStorage.AwsS3/index.md), [AzureStorage](../DKNet.Svc.BlobStorage.AzureStorage/index.md), and
-[Local](../DKNet.Svc.BlobStorage.Local/index.md) — derives from them the same way a custom provider would. None of
-them override `GetBlobLocation`; each trims or reshapes the normalized `/name` on top of it for its own backend
-instead (see each provider's page).
+[`S3BlobService`](../DKNet.Svc.BlobStorage.AwsS3/configure-and-operate-s3-storage.md),
+[`AzureStorageBlobService`](../DKNet.Svc.BlobStorage.AzureStorage/configure-azure-blob-client.md), and
+[`LocalBlobService`](../DKNet.Svc.BlobStorage.Local/configure-and-operate-local-storage.md) — derives from them the
+same way a custom provider would. None of them override `GetBlobLocation`; each trims or reshapes the normalized
+`/name` on top of it for its own backend instead (see each provider's page).
+
+**Entry point in your app:** derive your own class from `BlobService` (as `InMemoryBlobService` does above) and
+register it as `IBlobService` yourself.
 
 ## ⚠️ Gotchas & limits
 

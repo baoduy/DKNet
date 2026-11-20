@@ -1,0 +1,120 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Add a custom contextual source",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "c33e97629e2e8b28da4f90100fdeaddf223c558c"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "Population mechanism"
+        },
+        "external": {
+          "label": "Code you write"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "main",
+      "label": "Call path"
+    }
+  ],
+  "mainPath": [
+    "n0",
+    "n1",
+    "n2",
+    "n3"
+  ],
+  "nodes": [
+    {
+      "id": "n0",
+      "lane": "main",
+      "col": 0,
+      "type": "external",
+      "label": "Write your attribute",
+      "sublabel": "implements IContextualSource",
+      "width": 185,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/ModelBinding/IContextualSource.cs",
+          "line": 16,
+          "end_line": 18
+        }
+      ]
+    },
+    {
+      "id": "n1",
+      "lane": "main",
+      "col": 1,
+      "type": "external",
+      "label": "Write your resolver",
+      "sublabel": "CanResolve, then Resolve",
+      "width": 180,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/ModelBinding/ContextualValueResolver.cs",
+          "line": 17,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "n2",
+      "lane": "main",
+      "col": 2,
+      "type": "external",
+      "label": "Register it scoped",
+      "sublabel": "Either order, alongside built-ins",
+      "width": 195,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/ModelBinding/ContextualRequestPopulation.cs",
+          "line": 140,
+          "end_line": 142
+        }
+      ]
+    },
+    {
+      "id": "n3",
+      "lane": "main",
+      "col": 3,
+      "type": "backend",
+      "label": "Runtime picks it",
+      "sublabel": "First CanResolve wins",
+      "width": 175,
+      "sources": [
+        {
+          "path": "src/AspNet/DKNet.AspCore.Extensions/ModelBinding/ContextualRequestPopulation.cs",
+          "line": 38,
+          "end_line": 49
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "from": "n0",
+      "to": "n1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e1",
+      "from": "n1",
+      "to": "n2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "variant": "emphasis"
+    }
+  ]
+}

@@ -21,6 +21,12 @@ Console.WriteLine("RequestBoundsConfig pipeline configured.");
 | `MaxRequestBodySizeBytes` | `long` | 1048576 | Kestrel maximum body size. |
 | `RequestHeadersTimeoutSeconds` | `int` | 10 | Kestrel header-read timeout. |
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddRequestBoundsConfig` or `UseRequestBoundsConfig`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddRequestBoundsConfig(builder.Configuration)` and `app.UseRequestBoundsConfig()` in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - These body/header limits configure Kestrel, not an upstream proxy. Other servers have their own limits.

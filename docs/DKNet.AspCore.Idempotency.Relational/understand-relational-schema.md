@@ -29,11 +29,20 @@ This registers the provider context, factory and migration hosted service; use t
 
 Only the lookup identity is hashed. The raw client key, route template and method are retained as columns.
 
+## ⚙️ Configuration reference
+
+None — the shared schema and its migration-ownership rule are fixed mapping; this page exposes no option or override point. The per-provider design-time connection variables (`IDEMPOTENCY_MSSQL_CONNECTION`, `IDEMPOTENCY_NPGSQL_CONNECTION`) belong to [MsSqlStore](../DKNet.AspCore.Idempotency.MsSqlStore/persist-responses.md) and [NpgsqlStore](../DKNet.AspCore.Idempotency.NpgsqlStore/persist-responses.md).
+
 ## 🧱 Where it fits
 
-The package overview shows the host registrations and dependencies behind this capability. The core filter and selected store have separate responsibilities.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| MsSqlStore's `IdempotencyDbContext` | [MsSqlStore](../DKNet.AspCore.Idempotency.MsSqlStore/persist-responses.md) | Extends the shared context; EF Core discovers `IdempotencyKeyConfiguration` from its own assembly to map this schema onto SQL Server. |
+| NpgsqlStore's `IdempotencyDbContext` | [NpgsqlStore](../DKNet.AspCore.Idempotency.NpgsqlStore/persist-responses.md) | Same, for PostgreSQL. |
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
+
+**Entry point in your app:** you never query this schema directly — it exists once you register a provider (`AddIdempotencyMsSqlStore`/`AddIdempotencyNpgsqlStore`) in `Program.cs`.
 
 ## ⚠️ Gotchas & limits
 

@@ -1,0 +1,141 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "The IHookDisablingContext handle's lifetime",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/baoduy/DKNet.git",
+      "revision": "c33e97629e2e8b28da4f90100fdeaddf223c558c"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "Your code"
+        },
+        "backend": {
+          "label": "Ref-count state"
+        },
+        "security": {
+          "label": "Interceptor check"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "caller",
+      "label": "Caller code"
+    },
+    {
+      "id": "state",
+      "label": "AsyncLocal ref-count"
+    },
+    {
+      "id": "save",
+      "label": "Next SaveChanges"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "s2",
+    "s3"
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "caller",
+      "col": 0,
+      "type": "external",
+      "label": "context.DisableHooks()",
+      "sublabel": "returns IHookDisablingContext",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/SetupEfCoreHook.cs",
+          "line": 20,
+          "end_line": 21
+        }
+      ]
+    },
+    {
+      "id": "s1",
+      "lane": "state",
+      "col": 1,
+      "type": "backend",
+      "label": "HookDisablingContext ctor",
+      "sublabel": "ref-count for this DbContext type += 1",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookDisablingContext.cs",
+          "line": 48,
+          "end_line": 55
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "lane": "save",
+      "col": 2,
+      "type": "security",
+      "label": "HookRunnerInterceptor",
+      "sublabel": "IsHookDisabled(db) is true, hooks skipped",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookRunnerInterceptor.cs",
+          "line": 144,
+          "end_line": 148
+        }
+      ]
+    },
+    {
+      "id": "s3",
+      "lane": "caller",
+      "col": 3,
+      "type": "external",
+      "label": "handle.Dispose()",
+      "sublabel": "ref-count -= 1",
+      "width": 220,
+      "sources": [
+        {
+          "path": "src/EfCore/DKNet.EfCore.Hooks/Internals/HookDisablingContext.cs",
+          "line": 65,
+          "end_line": 72
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "s2",
+      "to": "s3",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Behavior to keep in mind",
+      "items": [
+        "Disposing the handle only decrements the ref-count; it never disposes the DbContext.",
+        "Nested handles for the same DbContext type are reference-counted, not boolean."
+      ]
+    }
+  ]
+}

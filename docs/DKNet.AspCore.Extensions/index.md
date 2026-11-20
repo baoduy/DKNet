@@ -61,7 +61,9 @@ Versioning is enabled by default and checked before discovery. The Quick Start o
 ## 🧩 Features
 
 - [Discover and map endpoint groups](map-endpoint-groups.md) — Discover groups and choose versioned routes and authorization policies.
+- [Configure endpoint registration](configure-endpoint-registration.md) — Full `EndpointRegistrationOptions` reference: route templates, tags, authorization and the `ConfigureGroup` hook.
 - [Populate request members from context](bind-contextual-members.md) — Overwrite bound members from claims, headers, or custom host sources.
+- [Add a custom contextual source](add-a-contextual-source.md) — Implement `IContextualSource`/`IContextualValueResolver` to add a new source kind.
 - [Dispatch HTTP requests through SlimMessageBus](dispatch-bus-requests.md) — Choose command/query mappers and understand their binding and HTTP results.
 - [Read and delete entities through specifications](map-entity-endpoints.md) — Read, list, and hard-delete through the specification repository.
 - [Filter, search and page list endpoints](query-list-endpoints.md) — Validate filters, search, ordering, page sizes, and activity windows.
@@ -74,6 +76,7 @@ Versioning is enabled by default and checked before discovery. The Quick Start o
 - [Configure HSTS and HTTPS redirection](configure-https.md) — Register HSTS settings and install HTTPS redirection.
 - [Bound request size and duration](bound-requests.md) — Configure Kestrel size limits and a default timeout policy.
 - [Limit rate and concurrent requests](limit-requests.md) — Partition local request-rate and concurrency limits.
+- [Supply your own rate-limit provider](customise-rate-limits.md) — Implement `IRateLimitOptionsProvider` to vary limits per caller.
 - [Validate antiforgery headers on browser mutations](guard-antiforgery.md) — Issue request-token cookies and validate headers on checked mutations.
 - [Resolve the current principal for sensitive-data serialization](resolve-sensitive-principal.md) — Supply the current HTTP principal to sensitive-data serialization.
 - [Select a named job from command-line arguments](select-jobs.md) — Match a positional argument to a known job name without executing it.

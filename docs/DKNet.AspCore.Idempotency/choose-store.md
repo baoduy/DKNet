@@ -32,6 +32,16 @@ The in-memory store logs one startup warning while it is the resolved store. It 
 
 All other settings are owned by [validation](validate-keys.md), [scope](scope-callers.md), and [retention](replay-responses.md).
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `IdempotencyMsSqlSetup.AddIdempotencyWithMsSqlStore` | [MsSqlStore](../DKNet.AspCore.Idempotency.MsSqlStore/register-store.md) | Calls `AddIdempotentKey<IdempotencySqlServerStore>(config)` to select itself as the active store and forward the options delegate. |
+| `IdempotencyNpgsqlSetup.AddIdempotencyWithNpgsqlStore` | [NpgsqlStore](../DKNet.AspCore.Idempotency.NpgsqlStore/register-store.md) | Same, for `IdempotencyPostgresStore`. |
+| `IdempotencyRedisSetup.AddIdempotencyWithRedisStore` | [RedisStore](../DKNet.AspCore.Idempotency.RedisStore/register-redis-store.md) | Same, for `IdempotencyRedisStore`. |
+
+**Entry point in your app:** `Program.cs`, by calling exactly one `AddIdempotentKey()` / `AddIdempotentKey<TStore>()` / `AddIdempotencyWith…Store()` once at startup.
+
 ## ⚠️ Gotchas & limits
 
 - An in-memory ledger cannot coordinate replicas or survive restart. Use shared storage for those requirements.

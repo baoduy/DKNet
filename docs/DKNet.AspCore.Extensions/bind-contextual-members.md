@@ -1,6 +1,6 @@
 # Populate request members from context
 
-Part of [DKNet.AspCore.Extensions](index.md). Register `AddContextualRequestPopulation()` before building the host. On groups discovered by `UseEndpointConfigs`, declarations overwrite bound values before later group filters and the handler.
+Part of [DKNet.AspCore.Extensions](index.md). Register `AddContextualRequestPopulation()` before building the host. On groups discovered by [UseEndpointConfigs](map-endpoint-groups.md), declarations overwrite bound values before later group filters and the handler.
 
 ```csharp
 using System.Security.Claims;
@@ -39,6 +39,25 @@ POST `{}` with `X-Correlation-Id: demo-1` to receive the header value in `Correl
 The population service overwrites unresolved values with the destination type’s default. Non-string conversion uses invariant `TypeDescriptor` conversion; format, unsupported-conversion and argument failures produce defaults. The service and built-in resolvers are scoped, with shared metadata/converter caches.
 
 OpenAPI transformers hide declared members from body schemas and query parameters. Header declarations add a deduplicated, optional string header parameter; claim declarations stay hidden. Transformers are configured for every OpenAPI document the host registers.
+
+## ⚙️ Configuration reference
+
+`AddContextualRequestPopulation()` reads no options; it registers the mechanism with fixed behaviour.
+
+| Override point | How you customise it |
+|---|---|
+| `IContextualSource` | Marker interface. Implement it on your own attribute to declare a new contextual source kind. |
+| `IContextualValueResolver` | Implement `CanResolve(IContextualSource)` and `Resolve(IContextualSource, HttpContext)` for your source kind, then register it with `services.AddScoped<IContextualValueResolver, TYourResolver>()` before or after `AddContextualRequestPopulation()`. The first resolver whose `CanResolve` returns true wins, so register a replacement for a built-in source (`FromClaimAttribute`, `FromRequestHeaderAttribute`) before `AddContextualRequestPopulation()` if it must run first. Full reference and a worked example: [Add a custom contextual source](add-a-contextual-source.md). |
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| [`UseEndpointConfigs`](map-endpoint-groups.md) | DKNet.AspCore.Extensions (same package) | Resolves the registered `IContextualRequestPopulationService` and runs it as the first endpoint filter on every discovered group, before `ConfigureGroup`, authorization and `Map`. |
+
+None outside this package — no other DKNet package declares an `IContextualSource` attribute or calls `AddContextualRequestPopulation`.
+
+**Entry point in your app:** the `[FromClaim]`/`[FromRequestHeader]` attributes on your request record's properties, plus `builder.Services.AddContextualRequestPopulation()` in `Program.cs`.
 
 ## ⚠️ Gotchas & limits
 

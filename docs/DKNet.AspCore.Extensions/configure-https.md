@@ -20,6 +20,12 @@ Console.WriteLine("HttpsConfig pipeline configured.");
 | `Https:HstsMaxAgeDays` | number | 365 | Default HSTS MaxAge; includes subdomains and enables preload at 365 days or more. |
 | `configureOptions` | `Action<HstsOptions>?` | null | Replaces the helper’s HSTS defaults with the supplied framework options callback. |
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddHttpsConfig` or `UseHttpsConfig`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddHttpsConfig(builder.Configuration)` and `app.UseHttpsConfig()` in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - The callback branch does not apply the helper's IncludeSubDomains or preload calculation.
