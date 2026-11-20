@@ -4,6 +4,7 @@
 // </copyright>
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using DKNet.AspCore.Idempotency;
 using DKNet.AspCore.Idempotency.Filtering;
@@ -79,10 +80,10 @@ public sealed class IdempotencyInMemoryStoreTests
 
     /// <summary>
     ///     Negative control demonstrating the harness above is actually capable of failing: a check-then-act
-    ///     store (look up "already reserved?", sleep, then write "reserved") reproduces the exact race
-    ///     DRK-1005 replaced the previous store for. Run against the same 25-caller/Barrier harness, it must
-    ///     let more than one caller believe it won the reservation - proving the harness contends the race
-    ///     rather than merely calling the store 25 times.
+    ///     store (look up "already reserved?", hold the write until another caller has also passed that check,
+    ///     then write "reserved") reproduces the exact race DRK-1005 replaced the previous store for. Run
+    ///     against the same 25-caller/Barrier harness, it must let more than one caller believe it won the
+    ///     reservation - proving the harness contends the race rather than merely calling the store 25 times.
     /// </summary>
     [Fact]
     public void NonAtomicCheckThenActStandIn_ManyConcurrentCallers_MoreThanOneWinnerPerRound()
@@ -108,20 +109,81 @@ public sealed class IdempotencyInMemoryStoreTests
     }
 
     /// <summary>
+    ///     Reproduces the scheduler skew that made the negative control flaky under CPU load (DRK-2564): the
+    ///     callers are released together, but every caller except the first is held 200 ms before its check -
+    ///     far past a fixed 10 ms window, yet still overlapping the first caller's reservation attempt. A
+    ///     window that only closes after another caller has also passed the check must still let more than
+    ///     one caller win.
+    /// </summary>
+    [Fact]
+    public void NonAtomicCheckThenActStandIn_CallersSkewedPastFixedWindow_MoreThanOneWinner()
+    {
+        // Arrange
+        var stub = new NonAtomicCheckThenActStore();
+        var key = Guid.NewGuid().ToString();
+        using var barrier = new Barrier(25);
+
+        // Act - caller 0 checks at once; callers 1..24 check 200 ms later
+        var tasks = Enumerable.Range(0, 25)
+            .Select(caller => Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait();
+                if (caller > 0)
+                    Thread.Sleep(200);
+                return stub.TryReserve(key);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default))
+            .ToArray();
+        Task.WaitAll(tasks);
+
+        // Assert - the skewed callers overlapped the first caller's reservation, so more than one wins
+        tasks.Count(t => t.Result).ShouldBeGreaterThan(1);
+    }
+
+    /// <summary>
+    ///     Callers run one after another, so none overlaps another's check: the stand-in must give exactly one
+    ///     winner - the negative control can still fail - and its bounded wait must not hang the run.
+    /// </summary>
+    [Fact]
+    public void NonAtomicCheckThenActStandIn_SequentialCallers_ExactlyOneWinnerWithinBound()
+    {
+        // Arrange
+        var stub = new NonAtomicCheckThenActStore();
+        var key = Guid.NewGuid().ToString();
+        var stopwatch = Stopwatch.StartNew();
+
+        // Act
+        var winners = Enumerable.Range(0, 25).Count(_ => stub.TryReserve(key));
+        stopwatch.Stop();
+
+        // Assert - only the first caller passes the check; it writes once its wait for a second checker
+        // times out, so the elapsed time is that bound plus a generous margin for a loaded machine
+        winners.ShouldBe(1);
+        stopwatch.Elapsed.ShouldBeLessThan(NonAtomicCheckThenActStore.SecondCheckerWait + TimeSpan.FromSeconds(3));
+    }
+
+    /// <summary>
     ///     Deliberately non-atomic stand-in: separates the "is this key already reserved?" check from the
-    ///     "reserve it" write by a short sleep, instead of a single compare-and-swap. Used only to prove the
-    ///     concurrency harness above can fail - never a substitute for <see cref="IdempotencyInMemoryStore" />.
+    ///     "reserve it" write, instead of a single compare-and-swap. After passing the check, a caller holds
+    ///     its write until another caller has also passed the check, or until <see cref="SecondCheckerWait" />
+    ///     expires - so overlapping callers race whatever the scheduler's skew, and a caller with no one
+    ///     overlapping it still wins alone. Used only to prove the concurrency harness above can fail - never
+    ///     a substitute for <see cref="IdempotencyInMemoryStore" />.
     /// </summary>
     private sealed class NonAtomicCheckThenActStore
     {
+        public static readonly TimeSpan SecondCheckerWait = TimeSpan.FromSeconds(2);
+
         private readonly ConcurrentDictionary<string, bool> _seen = new();
+        private int _passedCheck;
 
         public bool TryReserve(string key)
         {
             if (_seen.ContainsKey(key))
                 return false; // someone else already reserved - this caller loses
 
-            Thread.Sleep(10); // window in which another caller can also observe "not yet reserved"
+            // window in which another caller can also observe "not yet reserved"
+            Interlocked.Increment(ref _passedCheck);
+            SpinWait.SpinUntil(() => Volatile.Read(ref _passedCheck) >= 2, SecondCheckerWait);
             _seen[key] = true;
             return true; // this caller believes it won the reservation
         }
