@@ -108,6 +108,37 @@ public sealed class IdempotencyInMemoryStoreTests
     }
 
     /// <summary>
+    ///     Reproduces the scheduler skew that made the negative control flaky under CPU load (DRK-2564): the
+    ///     callers are released together, but every caller except the first is held 200 ms before its check -
+    ///     far past a fixed 10 ms window, yet still overlapping the first caller's reservation attempt. A
+    ///     window that only closes after another caller has also passed the check must still let more than
+    ///     one caller win.
+    /// </summary>
+    [Fact]
+    public void NonAtomicCheckThenActStandIn_CallersSkewedPastFixedWindow_MoreThanOneWinner()
+    {
+        // Arrange
+        var stub = new NonAtomicCheckThenActStore();
+        var key = Guid.NewGuid().ToString();
+        using var barrier = new Barrier(25);
+
+        // Act - caller 0 checks at once; callers 1..24 check 200 ms later
+        var tasks = Enumerable.Range(0, 25)
+            .Select(caller => Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait();
+                if (caller > 0)
+                    Thread.Sleep(200);
+                return stub.TryReserve(key);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default))
+            .ToArray();
+        Task.WaitAll(tasks);
+
+        // Assert - the skewed callers overlapped the first caller's reservation, so more than one wins
+        tasks.Count(t => t.Result).ShouldBeGreaterThan(1);
+    }
+
+    /// <summary>
     ///     Deliberately non-atomic stand-in: separates the "is this key already reserved?" check from the
     ///     "reserve it" write by a short sleep, instead of a single compare-and-swap. Used only to prove the
     ///     concurrency harness above can fail - never a substitute for <see cref="IdempotencyInMemoryStore" />.
