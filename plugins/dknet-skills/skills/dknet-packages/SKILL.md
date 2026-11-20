@@ -406,7 +406,7 @@ public sealed class ProductRepository : IRepository<Product> // IRepository<T> w
 - `references/package-catalog.md` — all 29 packages: id, install command, one-line purpose, entry point, owning skill.
 - `references/removed-and-renamed.md` — every removed/renamed API across the suite, with its replacement and source-verification status.
 - `references/namespace-imports.md` — the full method/type -> namespace table, including which setup calls are ambient to `Microsoft.Extensions.DependencyInjection` and need no extra `using`.
-- Docs hub: https://github.com/baoduy/DKNet/blob/dev/docs/README.md
+- Docs hub: https://baoduy.github.io/DKNet/
 - Getting started: https://github.com/baoduy/DKNet/blob/dev/docs/Getting-Started.md
 - Architecture guide: https://github.com/baoduy/DKNet/blob/dev/docs/Architecture.md
 - Full API/docs site: https://baoduy.github.io/DKNet/

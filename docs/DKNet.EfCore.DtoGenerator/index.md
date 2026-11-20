@@ -2,6 +2,8 @@
 
 Generate DTO property declarations and validate event payloads at compile time for .NET developers.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Keep DTO property lists aligned with entities and inherited properties.

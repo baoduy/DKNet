@@ -2,6 +2,8 @@
 
 A PostgreSQL ledger for .NET developers using DKNet minimal-API idempotency.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Share reservations across hosts using the same PostgreSQL database.

@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](../LICENSE)
 
 This directory is the solution root for every DKNet package. If you are **using** DKNet, start from the
-[documentation hub](../docs/README.md) instead — this page is for working on the code.
+[documentation hub](https://baoduy.github.io/DKNet/) instead — this page is for working on the code.
 
 ## Layout
 
@@ -60,7 +60,7 @@ Generated output — `nupkgs/`, `TestResults/`, `coverage-report*/` — is never
 
 | Page | What it covers |
 |---|---|
-| [Documentation hub](../docs/README.md) | all 28 published packages, and a problem-to-package table |
+| [Documentation hub](https://baoduy.github.io/DKNet/) | all 28 published packages, and a problem-to-package table |
 | [Architecture Guide](../docs/Architecture.md) | the onion rings, the package dependency graph, a request and a domain event end to end |
 | [Getting Started](../docs/Getting-Started.md) | prerequisites and a first working setup |
 | [Configuration & Setup](../docs/Configuration.md) | the registration conventions the packages share, and where each extension method lives |

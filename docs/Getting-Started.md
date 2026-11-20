@@ -20,7 +20,7 @@ that actually runs, and where to go next.
 
 ### 1. Install what you need
 
-The [Which package do I need?](README.md#which-package-do-i-need) table maps problems to packages. A typical
+The [Which package do I need?](index.md#which-package-do-i-need) table maps problems to packages. A typical
 DDD-style API starts with four:
 
 ```bash
@@ -140,7 +140,7 @@ end-to-end walkthroughs (an HTTP request and a domain event):
 
 ## Next steps
 
-1. **[Which package do I need?](README.md#which-package-do-i-need)** — pick the rest by problem.
+1. **[Which package do I need?](index.md#which-package-do-i-need)** — pick the rest by problem.
 2. **[Architecture Guide](Architecture.md)** — what a package may depend on, and how a request and an event
    travel through the suite.
 3. **[Configuration & Setup](Configuration.md)** — the four registration conventions the packages share, and
@@ -162,7 +162,7 @@ end-to-end walkthroughs (an HTTP request and a domain event):
 
 ## Getting help
 
-- **Documentation**: [Documentation hub](README.md)
+- **Documentation**: [Documentation hub](index.md)
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
 - **Contributing**: [Contributing Guide](Contributing.md)

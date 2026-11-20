@@ -24,7 +24,7 @@ For comprehensive contribution guidelines, please see our [Contributing Document
 
 - **Issues**: [GitHub Issues](https://github.com/baoduy/DKNet/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/baoduy/DKNet/discussions)
-- **Documentation**: [Complete Documentation](docs/README.md)
+- **Documentation**: [Complete Documentation](https://baoduy.github.io/DKNet/)
 
 ---
 

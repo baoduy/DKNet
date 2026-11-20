@@ -6,7 +6,7 @@ Repo-wide context, architecture and pitfalls live in the repo-root **`CLAUDE.md`
 
 ## Before You Start
 
-1. **`docs/README.md`** — the package index: every package, grouped by area.
+1. **`docs/index.md`** — the docs home page and package index: every package, grouped by area.
 2. **`docs/<Package>/index.md`** — the package's overview, Quick Start and feature list; each feature page beside it covers that capability's API, options and examples.
 3. **`plugins/dknet-skills/skills/`** — the `dknet-skills` plugin: `dknet-packages` (scenario → package routing, start here), one skill per package family (`dknet-efcore-*`, `dknet-slimbus-cqrs`, `dknet-aspcore-api`, `dknet-idempotency`, `dknet-blob-storage`, `dknet-services`, `dknet-core-utilities`), `dknet-codegen` (`[CrudAction]` / `[GenerateDto]`), `dknet-testing` (TestContainers, SQL assertions). Load with `claude --plugin-dir plugins/dknet-skills`; the table in `CLAUDE.md` maps needs to skills.
 4. **`docs/Architecture.md`**, **`docs/Testing-Strategy.md`** — cross-cutting reference.

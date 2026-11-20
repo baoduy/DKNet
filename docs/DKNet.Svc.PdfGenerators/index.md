@@ -4,9 +4,11 @@ Converts HTML or Markdown into a PDF file using headless Chromium (PuppeteerShar
 
 > [!NOTE]
 > This package is a fork of [Markdown2Pdf](https://github.com/Flayms/Markdown2Pdf) 2.x — see
-> [THIRD-PARTY-NOTICES.md](../../src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md) for the upstream
+> [THIRD-PARTY-NOTICES.md](https://github.com/baoduy/DKNet/blob/dev/src/Services/DKNet.Svc.PdfGenerators/THIRD-PARTY-NOTICES.md) for the upstream
 > attribution. Several option types carried over from upstream are **not wired into the current `PdfGenerator`
 > pipeline** — the feature pages below mark exactly which options affect the output today.
+
+[← All packages](../index.md#package-index)
 
 ## ✨ Why use it?
 

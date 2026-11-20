@@ -2,6 +2,8 @@
 
 A before/after SaveChangesAsync hook pipeline for .NET developers adding cross-cutting persistence work.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Share one captured change set between audit, event, ownership and custom hooks.

@@ -2,6 +2,8 @@
 
 Redis-backed reservations and TTL-based response retention for .NET developers using DKNet idempotency.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Share a key ledger across hosts connected to the same Redis database.

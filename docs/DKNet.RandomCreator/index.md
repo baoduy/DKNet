@@ -2,6 +2,8 @@
 
 Random string and character-buffer generation for .NET developers, using System.Security.Cryptography.RandomNumberGenerator.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Generate text without writing character-selection and shuffle loops.

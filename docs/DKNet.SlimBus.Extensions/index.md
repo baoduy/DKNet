@@ -4,6 +4,8 @@ CQRS and messaging glue on top of [SlimMessageBus](https://github.com/zarusz/Sli
 and event-consumer contracts, `FluentResults`-based handlers, lazy Mapster mapping, and an opt-in EF Core auto-save
 and domain-event publisher for hosts that use a `DbContext`.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - **Request shape says what a message is.** Implementing `Fluents.Requests.*` marks a write, `Fluents.Queries.*`

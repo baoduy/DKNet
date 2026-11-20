@@ -2,6 +2,8 @@
 
 Relational table metadata, existence, connection and one-shot schema helpers for .NET developers writing infrastructure code.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Resolve mapped table and schema names without a database round trip.

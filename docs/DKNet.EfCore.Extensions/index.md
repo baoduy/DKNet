@@ -2,6 +2,8 @@
 
 Model configuration, seeding, change-tracker helpers and sensitive JSON filtering for .NET developers using EF Core.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Apply configuration classes and shared entity conventions without repeating assembly scans per context.

@@ -2,6 +2,8 @@
 
 Reflection, type discovery and small value helpers for .NET developers who need reusable in-process operations.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Find concrete implementations across assemblies with a filter chain you can branch and reuse.

@@ -2,6 +2,8 @@
 
 Bounded idempotency reservations and optional response replay for .NET developers building minimal APIs.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Stop concurrent retries from reaching the same handler while a reservation is live.
