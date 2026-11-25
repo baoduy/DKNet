@@ -307,7 +307,7 @@ rect.c-bg-rect { fill: var(--bg); }
         </defs>
 
         <!-- Background Grid -->
-        <rect width="100%" height="100%" fill="url(#grid)" />
+        <rect x="0" y="0" width="1068" height="600" fill="#f4f5f7"/><rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Data Stages -->
         <rect data-graph-role="structural-frame" data-composition-frame-kind="stage" data-composition-frame-id="0" x="16" y="46" width="168" height="480" rx="10" class="c-lane" stroke-width="1"/>

@@ -46,7 +46,9 @@ Every SVG under `docs/` was re-exported with 3.0.1 *SVG (light)* for DRK-2597, e
 differently from their committed SVG: `dknet-domain-event-path`, and `efcore-encryption-column-path` and
 `encrypt-columns` in `docs/DKNet.EfCore.Encryption/diagrams/`. Those three keep their earlier colour-scheme-following
 export with `data-theme="light"` added to the root `<svg>`, which selects the light palette their `<style>` already
-holds. Their next re-export, after any JSON edit, picks up the current layout.
+holds. `dknet-domain-event-path.svg` painted no background, so it also gained one full-size `#f4f5f7`
+background `<rect>` before its grid; without it the diagram showed through to a dark page. Their next re-export,
+after any JSON edit, picks up the current layout.
 
 ## Conventions
 
