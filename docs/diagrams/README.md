@@ -21,16 +21,32 @@ archify validate <type> docs/diagrams/<name>.<type>.json --quality showcase
 
 # 2. Render to HTML.
 archify render <type> docs/diagrams/<name>.<type>.json /tmp/<name>.html --quality showcase
+
+# 3. Open /tmp/<name>.html and choose Export → "SVG (light)". Commit the downloaded file as <name>.svg.
 ```
 
-The committed `.svg` is the diagram `<svg>` element extracted from that HTML, with the theme `<style>` block
-inlined as its first child and explicit `width`/`height` attributes taken from the `viewBox` — the same output the
-viewer's *Export SVG* button produces.
+The committed `.svg` is the output of the viewer's **Export → SVG (light)** menu item (`data-format="svg-light"`):
+the diagram `<svg>` element with `data-theme="light"` on its root, the light palette resolved into its inlined
+`<style>` block and a light background, and explicit `width`/`height` attributes taken from the `viewBox`. Never
+commit the plain *SVG* export: it follows the reader's colour scheme and turns dark for a reader whose OS or browser
+is in dark mode, and the *SVG (dark)* export is always dark. The GitHub Pages theme (`jekyll-theme-primer`) is light,
+so every diagram is pinned light.
+
+Check before committing — every root `<svg>` must print `data-theme="light"`:
+
+```bash
+for f in $(find docs -name '*.svg'); do grep -o '<svg[^>]*>' "$f" | head -1 | grep -o 'data-theme="[a-z]*"' || echo none; done | sort | uniq -c
+```
 
 **archify 3.x:** `render`/`finalize` require `meta.output`, which the committed sources omit — add it to a scratch
 copy, not the committed JSON. Its *Export SVG* output starts with an XML declaration and embeds the JetBrains Mono
 subset, so a 3.x export is larger than the older assets. `dknet-layers`, `dknet-onion-packages` and
 `dknet-request-lifecycle` were last exported with 3.0.1 after passing `finalize --quality showcase`.
+Every SVG under `docs/` was re-exported with 3.0.1 *SVG (light)* for DRK-2597, except three that 3.0.1 now lays out
+differently from their committed SVG: `dknet-domain-event-path`, and `efcore-encryption-column-path` and
+`encrypt-columns` in `docs/DKNet.EfCore.Encryption/diagrams/`. Those three keep their earlier colour-scheme-following
+export with `data-theme="light"` added to the root `<svg>`, which selects the light palette their `<style>` already
+holds. Their next re-export, after any JSON edit, picks up the current layout.
 
 ## Conventions
 
@@ -42,6 +58,9 @@ subset, so a 3.x export is larger than the older assets. `dknet-layers`, `dknet-
   is documentation, so the same accuracy bar applies.
 - **One idea per diagram.** Prefer a second diagram over a denser one.
 - **Static by default** — `meta.animation` is left unset.
+- **Light theme, pinned.** Every committed `.svg` is exported with *Export → SVG (light)*, so its root `<svg>`
+  carries `data-theme="light"` and it renders light whatever colour scheme the reader uses. The JSON has no theme
+  field: the theme is chosen at export time only.
 
 ## Shared diagrams
 
