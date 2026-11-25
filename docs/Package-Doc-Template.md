@@ -205,7 +205,8 @@ like code.
 1. Author the typed JSON IR: `docs/<Package>/diagrams/<name>.<type>.json`
    (`<type>` ∈ `architecture | workflow | sequence | dataflow | lifecycle` — the type selects
    the schema and renderer). The JSON is the source of truth — edit it, never the SVG.
-2. Validate, then render at `showcase` quality, as `docs/diagrams/README.md` describes.
+2. Validate, then render at `showcase` quality and export with **Export → SVG (light)**, as
+   `docs/diagrams/README.md` describes.
 3. Commit **both** files — `<name>.<type>.json` (source) and `<name>.svg` (rendered) — side by
    side in `docs/<Package>/diagrams/`, with `meta.quality_profile: "showcase"` and a populated
    `meta.legend.entries` (generic swatch labels are a review reject).
@@ -218,6 +219,9 @@ Rules:
 - The diagram shows the **real mechanism** (actual type/method names from the source), never
   generic boxes ("Service → Database").
 - One diagram per shape — don't draw the same flow twice from different angles.
+- Every committed SVG is exported in the **light theme** (*Export → SVG (light)*; root `<svg>` carries
+  `data-theme="light"`), never the plain *SVG* export that follows the reader's colour scheme and turns dark
+  in dark mode.
 - Do **not** use ```mermaid fences: the GitHub Pages primer theme does not render them, so the
   page would ship broken on the published site.
 - If a change alters a drawn relationship, update the JSON + re-render the SVG in the same PR —
@@ -250,7 +254,8 @@ Rules:
 - [ ] Gotchas traced to actual source behaviour (cite the mechanism, e.g. "keyed by `Type.FullName`").
 - [ ] `index.md` has its 🏗️ Architecture and 🔄 How it works diagrams, every feature page has its
       own, each with archify JSON IR + rendered SVG committed in `docs/<Package>/diagrams/`;
-      `archify validate` passes at `showcase`; alt text narrates the diagram; no mermaid fences;
+      `archify validate` passes at `showcase`; every SVG exported in the light theme (root `<svg>`
+      carries `data-theme="light"`); alt text narrates the diagram; no mermaid fences;
       no hand-edited SVGs.
 - [ ] Every feature page has all three mandatory parts (body example with DI registration,
       ⚙️ Configuration reference, 🧱 Where it fits), each filled or carrying a `None —` line.
