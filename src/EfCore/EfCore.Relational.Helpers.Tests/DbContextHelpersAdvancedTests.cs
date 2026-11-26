@@ -100,6 +100,9 @@ public class DbContextHelpersAdvancedTests(PostgresFixture fixture) : IClassFixt
             new DbContextOptionsBuilder<TestDbContext>()
                 .UseNpgsql(fixture.GetConnectionString()).Options);
 
+        // The fixture database exists only once a test creates it: create it here so this test does not depend on test order.
+        await db.Database.EnsureCreatedAsync();
+
         // Ensure connection is closed first
         if (db.Database.GetDbConnection().State != ConnectionState.Closed)
         {
@@ -123,6 +126,9 @@ public class DbContextHelpersAdvancedTests(PostgresFixture fixture) : IClassFixt
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
                 .UseNpgsql(fixture.GetConnectionString()).Options);
+
+        // The fixture database exists only once a test creates it: create it here so this test does not depend on test order.
+        await db.Database.EnsureCreatedAsync();
 
         // Ensure connection is open first
         await db.Database.OpenConnectionAsync();
@@ -202,7 +208,8 @@ public class DbContextHelpersAdvancedTests(PostgresFixture fixture) : IClassFixt
             new DbContextOptionsBuilder<TestDbContext>()
                 .UseNpgsql(fixture.GetConnectionString()).Options);
 
-        // Don't create the database - table won't exist
+        // The fixture database exists only once a test creates it: create it here so this test does not depend on test order.
+        await db.Database.EnsureCreatedAsync();
 
         // Act
         var exists = await db.TableExistsAsync<TestEntity>();
