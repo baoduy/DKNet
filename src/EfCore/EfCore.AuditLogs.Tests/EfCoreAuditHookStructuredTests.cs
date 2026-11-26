@@ -107,7 +107,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         log.Changes.ShouldContain(c => c.FieldName == nameof(TestAuditEntity.Name));
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
 
@@ -170,7 +170,7 @@ public class EfCoreAuditHookStructuredTests : IAsyncLifetime
         publisher.Received.Any(e=>e.Action == AuditLogAction.Updated).ShouldBeTrue(); // assert action
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var services = new ServiceCollection();
         services.AddLogging();

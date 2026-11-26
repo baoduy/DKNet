@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 using HookContext = EfCore.HookTests.Data.HookContext;
 
 namespace EfCore.HookTests;
@@ -41,12 +40,12 @@ public class BaselineServiceProviderTest(ITestOutputHelper output) : IAsyncLifet
         await action.ShouldNotThrowAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_provider != null) await _provider.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))

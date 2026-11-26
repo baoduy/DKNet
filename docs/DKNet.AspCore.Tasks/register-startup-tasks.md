@@ -30,6 +30,14 @@ public sealed class PrintTask : IBackgroundTask
 
 There is no options object or configuration section.
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `BackgroundJobHost` (internal; described in [Run a concurrent startup batch](run-startup-tasks.md)) | DKNet.AspCore.Tasks | Resolves every registered `IBackgroundTask`/`BackgroundJobRegistration` pair at host start and runs each one's `RunAsync` concurrently. |
+
+**Entry point in your app:** `Program.cs`, via `services.AddBackgroundJob<TJob>()` or `AddBackgroundJobFrom(assemblies)` before building the host.
+
 ## ⚠️ Gotchas & limits
 
 - The guard recognizes implementation-type descriptors; a custom factory registration is not the same descriptor.

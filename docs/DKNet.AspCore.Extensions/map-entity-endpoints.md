@@ -16,6 +16,8 @@ public sealed class Item : IEntity<int> { public int Id { get; set; } }
 public sealed class ItemModel { public int Id { get; set; } }
 ```
 
+Registration: `services.AddSpecRepo<TDbContext>()` from DKNet.EfCore.Specifications registers the `IRepositorySpec` these mappers resolve, plus your own `DbContext` registration. See [Query and save through a repository](../DKNet.EfCore.Specifications/query-and-save.md).
+
 ![The delete mapper looks up an entity, returns 404 when absent, or deletes and saves through the repository with a 409 save-failure branch.](diagrams/entity-delete.svg)
 
 `MapGetById<TEntity,TKey,TModel>` defaults to `{id}` and returns a projected model (200) or 404. `MapGetList<TEntity,TKey,TModel>` defaults to `/` and returns a paged projection or 400 for an unusable list query. `MapDeleteById<TEntity,TKey>` defaults to `{id}`, loads the entity, deletes through the repository and calls `SaveChangesAsync`; it returns 204, 404 for no match, or 409 on `DbUpdateException` from saving.
@@ -24,11 +26,19 @@ Each has a Guid-key shorthand omitting `TKey`. Explicit keys must implement `IEq
 
 Deletes use the repository save pipeline, including any configured audit/domain-event hooks. They are hard deletes, subject to the repository and database behavior.
 
+## ⚙️ Configuration reference
+
+None — these mappers read no options of their own and expose no override point. List inputs are governed by `ListQueryOptions`; see [Filter, search and page list endpoints](query-list-endpoints.md) for its configuration reference and defaults.
+
 ## 🧱 Where it fits
 
-Register `AddSpecRepo<TDbContext>()` from [EF Core Specifications](../DKNet.EfCore.Specifications/index.md). For list inputs see [query list endpoints](query-list-endpoints.md). The package component diagram shows the repository path alongside SlimMessageBus dispatch.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `Map{Entity}Crud` (generated) | [SlimBus Generators](../DKNet.SlimBus.Generators/map-crud-endpoints.md) | Calls `MapGetById`, `MapGetList` and `MapDeleteById` to register the read and delete routes it generates for an entity. |
 
-![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
+These mappers call `IRepositorySpec` from [EF Core Specifications](../DKNet.EfCore.Specifications/query-and-save.md) directly — register it with `AddSpecRepo<TDbContext>()` before serving them. For list inputs see [Filter, search and page list endpoints](query-list-endpoints.md).
+
+**Entry point in your app:** calling `group.MapGetById<...>()`, `MapGetList<...>()` or `MapDeleteById<...>()` on a `RouteGroupBuilder` in `Program.cs` or inside an `IEndpointConfig.Map`.
 
 ## ⚠️ Gotchas & limits
 

@@ -34,7 +34,7 @@ Guidance for Claude Code (claude.ai/code) when working in this repository. The s
 │   └── coverage.runsettings       Coverage collection settings
 ├── docs/              GitHub Pages site AND the reference knowledge base:
 │                      one folder per package, docs/<Package>/ (index.md,
-│                      feature pages, diagrams/); README.md is the package index
+│                      feature pages, diagrams/); index.md is the home page and package index
 ├── .claude-plugin/    marketplace.json — Claude Code marketplace "dknet"
 ├── plugins/           dknet-skills/ — the DKNet agent-skills plugin, also the npm package @drunkcoding/dknet-skills (see Repo Skills)
 ├── specs/             Spec-Kit feature specifications (historical)
@@ -56,7 +56,7 @@ Treat these as primary sources — read the relevant ones before generating non-
 |---|---|
 | `src/AGENTS.md` | DKNet-only coding/testing/PR conventions (commit format, test patterns). |
 | `docs/<Package>/index.md` | **Per-package reference — the single best source for any package's API, DI setup and options.** Starts at `index.md`, with one page per feature beside it. e.g. `docs/DKNet.EfCore.Specifications/index.md`, `docs/DKNet.SlimBus.Generators/index.md`. |
-| `docs/README.md` | Package index: every package, grouped by area, linking its `docs/<Package>/index.md`. |
+| `docs/index.md` | Docs home page and package index: every package, grouped by area, linking its `docs/<Package>/index.md`. |
 | `docs/Architecture.md`, `docs/Testing-Strategy.md`, `docs/Contributing.md` | Cross-cutting reference. |
 | `.github/copilot-instructions.md` | Condensed Copilot-facing version of AGENTS.md; kept in sync with it. |
 

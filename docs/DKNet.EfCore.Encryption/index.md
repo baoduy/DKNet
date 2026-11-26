@@ -2,6 +2,8 @@
 
 Encrypt and decrypt EF Core string columns through value converters for .NET developers.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Keep selected database columns unreadable as plaintext while entities expose normal strings.

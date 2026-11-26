@@ -44,7 +44,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         Client.Dispose();
         if (_app is null) return;
@@ -52,7 +52,7 @@ public sealed class EndpointTestHost : IAsyncLifetime
         await _app.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();

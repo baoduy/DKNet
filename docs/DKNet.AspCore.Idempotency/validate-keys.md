@@ -23,6 +23,14 @@ services.AddIdempotentKey(o => o.MaxIdempotencyKeyLength = 500);
 
 `AddIdempotentKey` validates a nonblank header and pattern, and a length of at least 1, on host start through `ValidateOnStart()`. A failed startup validation throws `OptionsValidationException`. Invalid regex syntax throws when assigned.
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Endpoint filter (internal; the call sequence is shown on [Protect endpoints and route groups](protect-endpoints.md)) | DKNet.AspCore.Idempotency | Calls `IdempotentKeyInfo.IsValid(IdempotencyOptions)` before reserving a key, and turns a failed result into a 400 response. |
+
+**Entry point in your app:** you don't call validation directly — it runs automatically once an endpoint is protected with `.RequiredIdempotentKey()`.
+
 ## ⚠️ Gotchas & limits
 
 - Raising the configured limit above 500 does not admit longer keys. The cap matches the relational key column.

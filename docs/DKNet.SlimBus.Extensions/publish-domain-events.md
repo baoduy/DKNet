@@ -139,10 +139,13 @@ same publisher implementation twice.
 
 ## 🧱 Where it fits
 
-[DKNet.EfCore.Events](../DKNet.EfCore.Events/index.md) owns the entity event queues and the `EventHook` that runs
-around a save; this package only supplies the `IEventPublisher` that forwards the batch onto `IMessageBus`.
-[DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/index.md) owns `AddDbContextWithHook<TDbContext>()`, the save-pipeline
-registration this feature depends on. [Consume published events](consume-events.md) covers the receiving side.
+[DKNet.EfCore.Events](../DKNet.EfCore.Events/publish-domain-events.md) owns the entity event queues and the
+`EventHook` that runs around a save; this package only supplies the `IEventPublisher` that forwards the batch onto
+`IMessageBus`. [DKNet.EfCore.Hooks](../DKNet.EfCore.Hooks/write-save-hooks.md) owns `AddDbContextWithHook<TDbContext>()`,
+the save-pipeline registration this feature depends on. [Consume published events](consume-events.md) covers the
+receiving side.
+
+**Entry point in your app:** `services.AddSlimBusEventPublisher<AppDbContext>()` (or `AddEventPublisher<TDbContext, TImplementation>()` for your own subclass) in `Program.cs`, alongside `AddDbContextWithHook<TDbContext>()`.
 
 ## ⚠️ Gotchas & limits
 

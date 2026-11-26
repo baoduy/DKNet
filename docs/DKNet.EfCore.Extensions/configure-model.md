@@ -37,6 +37,8 @@ public sealed class ItemConfiguration : DefaultEntityTypeConfiguration<Item>
 }
 ```
 
+None — no DI registration needed; `UseAutoConfigModel<TContext>()` is a `DbContextOptionsBuilder` extension method you call directly, as above.
+
 ![UseAutoConfigModel records assemblies, AutoConfigModelCustomizer applies their configurations, and ItemConfiguration assigns GuidV7ValueGenerator to the Id.](diagrams/configure-model.svg)
 
 `AutoConfigModelCustomizer` applies configurations, global builders and supported-provider sequences before delegating to the original model customizer. `DefaultEntityTypeConfiguration<TEntity>` is opt-in: derive and call `base.Configure` before your overrides.
@@ -48,7 +50,20 @@ public sealed class ItemConfiguration : DefaultEntityTypeConfiguration<Item>
 | `UseAutoConfigModel<TContext>(assemblies)` | `Assembly[]?` | Context assembly | Assemblies to scan. |
 | Nongeneric `UseAutoConfigModel(assemblies)` | `Assembly[]` | explicit argument | Empty list falls back to the runtime context assembly. |
 
+| Override point | How you customise it |
+|---|---|
+| `IEntityTypeConfiguration<TEntity>` | Implement it directly for a type with no DKNet conventions; the assembly scan discovers and applies it. |
+| `DefaultEntityTypeConfiguration<TEntity>.Configure(EntityTypeBuilder<TEntity>)` | `virtual`. Derive from it (as `ItemConfiguration` does above), call `base.Configure(builder)` first, then add your own mapping. |
+
 The options extension preserves the provider model customizer and wraps `IModelCacheKeyFactory` with a global-builder registration version. Replacing the cache-key factory later also replaces that wrapper; account for builder registration in your custom key.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `UseAutoConfigModel` or derives from `DefaultEntityTypeConfiguration`; you call it from your own `DbContext` configuration.
+
+`AutoConfigModelCustomizer`, which `UseAutoConfigModel` registers, also applies the global builders from [Apply named filters across matching entities](apply-global-filters.md) and registers the sequences from [Read and format a database sequence value](read-sequences.md) in the same model-building pass — those two features need `UseAutoConfigModel` to be called to run at all.
+
+**Entry point in your app:** `optionsBuilder.UseAutoConfigModel<TContext>(...)` in your `AddDbContext` configuration callback.
 
 ## ⚠️ Gotchas & limits
 

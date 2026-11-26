@@ -21,6 +21,12 @@ Console.WriteLine("CorsConfig pipeline configured.");
 | `Cors:AllowedMethods` | `string[]` | GET, POST, PUT, PATCH | Methods on the default policy. |
 | `Cors:AllowedHeaders` | `string[]` | Authorization, Content-Type, Accept, X-Idempotency-Key | Headers on the default policy. |
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddCorsConfig` or `UseCorsConfig`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddCorsConfig(builder.Configuration)` and `app.UseCorsConfig()` in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - DELETE is not in the default allowed methods. Configure it if the browser client needs it.

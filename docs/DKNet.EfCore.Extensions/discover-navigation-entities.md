@@ -45,7 +45,22 @@ public sealed class Child
 
 ![AddNewEntitiesFromNavigations selects Modified or Detached tracked roots, reads collection navigation values, checks each child with IsNewEntity and adds the resulting batch.](diagrams/discover-navigation-entities.svg)
 
-`GetPossibleUpdatingEntities` calls DetectChanges and selects Detached/Modified entries. `GetNewEntitiesFromNavigations(entry)` scans one root; its parameterless form scans those possible roots. `GetCollectionNavigations(Type)` selects collection, non-shadow `INavigation` metadata.
+`GetPossibleUpdatingEntities` calls DetectChanges and selects Detached/Modified entries. `GetNewEntitiesFromNavigations(entry)` scans one root; its parameterless form scans those possible roots. `GetCollectionNavigations(Type)` selects collection, non-shadow `INavigation` metadata. Each discovered child is checked with [`IsNewEntity`](inspect-entries.md).
+
+None — no DI registration needed; `GetNewEntitiesFromNavigations` and `AddNewEntitiesFromNavigations` are extension methods you call directly on a `DbContext`.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no override point.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `EfAutoSavePostInterceptor` | [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md) | Calls `AddNewEntitiesFromNavigations` before `SaveChangesWithConcurrencyHandlingAsync` on every registered `DbContext` with pending changes. |
+| `RepositorySpec<TDbContext>` | [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/query-and-save.md) | `SaveChangesAsync` calls `AddNewEntitiesFromNavigations`; `UpdateAsync` calls `GetNewEntitiesFromNavigations(entry)` for the entity being updated. |
+
+**Entry point in your app:** call `dbContext.AddNewEntitiesFromNavigations()` yourself before `SaveChangesAsync` when you are not going through either consumer above.
 
 ## ⚠️ Gotchas & limits
 

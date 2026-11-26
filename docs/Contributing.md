@@ -134,7 +134,7 @@ dotnet test --configuration Release
 
 ### General Guidelines
 
-Follow the [DKNet Coding Guidelines](../src/.github/copilot-instructions.md) and Microsoft .NET guidelines:
+Follow the [DKNet Coding Guidelines](https://github.com/baoduy/DKNet/blob/dev/src/.github/copilot-instructions.md) and Microsoft .NET guidelines:
 
 - Use C# 14.0 language features appropriately
 - Follow `.editorconfig` rules
@@ -310,6 +310,13 @@ For critical bugs requiring immediate release:
 4. **Release Following Standard Process**
 
 ## Documentation Guidelines
+
+### Package docs under `docs/`
+
+Every package has one folder, `docs/<Package>/`, with an `index.md` and one page per feature.
+Write and update those pages with the [Package Documentation Template](Package-Doc-Template.md):
+it fixes the folder layout, the section headers, the diagram rules and the three mandatory parts of
+every feature page (how to use it, how to customise it, where DKNet uses it).
 
 ### README Structure
 

@@ -20,6 +20,12 @@ Console.WriteLine("ForwardedHeadersConfig pipeline configured.");
 | `Security:TrustedProxies` | `string[]` | empty | IPs parsed with `IPAddress.Parse`. |
 | `Security:TrustedNetworks` | `string[]` | empty | CIDRs parsed with `System.Net.IPNetwork.Parse`. |
 
+## 🧱 Where it fits
+
+None — no other DKNet package calls `AddForwardedHeadersConfig` or `UseForwardedHeadersConfig`; you call them from your own code.
+
+**Entry point in your app:** `builder.Services.AddForwardedHeadersConfig(builder.Configuration)` and `app.UseForwardedHeadersConfig()` in `Program.cs`, placed before middleware that reads forwarded scheme or client IP.
+
 ## ⚠️ Gotchas & limits
 
 - Invalid addresses or networks throw during registration.

@@ -2,6 +2,8 @@
 
 Part of [DKNet.SlimBus.Generators](index.md). Mark a public constructor or method with `[CrudCreate]`, `[CrudUpdate]` or `[CrudAction]` — all three live in `DKNet.EfCore.Abstractions.Attributes`, so the domain layer takes on no messaging dependency — and the generator turns it into a `sealed partial record` request:
 
+None — no DI registration needed; `CrudGenerator` runs at compile time inside the C# compiler, and the resulting request record needs no service registration of its own.
+
 ```csharp
 // Domain project
 public class Product : Entity
@@ -86,7 +88,9 @@ The generator scans **both the compiling project and its referenced assemblies**
 
 ## 🧱 Where it fits
 
-The entity must implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>` (`DKCRUDGEN006`), and every marked member must be public (`DKCRUDGEN004`). [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/index.md) supplies the DTO this step resolves against; [Generate handlers](generate-handlers.md) is what dispatches the request this step produces.
+The entity must implement `DKNet.EfCore.Abstractions.Entities.IEntity<TKey>` (`DKCRUDGEN006`), and every marked member must be public (`DKCRUDGEN004`). [DKNet.EfCore.DtoGenerator](../DKNet.EfCore.DtoGenerator/generate-dtos.md) supplies the DTO this step resolves against; [Generate handlers](generate-handlers.md) is what dispatches the request this step produces.
+
+**Entry point in your app:** mark a constructor or method `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]`; the request record appears on the next build, with nothing to register yourself.
 
 ## ⚠️ Gotchas & limits
 

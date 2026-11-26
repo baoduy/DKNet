@@ -28,7 +28,7 @@
         <!-- Force fixed SSH.NET (Testcontainers pulls vulnerable 2025.1.0, GHSA-q939-rpr3-3284) -->
         <PackageReference Include="SSH.NET" />
         <PackageReference Include="Testcontainers.MsSql"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.v3.mtp-off"/>
         <PackageReference Include="xunit.runner.visualstudio">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

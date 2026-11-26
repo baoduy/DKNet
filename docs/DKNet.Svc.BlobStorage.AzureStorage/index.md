@@ -2,6 +2,8 @@
 
 Azure Blob Storage implementation of `IBlobService` for .NET developers, backed by `Azure.Storage.Blobs`.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Authenticate with a connection string or your own managed-identity client — `BlobServiceClientFactory` is the hook

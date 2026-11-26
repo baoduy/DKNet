@@ -84,7 +84,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     /// <summary>
     ///     Disposes the test application and SQL Server container.
     /// </summary>
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         if (_container != null)
         {
@@ -104,7 +104,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     /// <summary>
     ///     Initializes the test application with TestContainers.MsSql.
     /// </summary>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // Create and start the SQL Server container.
         _container = new MsSqlBuilder(MssqlImage)

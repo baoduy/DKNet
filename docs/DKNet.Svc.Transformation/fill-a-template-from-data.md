@@ -8,6 +8,8 @@ var text = transformer.Transform("Order [OrderId] — [Total] on [Placed]. Paid:
 // Order 4,711 — 129.50 on 01/03/2026 12.00.00. Paid: Yes
 ```
 
+Registration: the same `AddTransformerService()` call as [Register the service](register-the-service.md); it registers `ITransformerService` as transient and the `TransformOptions` you configure as a singleton.
+
 Resolution walks the `parameters` array in order, then falls back to `TransformOptions.GlobalParameters` (set at [registration](register-the-service.md)). For each entry: an `IDictionary<string, string>` is looked up by key, case-insensitively, wherever it sits — passed directly, inside a collection at any nesting depth, or in `GlobalParameters`; an `IEnumerable<object>` — including `GlobalParameters` itself — is searched recursively, item by item; anything else is treated as an object — a public instance property matching the token name wins, and a non-public one is tried next. An `IDictionary<string, string>` answers by key only, wherever it sits, so `[Count]` or `[Keys]` does not resolve from it; any other dictionary inside a collection or in `GlobalParameters`, such as `Dictionary<string, object>`, is read as an object, so its keys are not used and the next item is tried. The first non-null value wins.
 
 ![Each parameter is tried through TokenResolver.Resolve, which picks the lookup — dictionary key, collection search, or property reflection — from the object's runtime type; the first non-null value found wins.](diagrams/resolve-token-value.svg)
@@ -26,6 +28,12 @@ public enum TokenNotFoundBehavior { LeaveAsIs, Remove, ThrowError } // default: 
 |---|---|---|---|
 | `TokenNotFoundBehavior` | `TokenNotFoundBehavior` | `ThrowError` | `LeaveAsIs` / `Remove` for lenient rendering instead of throwing `UnResolvedTokenException`. |
 | `GlobalParameters` | `IEnumerable<object>` | `[]` | Fallback resolution sources tried after the call's own `parameters`. Configured at [registration](register-the-service.md). |
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `ITransformerService.Transform`/`TransformAsync`; you call it from your own
+code after [registering the service](register-the-service.md). **Entry point in your app:** resolve
+`ITransformerService` wherever you render a template.
 
 ## ⚠️ Gotchas & limits
 

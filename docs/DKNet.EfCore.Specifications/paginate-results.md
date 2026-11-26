@@ -9,6 +9,8 @@ var next = await repo.ToKeysetPageAsync(new MinimumPrice(0), p => p.Id, cursor: 
 Console.WriteLine(next.Single().Name); // Tea
 ```
 
+Registration: the same `AddSpecRepo<TDbContext>()` call as the [Quick Start](index.md#-quick-start) — it registers the scoped `IRepositorySpec` that `repo` above resolves to.
+
 ![Paging chooses offset materialization, buffered ordered enumeration, or a keyset cursor predicate before fetching rows; arbitrary keysets additionally check whether previous and next pages exist.](diagrams/paginate-results.svg)
 
 | Surface | Ordering owner | Result |
@@ -34,6 +36,12 @@ The queryable arbitrary-key overload uses MR.EntityFrameworkCore.KeysetPaginatio
 ## 🧱 Where it fits
 
 The [query architecture](index.md#-architecture) shows the shared DbContext. Both entity and projected repository queries offer paged lists and buffered enumeration; keyset repository helpers return entities.
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `MapGetList` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md) | Calls `repo.ToPagedListAsync` to serve its mapped list endpoint's paged response. |
+
+**Entry point in your app:** call `repo.ToPagedListAsync`, `ToPageEnumerable` or a keyset helper yourself when not going through a mapped endpoint.
 
 ## ⚠️ Gotchas & limits
 

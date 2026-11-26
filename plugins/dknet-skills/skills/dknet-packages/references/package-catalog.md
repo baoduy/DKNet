@@ -48,7 +48,7 @@ Roslyn generators (`DKNet.EfCore.DtoGenerator`, `DKNet.SlimBus.Generators`), whi
 
 ## Docs and source
 
-- Docs hub: https://github.com/baoduy/DKNet/blob/dev/docs/README.md
+- Docs hub: https://baoduy.github.io/DKNet/
 - Per-area doc pages: `https://github.com/baoduy/DKNet/blob/dev/docs/<Area>/<Package>.md` (`Area` is
   one of `Core`, `EfCore`, `AspNetCore`, `Services`, `Messaging`, `Aspire`).
 - Source tree: `https://github.com/baoduy/DKNet/tree/dev/src/<Area>/<Package>`.

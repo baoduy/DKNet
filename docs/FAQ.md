@@ -19,7 +19,7 @@
 
 A suite of 28 independent .NET NuGet packages for building enterprise applications around Domain-Driven Design
 and Onion Architecture. There is no framework to adopt wholesale: each package registers itself and is usable on
-its own. Start from [Which package do I need?](README.md#which-package-do-i-need).
+its own. Start from [Which package do I need?](index.md#which-package-do-i-need).
 
 ### Which .NET versions are supported?
 

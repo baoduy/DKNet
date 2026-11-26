@@ -1,6 +1,10 @@
 # Generate handlers, unless a hand-written one wins
 
-Part of [DKNet.SlimBus.Generators](index.md). Each request gets an `internal sealed IHandler<TRequest, TDto>` in `{Entity}CrudHandlers.g.cs` — unless the compiling project already declares a type implementing `IHandler<TRequest, TDto>` for that request, in which case the generator skips it and reports `DKCRUDGEN005` (Info) at the hand-written type. The request record itself is still generated either way. From `SlimBus.Generators.Tests.Api`, a passing-test override of a generated action handler:
+Part of [DKNet.SlimBus.Generators](index.md). Each request gets an `internal sealed IHandler<TRequest, TDto>` in `{Entity}CrudHandlers.g.cs` — unless the compiling project already declares a type implementing `IHandler<TRequest, TDto>` for that request, in which case the generator skips it and reports `DKCRUDGEN005` (Info) at the hand-written type. The request record itself is still generated either way.
+
+None — no separate DI registration; the generated (or your hand-written override) handler is discovered automatically by `AddServicesFromAssembly(...)`, the same call already shown in the [Quick Start](index.md#-quick-start).
+
+From `SlimBus.Generators.Tests.Api`, a passing-test override of a generated action handler:
 
 ```csharp
 internal sealed class CustomDiscontinueGadgetHandler(GadgetDbContext db, IMapper mapper)
@@ -68,9 +72,19 @@ internal sealed class UpdatePriceProductHandler(
 
 Both handler kinds return `mapper.ResultOf<TDto>(entity)` (via `LazyMapExtensions`), so the DTO materializes lazily — after the auto-save interceptor has persisted the change, which is why database-generated values (identity keys, timestamps) are present in the response.
 
+## ⚙️ Configuration reference
+
+There is no options type for this step — naming comes from [Generate CRUD requests](generate-crud-requests.md) and [Name requests and routes](name-requests-and-routes.md).
+
+| Override point | How you customise it |
+|---|---|
+| `Fluents.Requests.IHandler<TRequest, TDto>` (from [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/send-commands.md)) | Declare your own type implementing it for the generated request; the generator detects it by request type name and skips emitting `{Entity}CrudHandlers.g.cs`'s version for that request (`DKCRUDGEN005`, Info). |
+
 ## 🧱 Where it fits
 
-Generated handlers call `IRepositorySpec` from [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md), `NotFoundError` and `LazyMapExtensions.ResultOf` from [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/index.md), and a registered Mapster `IMapper`. They never call `SaveChangesAsync`: [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/index.md)'s auto-save interceptor (`AddSlimBusEfCoreInterceptor<TDbContext>()`, see [Auto-save on write](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md)) does that after a successful dispatch, and that same save is what makes the entity's domain events reach [`AddSlimBusEventPublisher<TDbContext>()`](../DKNet.SlimBus.Extensions/publish-domain-events.md) — nothing in this generator's output raises, declares, or subscribes to an event itself.
+Generated handlers call `IRepositorySpec` from [DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/query-and-save.md), [`NotFoundError`](../DKNet.SlimBus.Extensions/send-commands.md) and [`LazyMapExtensions.ResultOf`](../DKNet.SlimBus.Extensions/map-results-lazily.md) from `DKNet.SlimBus.Extensions`, and a registered Mapster `IMapper`. They never call `SaveChangesAsync`: [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/index.md)'s auto-save interceptor (`AddSlimBusEfCoreInterceptor<TDbContext>()`, see [Auto-save on write](../DKNet.SlimBus.Extensions/auto-save-dbcontext.md)) does that after a successful dispatch, and that same save is what makes the entity's domain events reach [`AddSlimBusEventPublisher<TDbContext>()`](../DKNet.SlimBus.Extensions/publish-domain-events.md) — nothing in this generator's output raises, declares, or subscribes to an event itself.
+
+**Entry point in your app:** nothing to register — `AddServicesFromAssembly(...)` (see the [Quick Start](index.md#-quick-start)) discovers the generated handler, or your hand-written override, the same way.
 
 ## ⚠️ Gotchas & limits
 

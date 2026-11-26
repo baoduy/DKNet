@@ -2,6 +2,8 @@
 
 Part of [DKNet.Fw.Extensions](index.md). Build reusable filters over loaded assemblies with `TypeArrayExtractorExtensions` and `ITypeExtractor`.
 
+None — no DI registration needed; `Extract()` is a static extension method you call directly.
+
 ```csharp
 using System;
 using System.Linq;
@@ -37,6 +39,23 @@ Each filter compiles its predicate once and creates a new extractor; `Where(null
 | `Where(Expression<Func<Type, bool>>?)` | Custom predicate |
 
 `Extract()` accepts an `Assembly`, an `Assembly[]`, or an `ICollection<Assembly>`. The extractor implements `IEnumerable<Type>`, so LINQ can materialize it.
+
+## ⚙️ Configuration reference
+
+None — the filter chain reads no options. `ITypeExtractor` has no override point: its only implementation, `TypeExtractor`, is `internal`, so you cannot implement it yourself — you only ever consume the instance `Extract()` returns.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `EndpointConfigExtensions` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-endpoint-groups.md) | `UseEndpointConfigs` calls `Extract().NotGeneric().NotAbstract().Classes().IsInstanceOf<IEndpointConfig>()` to discover your endpoint-group implementations. |
+| `EntityAutoConfigExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/apply-global-filters.md) | Calls `Extract().Classes().NotAbstract().IsInstanceOf<IGlobalModelBuilder>()` to discover model-wide filter builders. |
+| `EfCoreDataSeedingExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/seed-data.md) | Calls `Extract().Classes().NotAbstract().IsInstanceOf<IDataSeedingConfiguration>()` to discover seeding configurations. |
+| `SequenceExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/read-sequences.md) | Calls `Extract().Enums()` then [`HasAttribute<SqlSequenceAttribute>()`](check-attributes.md) to find enums that need a registered SQL sequence. |
+
+`EndpointConfigExtensions` is public but undocumented by name; `EntityAutoConfigExtensions` and `SequenceExtensions` are internal. All three links go to the page documenting the public interface or attribute each consumer scans for.
+
+**Entry point in your app:** calling `Extract()` directly on an `Assembly`/`Assembly[]`/`ICollection<Assembly>` in your own code, then chaining the filter methods in the table above.
 
 ## ⚠️ Gotchas & limits
 

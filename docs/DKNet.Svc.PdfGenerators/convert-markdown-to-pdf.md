@@ -55,6 +55,10 @@ The diagram does not show the HTML-to-PDF rendering step in detail — see
 Both paths converge on the same Chromium render described in
 [Page layout, header and footer](page-layout-header-footer.md).
 
+None — no other DKNet package calls `IPdfGenerator`; you call it from your own code.
+
+**Entry point in your app:** `services.AddPdfGenerator(...)` in `Program.cs` registers `IPdfGenerator` as a singleton; inject it where you build the document.
+
 ## ⚠️ Gotchas & limits
 
 - **No Razor/template-model API.** There is no `GenerateFromTemplateAsync` or model binding — render the Markdown string yourself (fill placeholders, apply a template) before calling this package.

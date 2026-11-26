@@ -58,6 +58,10 @@ as on the cloud providers. Application code depends on `IBlobService` only; swap
 environment without touching a consumer. Test projects register this provider against a temporary directory to
 exercise blob-writing code paths without a storage emulator.
 
+None — no other DKNet package calls `LocalBlobService`; your own code reaches it through `IBlobService`.
+
+**Entry point in your app:** `services.AddLocalDirectoryBlobService(...)` in `Program.cs`, then inject `IBlobService` where you read or write blobs.
+
 ## ⚠️ Gotchas & limits
 
 - **`GetAsync`'s `FileNotFoundException` is the biggest provider-agnostic trap.** S3 and Azure Storage both return

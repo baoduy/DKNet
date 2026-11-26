@@ -22,6 +22,14 @@ With no custom resolver, `IdempotencyKeyScopeResolver.Resolve` chooses the authe
 | `ScopeHmacSecret` | `string?` | null | Enables the Authorization fallback; non-null whitespace fails startup validation. |
 | `IncludeClientIpInScope` | `bool` | false | Enables IP as the last built-in fallback. |
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| Endpoint filter (internal; the call sequence is shown on [Protect endpoints and route groups](protect-endpoints.md)) | DKNet.AspCore.Idempotency | Resolves a `Scope` — through `KeyScopeResolver` or `IdempotencyKeyScopeResolver.Resolve` — before building `IdempotentKeyInfo.CompositeKey`. |
+
+**Entry point in your app:** set `KeyScopeResolver`, `ScopeHmacSecret`, or `IncludeClientIpInScope` on the `config` delegate of whichever `AddIdempotentKey`/`AddIdempotencyWith…Store` call you use in `Program.cs`.
+
 ## ⚠️ Gotchas & limits
 
 - Anonymous callers share a scope unless the host supplies another identity. Choose a scope from trusted host data.

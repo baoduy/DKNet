@@ -1,7 +1,6 @@
 using System.Text;
 using DKNet.Svc.Encryption;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace Svc.Encryption.Tests;
 

@@ -25,6 +25,8 @@ public sealed class Order
 
 These declarations are inert without [SlimBus.Generators](../DKNet.SlimBus.Generators/index.md). Keep domain methods as the source of business behavior; the generator owns the transport adapter.
 
+None — no DI registration needed; `[CrudCreate]`, `[CrudUpdate]` and `[CrudAction]` are declarative attributes read by `CrudGenerator` at compile time.
+
 ## ⚙️ Configuration reference
 
 | Marker | Targets | Option | Default | Effect |
@@ -37,7 +39,11 @@ These declarations are inert without [SlimBus.Generators](../DKNet.SlimBus.Gener
 
 ## 🧱 Where it fits
 
-The domain references only the marker types here. SlimBus.Generators consumes those markers during compilation; generated adapters execute the domain methods in the API host.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `CrudGenerator` | [DKNet.SlimBus.Generators](../DKNet.SlimBus.Generators/generate-crud-requests.md) | Reads `[CrudCreate]`/`[CrudUpdate]`/`[CrudAction]` at compile time and emits the request, handler and minimal-API endpoint for each marked member. |
+
+**Entry point in your app:** mark your domain constructors/methods; the generated adapters execute them from the minimal-API endpoint SlimBus.Generators emits.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

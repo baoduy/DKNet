@@ -57,9 +57,19 @@ Only entities in the changed-entry snapshot participate in manual queue dispatch
 | `MapsterMapper.IMapper` | host-supplied, first resolved | Needed for queued event types and declared events. |
 | `ILogger<EventHook>` | optional | Information per after-save pass and errors for publisher failures. |
 
+| Override point | How you customise it |
+|---|---|
+| `IEventPublisher` | Implement it (or derive from `DefaultEventPublisher`) and register with `AddEventPublisher<TDbContext, TPublisher>()`. |
+
 ## 🧱 Where it fits
 
-Abstractions defines the entity queues and publisher contracts. Hooks invokes EventHook around the context save, and the host publisher implementation owns transport or external side effects.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `SlimBusEventPublisher` | [DKNet.SlimBus.Extensions](../DKNet.SlimBus.Extensions/publish-domain-events.md) | Implements `IEventPublisher` and registers itself with this package's `AddEventPublisher<TDbContext, SlimBusEventPublisher>()` to forward queued events onto the message bus. |
+
+[Abstractions](../DKNet.EfCore.Abstractions/queue-domain-events.md) defines the entity queues and publisher contracts; [Hooks](../DKNet.EfCore.Hooks/index.md) invokes `EventHook` around the context save, and your publisher implementation owns transport or external side effects.
+
+**Entry point in your app:** call `AddEvent`/`AddEvent<TEvent>()` from domain methods, then register your `IEventPublisher` with `AddEventPublisher<TDbContext, TPublisher>()`.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
 

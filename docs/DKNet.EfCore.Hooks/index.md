@@ -2,6 +2,8 @@
 
 A before/after SaveChangesAsync hook pipeline for .NET developers adding cross-cutting persistence work.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Share one captured change set between audit, event, ownership and custom hooks.
@@ -81,6 +83,7 @@ Use SaveChangesAsync; synchronous saves fail unless hooks are disabled. Empty sn
 
 - [Run custom work before and after an async save](write-save-hooks.md) — Implement a hook interface or derive from `HookAsync` to inspect the shared snapshot around a save.
 - [Suppress hooks for a bounded async flow](disable-hooks.md) — Wrap saves in a disposable `DisableHooks()` scope when a batch must bypass every hook for that context type.
+- [The disposable handle behind a disabled-hooks scope](hook-disabling-scope.md) — `IHookDisablingContext` is the disposable handle `DisableHooks()` returns; hold it and dispose it, do not implement it.
 
 ## 🔗 Related packages
 

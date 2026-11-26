@@ -25,7 +25,11 @@ A missing provider or `null`/empty user skips user stamping. No arguments or con
 
 ## 🧱 Where it fits
 
-See [ownership and the audit-field split](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split). With a non-empty user, `EfCoreAuditHook` owns the audit fields and `DataOwnerHook` owns `OwnedBy`; otherwise ownership supplies the fallback. The choice comes from provider values rather than registration order.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `DataOwnerHook` | [DKNet.EfCore.DataAuthorization](../DKNet.EfCore.DataAuthorization/stamp-ownership.md#who-fills-createdbyupdatedby-the-audit-field-split) | Reads the same `ICurrentUserProvider` value; when it is non-empty, `EfCoreAuditHook` owns the audit fields and `DataOwnerHook` owns only `OwnedBy`, otherwise ownership supplies the audit-field fallback. The choice comes from provider values, not registration order. |
+
+**Entry point in your app:** implement `ICurrentUserProvider` and register it with `AddCurrentUserProvider<TDbContext, TProvider>()`.
 
 ## ⚠️ Gotchas & limits
 

@@ -29,9 +29,11 @@ The combined callback configures [core key validation](../DKNet.AspCore.Idempote
 
 ## 🧱 Where it fits
 
-The package overview shows the host registrations and dependencies behind this capability. The core filter and selected store have separate responsibilities.
+None — no other DKNet package calls `AddIdempotencyRedisStore`/`AddIdempotencyWithRedisStore`; you call them from your own `Program.cs`.
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
+
+**Entry point in your app:** `Program.cs`, via `builder.Services.AddIdempotencyWithRedisStore(connectionString)`.
 
 ## ⚠️ Gotchas & limits
 

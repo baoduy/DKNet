@@ -6,6 +6,8 @@ Part of [DKNet.SlimBus.Generators](index.md). `{Entity}CrudEndpoints.g.cs` is ge
 app.MapGroup("/products").MapProductCrud();
 ```
 
+None — no DI registration needed; `Map{Entity}Crud` is a generated `RouteGroupBuilder` extension method you call directly, as above. It composes mappers that resolve `IRepositorySpec` and the bus at request time — register `AddSpecRepo<TDbContext>()` and SlimMessageBus before serving, as [Map entity endpoints](../DKNet.AspCore.Extensions/map-entity-endpoints.md) and [Dispatch bus requests](../DKNet.AspCore.Extensions/dispatch-bus-requests.md) describe.
+
 ```csharp
 // By operation kind — no DELETE route is registered at all.
 app.MapGroup("/products").MapProductCrud(o => o.Exclude(CrudOp.Delete));
@@ -36,7 +38,9 @@ app.MapGroup("/products").MapProductCrud(o => o.Exclude("ChangePrice"));
 
 ## 🧱 Where it fits
 
-`Map{Entity}Crud` composes `MapGetById`, `MapGetList`, `MapDeleteById`, `MapPost`, `MapPutById`, `MapActionById` and `MapParameterlessActionById` from [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/index.md) — no new mapping layer. It never runs without that package referenced; see [Generate CRUD requests](generate-crud-requests.md) for what exists without it.
+`Map{Entity}Crud` composes `MapGetById`, `MapGetList` and `MapDeleteById` from [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/map-entity-endpoints.md), and `MapPost`, `MapPutById`, `MapActionById` and `MapParameterlessActionById` from the [same package's bus dispatcher](../DKNet.AspCore.Extensions/dispatch-bus-requests.md) — no new mapping layer. It never runs without that package referenced; see [Generate CRUD requests](generate-crud-requests.md) for what exists without it.
+
+**Entry point in your app:** `group.MapProductCrud()` (generated per entity) on a `RouteGroupBuilder` in `Program.cs`.
 
 ## ⚠️ Gotchas & limits
 

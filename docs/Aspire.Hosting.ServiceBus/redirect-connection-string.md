@@ -28,9 +28,21 @@ builder.Build().Run();
 
 ![ConnectionStringExpression and GetConnectionStringAsync both check TryGetLastAnnotation for a ConnectionStringRedirectAnnotation; without one they build the emulator's UseDevelopmentEmulator connection string, with one they return the annotated resource's own expression or resolved value instead.](diagrams/redirect-connection-string.svg)
 
+## ⚙️ Configuration reference
+
+| Override point | How you customise it |
+|---|---|
+| `ConnectionStringRedirectAnnotation` | Add one to `serviceBus.Resource.Annotations`, pointing at another `IResourceWithConnectionString`. `ConnectionStringExpression` and `GetConnectionStringAsync` return that resource's string instead of the emulator's. |
+
+There is no DKNet-owned options type for this feature — the single override point is applying Aspire's own annotation type to the resource `AddServiceBus` created, as shown above.
+
 ## 🧱 Where it fits
 
 The redirect only changes which string a referencing project receives through `WithReference`. `AddServiceBus` still provisions the full emulator resource — the container, the SQL Server dependency and `WaitFor`, the config bind mount — regardless of whether a redirect is applied; nothing short-circuits that wiring. See [index.md](index.md) for what else `AddServiceBus` adds alongside the resource this annotation targets.
+
+None — no other DKNet package calls `ConnectionStringRedirectAnnotation`; you add it to your own AppHost's resource.
+
+**Entry point in your app:** your AppHost's `Program.cs`, via `serviceBus.Resource.Annotations.Add(new ConnectionStringRedirectAnnotation(...))`, typically gated on `builder.ExecutionContext.IsPublishMode`.
 
 ## ⚠️ Gotchas & limits
 

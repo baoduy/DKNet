@@ -15,6 +15,18 @@ Arguments starting with `-` are skipped. An option without `=` also consumes the
 
 `JobSelection` carries `RequestedJobName`, nullable canonical `JobName`, `IsRecognized`, and a copied `KnownJobNames` list. `HasJobName` means a candidate was found, even if unknown. No candidate produces null names and false recognition; an unknown candidate preserves the requested string but no canonical name.
 
+None — no DI registration needed; `JobSelector.Select` is a static method you call directly.
+
+## ⚙️ Configuration reference
+
+None — `JobSelector.Select` reads no options and exposes no override point. Pass your own known-job-name list as an argument on each call.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `JobSelector.Select`; you call it from your own startup/console code.
+
+**Entry point in your app:** calling `JobSelector.Select(args, knownJobNames)` early in your host's startup, typically before `WebApplication.CreateBuilder`/`Host.CreateApplicationBuilder` runs the rest of its pipeline.
+
 ## ⚠️ Gotchas & limits
 
 - This helper selects only; it does not register, run or schedule a job and does not stop the host.

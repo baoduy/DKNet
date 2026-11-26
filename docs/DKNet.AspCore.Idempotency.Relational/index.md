@@ -2,6 +2,8 @@
 
 Internal EF Core storage machinery shared by the SQL Server and PostgreSQL idempotency providers.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Understand why SQL retries reserve through a unique index before handlers run.

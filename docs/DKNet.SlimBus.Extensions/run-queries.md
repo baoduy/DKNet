@@ -94,11 +94,25 @@ A single-item query (`Fluents.Queries.IWitResponse<TResponse>`) follows the same
 For an in-memory source instead of an EF Core `IQueryable`, build the page from any `IEnumerable<T>` with
 `X.PagedList`'s own `ToPagedList(...)`.
 
+## ⚙️ Configuration reference
+
+There is no options type and no `IConfiguration` section.
+
+| Override point | How you customise it |
+|---|---|
+| `Fluents.Queries.IHandler<TQuery, TResponse>` | Implement it for a single-item query; `AddServicesFromAssembly(...)` (see the [Quick Start](index.md#-quick-start)) discovers and registers it. |
+| `Fluents.Queries.IPageHandler<TQuery, TResponse>` | Implement it for a paged query, returning `IPagedList<TResponse>`; discovered the same way. |
+
 ## 🧱 Where it fits
 
-[DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/index.md) is the recommended way to express the query
-behind a page handler as a reusable specification. `DKNet.AspCore.Extensions` maps `IWitResponse<T>` to `MapGet`
-(200/404) and `IWitPageResponse<T>` to `MapGetPage` (200 with a `PagedResponse<T>` envelope).
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `FluentsEndpointMapperExtensions` | [DKNet.AspCore.Extensions](../DKNet.AspCore.Extensions/dispatch-bus-requests.md) | `MapGet<TCommand,TResponse>` maps `Fluents.Queries.IWitResponse<TResponse>` to a GET returning 200/404; `MapGetPage<TCommand,TResponse>` maps `Fluents.Queries.IWitPageResponse<TResponse>` to a GET returning a `PagedResponse<TResponse>`. |
+
+[DKNet.EfCore.Specifications](../DKNet.EfCore.Specifications/paginate-results.md) is the recommended way to express
+the query behind a page handler as a reusable specification, through `IRepositorySpec`.
+
+**Entry point in your app:** implement `Fluents.Queries.IHandler<TQuery, TResponse>`/`IPageHandler<TQuery, TResponse>` and let `AddServicesFromAssembly(...)` discover it; map it to HTTP with `MapGet`/`MapGetPage` from `DKNet.AspCore.Extensions`, or call `IMessageBus.Send(...)` yourself.
 
 ## ⚠️ Gotchas & limits
 

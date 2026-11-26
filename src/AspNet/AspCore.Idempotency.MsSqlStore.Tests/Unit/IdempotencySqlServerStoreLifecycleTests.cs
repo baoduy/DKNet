@@ -34,14 +34,14 @@ public sealed class IdempotencySqlServerStoreLifecycleTests : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _store.DisposeAsync();
         await _serviceProvider.DisposeAsync();
         File.Delete(_dbFilePath);
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var services = new ServiceCollection();
         services.AddDbContextFactory<IdempotencyDbContext>(o => o.UseSqlite(

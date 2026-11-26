@@ -57,11 +57,19 @@ public sealed class ReportHook : HookAsync
 
 Suppression is keyed by the concrete context type full name and follows the current logical execution context. Nested scopes are reference-counted; synchronous and asynchronous disposal are supported and repeated disposal is a no-op.
 
+None — no DI registration needed beyond having already registered hooks for the context (`AddDbContextWithHook`/`AddHook`, above); `DisableHooks()` itself is an extension method you call directly on the `DbContext`.
+
+## ⚙️ Configuration reference
+
+None — `DisableHooks()` reads no options and exposes no override point.
+
 ## 🧱 Where it fits
 
-The shared hook pipeline means one scope also suppresses Events, AuditLogs and DataAuthorization hooks registered for that concrete context type in the inherited execution flow.
+The shared hook pipeline means one scope also suppresses [`EventHook`](../DKNet.EfCore.Events/publish-domain-events.md), [`EfCoreAuditHook`](../DKNet.EfCore.AuditLogs/capture-changes.md) and [`DataOwnerHook`](../DKNet.EfCore.DataAuthorization/stamp-ownership.md) registered for that concrete context type in the inherited execution flow, together with [custom hooks](write-save-hooks.md). See [the disposable handle this call returns](hook-disabling-scope.md) for what you get back and how its disposal is scoped.
 
 ![The package component map shows the host, contracts and consumers involved in this capability.](diagrams/components.svg)
+
+**Entry point in your app:** `using (db.DisableHooks()) { ... }` around the save you want every hook skipped for, after registering hooks as above.
 
 ## ⚠️ Gotchas & limits
 

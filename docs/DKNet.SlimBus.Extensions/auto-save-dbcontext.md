@@ -97,18 +97,26 @@ when.
 | Skipped when | The response is `null`, or is an `IResultBase` with `IsSuccess == false` |
 | Saved contexts | Every `DbContext` type registered through `AddSlimBusEfCoreInterceptor<T>()`, across every call, whose `ChangeTracker.HasChanges()` |
 | Save call | `AddNewEntitiesFromNavigations`, then `SaveChangesWithConcurrencyHandlingAsync` (both from `DKNet.EfCore.Extensions`) |
-| Exception handler | `IEfCoreExceptionHandler` keyed by the `DbContext`'s `FullName` (`AddEfCoreExceptionHandler<TDbContext, THandler>()`), falling back to an unkeyed registration |
+| Exception handler | [`IEfCoreExceptionHandler`](../DKNet.EfCore.Extensions/customise-concurrency-handling.md) keyed by the `DbContext`'s `FullName` (`AddEfCoreExceptionHandler<TDbContext, THandler>()`), falling back to an unkeyed registration |
 | Interceptor order | `int.MaxValue` (`IInterceptorWithOrder`) — runs last in the chain, wrapping the handler directly, inside any interceptor you register |
 
 Calling `AddSlimBusEfCoreInterceptor<TDbContext>()` again for the same `TDbContext` adds no second save registration.
 For a second `DbContext`, call it again with that type — each registered context with pending changes is saved in
 the same pass, independently.
 
+| Override point | How you customise it |
+|---|---|
+| `IEfCoreExceptionHandler` | Implement it and register with [`AddEfCoreExceptionHandler<TDbContext, THandler>()`](../DKNet.EfCore.Extensions/customise-concurrency-handling.md), keyed per `DbContext` or unkeyed as a shared fallback, to control concurrency-conflict retries during auto-save. |
+
 ## 🧱 Where it fits
 
 [Send write commands](send-commands.md) is what gets saved; [Run read queries](run-queries.md) is never auto-saved.
 [Publish domain events onto the bus](publish-domain-events.md) runs as part of the same `SaveChangesAsync` call this
-interceptor triggers, through `DKNet.EfCore.Events`' save hook.
+interceptor triggers, through `DKNet.EfCore.Events`' save hook. When a save throws a concurrency exception, the
+interceptor resolves and calls [`IEfCoreExceptionHandler`](../DKNet.EfCore.Extensions/customise-concurrency-handling.md)
+from `DKNet.EfCore.Extensions` to decide whether to retry, ignore or rethrow.
+
+**Entry point in your app:** `services.AddSlimBusEfCoreInterceptor<TDbContext>()` in `Program.cs`, before `AddSlimMessageBus(...)`.
 
 ## ⚠️ Gotchas & limits
 

@@ -2,6 +2,8 @@
 
 Part of [DKNet.RandomCreator](index.md). Use `RandomCreators.NewString` or `NewChars` with `StringCreatorOptions` to choose the output form and character counts.
 
+None — no DI registration needed; `RandomCreators.NewString`/`NewChars` are static methods you call directly.
+
 ```csharp
 using System;
 using DKNet.RandomCreator;
@@ -33,6 +35,12 @@ The character pools are fixed. With default options, all characters are letters;
 | `options` | `StringCreatorOptions?` | `null` | Null creates fresh options with zero quotas. |
 | `MinNumbers` | `int` | `0` | Exact digit count for a nonnegative quota. |
 | `MinSpecials` | `int` | `0` | Exact symbol count for a nonnegative quota. |
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `RandomCreators.NewString`/`NewChars`; you call them from your own code.
+
+**Entry point in your app:** calling `RandomCreators.NewString`/`NewChars` directly wherever you need random text, such as a generated password or token.
 
 ## ⚠️ Gotchas & limits
 

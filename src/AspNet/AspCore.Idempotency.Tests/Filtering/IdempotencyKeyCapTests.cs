@@ -10,8 +10,10 @@ using AspCore.Idempotency.Tests.Fixtures;
 using DKNet.AspCore.Idempotency;
 using DKNet.AspCore.Idempotency.Filtering;
 using DKNet.AspCore.Idempotency.Store;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.TestHost;
 
 namespace AspCore.Idempotency.Tests.Filtering;
 
@@ -142,9 +144,16 @@ public sealed class IdempotencyKeyCapTests(ApiFixtureCachedResult fixture) : ICl
     [InlineData(-1)]
     public async Task Start_WithLimitBelow1_StopsWithKeyLimitMustBeAtLeast1(int limit)
     {
-        await using var app = AppWithKeyLimit(limit);
+        // Started on the test thread, not through WebApplicationFactory: the factory runs Program on a
+        // background thread whose RunAsync disposes the host on start failure, racing CreateClient into an
+        // ObjectDisposedException (DRK-2561).
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Services.AddIdempotentKey();
+        builder.Services.PostConfigure<IdempotencyOptions>(o => o.MaxIdempotencyKeyLength = limit);
+        await using var app = builder.Build();
 
-        var exception = Should.Throw<OptionsValidationException>(() => app.CreateClient());
+        var exception = await Should.ThrowAsync<OptionsValidationException>(() => app.StartAsync());
 
         exception.Failures.ShouldBe(["MaxIdempotencyKeyLength must be at least 1."]);
     }

@@ -431,9 +431,9 @@ public sealed class IdempotencyIntegrationTests(ApiFixture fixture) : IAsyncLife
             "The handler must have executed exactly once, even when racing an already-expired reservation row");
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public ValueTask InitializeAsync() => ValueTask.CompletedTask;
 
     #endregion
 }

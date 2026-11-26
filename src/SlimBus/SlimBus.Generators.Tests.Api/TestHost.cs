@@ -52,7 +52,7 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
 
     public void Dispose() => _connection?.Dispose();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // Kept open for the fixture's lifetime: SQLite's ":memory:" database is dropped once its one
         // connection closes, so this connection (not EF's per-scope ones) owns the database's lifetime.
@@ -120,7 +120,7 @@ public sealed class GadgetTestHost : IAsyncLifetime, IDisposable
         Client = app.GetTestClient();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         Client.Dispose();
         if (_app is not null)
@@ -187,7 +187,7 @@ public sealed class GadgetAuthTestHost : IAsyncLifetime, IDisposable
 
     public void Dispose() => _connection?.Dispose();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -259,7 +259,7 @@ public sealed class GadgetAuthTestHost : IAsyncLifetime, IDisposable
         Client = app.GetTestClient();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         // Client stays null when InitializeAsync throws before reaching app.StartAsync() — e.g. today, while
         // CrudMapOptions.Configure is a NotImplementedException stub (DRK-1327 Acceptance-tests stage).

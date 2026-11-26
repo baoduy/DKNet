@@ -39,6 +39,16 @@ public virtual string NumberFormat { get; set; } = "###,##0.00";
 | `ValueFormatter.IntegerFormat` | `string` | `"###,##0"` | Format string for `int`/`long` values. |
 | `ValueFormatter.NumberFormat` | `string` | `"###,##0.00"` | Format string for `double`/`decimal`/`float` values. |
 
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `TransformerService` | [Register the service](register-the-service.md) | Calls `Options.Formatter.Convert(token, value)` for every resolved token before substituting it into the output — see [fill a template from data](fill-a-template-from-data.md). |
+
+No other DKNet package calls `IValueFormatter`. **Entry point in your app:** set `TransformOptions.Formatter` when
+calling [`AddTransformerService`](register-the-service.md); `ITransformerService.Transform`/`TransformAsync` invoke
+it automatically for every token.
+
 ## ⚠️ Gotchas & limits
 
 - **The default date format is 12-hour with no meridiem.** `"dd/MM/yyyy hh.mm.ss"` renders 13:05 as `01.05.00` — override `DateFormat` (e.g. `"HH:mm"`) for anything a reader must interpret unambiguously.

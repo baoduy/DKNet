@@ -36,6 +36,23 @@ public sealed class Item
 
 `GetPrimaryKeyValues(object)` and `GetEntityKeyValues()` return name/value dictionaries with ordinal case-insensitive keys. `GetOriginalKeyValues` and `GetCurrentKeyValues` return value sequences in metadata key order.
 
+None — no DI registration needed; these are extension methods you call directly on a tracked `DbContext`/`EntityEntry`.
+
+## ⚙️ Configuration reference
+
+None — this feature reads no options and exposes no override point.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AuditLogExtensions` | [DKNet.EfCore.AuditLogs](../DKNet.EfCore.AuditLogs/capture-changes.md) | Calls `entry.GetEntityKeyValues()` to fill `AuditLogEntry.Keys`. |
+| `DbContextHelpers.GetTableName<TEntity>` | [DKNet.EfCore.Relational.Helpers](../DKNet.EfCore.Relational.Helpers/resolve-table-names.md) | Calls `IsSqlServer()` to pick the `dbo` default-schema fallback. |
+
+Inside this package, [`AutoConfigModelCustomizer`](configure-model.md) calls `IsSqlServer()`/`IsNpgsql()` to decide whether to register sequences at all, [`NextSeqValue`](read-sequences.md) calls the same pair to pick its SQL dialect when reading a sequence, and [`GetNewEntitiesFromNavigations`](discover-navigation-entities.md) calls `IsNewEntity()` to decide whether a discovered child is new. `GetPrimaryKeyProperties`, `GetOriginalValue`, `GetCurrentValue` and `HasProperty` have no DKNet caller outside this package today.
+
+**Entry point in your app:** call these extension methods directly on a tracked `DbContext`/`EntityEntry` from your own infrastructure code.
+
 ## ⚠️ Gotchas & limits
 
 - No primary key metadata gives empty key results. `GetOriginalValue` and `GetCurrentValue` return null for a missing property; use `HasProperty` to distinguish absence from a null value.

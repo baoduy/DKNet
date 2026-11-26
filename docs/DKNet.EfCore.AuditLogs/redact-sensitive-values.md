@@ -13,6 +13,8 @@ public string? DebugText { get; set; }
 public DateTimeOffset TokenExpiryUtc { get; set; }
 ```
 
+Registration: the same `AddDbContextWithHook<TDbContext>()` and `AddEfCoreAuditLogs<TDbContext, TPublisher>()` (or `AddEfCoreAuditHook<TDbContext>()`) calls as the [Quick Start](index.md#-quick-start); these attributes only change what that hook captures.
+
 ![Capture skips ignored properties, redacts declared sensitive or encrypted values, and otherwise applies the selected property policy.](diagrams/redact-sensitive-values.svg)
 
 `[IgnoreAuditLog]` on the class excludes the entire entity; on a property it omits that field. `[AuditLog]` on the class enables opt-in entity capture; on a property it bypasses name-based redaction, but never `[SensitiveData]` or an attribute named `EncryptedAttribute`.
@@ -28,7 +30,11 @@ Pass these arguments to `AddEfCoreAuditHook<TDbContext>` or `AddEfCoreAuditLogs<
 
 ## 🧱 Where it fits
 
-[Withhold sensitive properties from unauthorised callers](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers) is separate, opt-in API response filtering. Audit capture ignores `[SensitiveData]` role arguments and always redacts declared-sensitive values.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `SensitiveDataJsonExtensions` | [DKNet.EfCore.Extensions](../DKNet.EfCore.Extensions/filter-sensitive-responses.md#withhold-sensitive-properties-from-unauthorised-callers) | Reads the same `[SensitiveData]` declaration for separate, opt-in API response filtering; it ignores role arguments, while audit capture always redacts the declared value unconditionally. |
+
+**Entry point in your app:** declare `[AuditLog]`/`[IgnoreAuditLog]`/`[SensitiveData]` on your entity; the behaviour or propertyPolicy options above decide what `EfCoreAuditHook` captures.
 
 ## ⚠️ Gotchas & limits
 

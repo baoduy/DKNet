@@ -63,6 +63,10 @@ the composition root references this package. Pair it with
 [DKNet.Svc.BlobStorage.Local](../DKNet.Svc.BlobStorage.Local/index.md) for local runs and CI where no storage
 account or emulator should be required.
 
+None — no other DKNet package calls `AzureStorageBlobService`; your own code reaches it through `IBlobService`.
+
+**Entry point in your app:** `builder.Services.AddAzureStorageAdapter(...)` in `Program.cs`, then inject `IBlobService` where you read or write blobs.
+
 ## ⚠️ Gotchas & limits
 
 - **`GetAsync` returns `null` for a missing blob — it does not throw.** `DownloadContentAsync`'s

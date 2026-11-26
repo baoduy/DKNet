@@ -2,6 +2,8 @@
 
 Fills bracketed tokens in a template string — `[Name]`, `{Email}`, `<Amount>`, {% raw %}`{{Ref}}`{% endraw %} — from plain objects or string dictionaries, formatting each resolved value on the way in.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - **No `string.Replace` chains.** One `Transform(template, data)` call resolves every token in the template against the objects you pass, in order.

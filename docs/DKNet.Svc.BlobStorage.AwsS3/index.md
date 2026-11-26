@@ -3,6 +3,8 @@
 AWS S3 implementation of `IBlobService` for .NET developers, also compatible with S3-compatible services such as
 MinIO and Cloudflare R2.
 
+[← All packages](../index.md#package-index)
+
 ## ✨ Why use it?
 
 - Register AWS S3 with one call — `AddS3BlobService(configuration)` binds credentials, endpoint, and bucket, and

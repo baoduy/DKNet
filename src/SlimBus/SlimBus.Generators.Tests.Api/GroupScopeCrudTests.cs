@@ -55,7 +55,7 @@ public sealed class GroupScopeCrudTestHost : IAsyncLifetime, IDisposable
 
     public void Dispose() => _connection?.Dispose();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -103,7 +103,7 @@ public sealed class GroupScopeCrudTestHost : IAsyncLifetime, IDisposable
         Client = app.GetTestClient();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         Client?.Dispose();
         if (_app is not null)

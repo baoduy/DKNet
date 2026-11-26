@@ -14,6 +14,8 @@ Console.WriteLine(back);  // ???>>>subjects
 Console.WriteLine(token.IsBase64String()); // False (- and _ are not in the standard Base64 alphabet)
 ```
 
+None — no DI registration needed; `Base64StringExtensions`' methods are static extension methods you call directly, as above.
+
 The URL variants are useful for JWT-style payloads without pulling in a JWT library: they replace `+`/`/` with
 `-`/`_` and omit `=` padding. Whitespace or empty input returns `string.Empty` from both decode helpers, and
 `IsBase64String` returns `false` for it.
@@ -22,6 +24,20 @@ The URL variants are useful for JWT-style payloads without pulling in a JWT libr
 
 The diagram cannot show the standard-alphabet pair (`ToBase64String`/`FromBase64String`) on its own — that path
 never touches `IsBase64String`'s URL-character check at all, because it never produces `-`/`_` in the first place.
+
+## ⚙️ Configuration reference
+
+None — `Base64StringExtensions` reads no options and exposes no override point. It is a static extension class
+with no DI registration; call the methods directly on any `string`.
+
+## 🧱 Where it fits
+
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `AesGcmEncryption` | [AES-GCM authenticated encryption](aes-gcm-encryption.md) | Calls `ToBase64String`/`FromBase64String` internally to pack and unpack its `nonce:tag:cipher` package. |
+
+No other DKNet package reaches these extensions. **Entry point in your app:** `using DKNet.Svc.Encryption;`, then
+call `ToBase64String`/`FromBase64UrlString`/etc. on any `string` — no DI registration needed.
 
 ## ⚠️ Gotchas & limits
 

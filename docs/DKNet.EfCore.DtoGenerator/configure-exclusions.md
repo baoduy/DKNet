@@ -11,6 +11,8 @@ public partial record ProductDto;
 
 For an ordinary `[GenerateDto]` DTO, a non-empty `Include` bypasses global exclusions and navigation filtering. Otherwise local and global exclusion names are combined, and the effective `IgnoreComplexType` selects whether navigation-like properties are omitted.
 
+None — no DI registration needed; selection runs inside the `DtoGenerator` compile-time analyzer from attribute arguments and MSBuild properties.
+
 ## ⚙️ Configuration reference
 
 | Option | Type | Default | Effect |
@@ -35,9 +37,11 @@ The package exposes both switches to the compiler automatically. See the [Global
 
 ## 🧱 Where it fits
 
+None — no other DKNet package reads `Include`/`Exclude`/`IgnoreComplexType` or the MSBuild switches; they are compile-time inputs local to this generator, with no runtime options object.
+
 ![The compiler reads project defaults and per-DTO arguments, then DtoGenerator emits only the selected DTO members.](diagrams/filter-settings.svg)
 
-Defaults are compile-time inputs; there is no DI registration or runtime options object.
+**Entry point in your app:** the `[GenerateDto]` attribute arguments, or the `DtoGeneratorExclusions`/`DtoGeneratorIgnoreComplexType` MSBuild properties in your `.csproj`.
 
 ## ⚠️ Gotchas & limits
 

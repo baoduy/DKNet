@@ -34,9 +34,31 @@ public enum InvoiceSequences
 }
 ```
 
+None — no DI registration needed; `UseAutoConfigModel<TContext>()` is a `DbContextOptionsBuilder` extension method you call directly, as above, and `NextSeqValue`/`NextSeqValueWithFormat` are extension methods you call on the `DbContext` itself.
+
 ![UseAutoConfigModel registers billing.Seq_Number and NextSeqValueWithFormat obtains a value before formatting it with the declared pattern.](diagrams/read-sequences.svg)
 
 `NextSeqValue<TEnum>` returns the raw scalar; the two-generic-argument overload casts it to `TValue?`. `NextSeqValueWithFormat` returns text. EF-managed open/close calls are balanced in a finally block even when execution fails.
+
+## ⚙️ Configuration reference
+
+| Attribute / Property | Type | Default | Effect |
+|---|---|---|---|
+| `[SqlSequence(schema)]` on the enum | `string` | `"seq"` | The sequence's SQL schema. |
+| `[Sequence(type)]` on a member | `Type?` | `typeof(int)` | The sequence's data type; only `byte`, `short`, `int`, `long` are supported. |
+| `FormatString` | `string?` | `null` | Pattern `NextSeqValueWithFormat` applies to the raw value. `null` or empty returns the raw value's plain string form (for example `"1000"`), unformatted. |
+| `Cyclic` | `bool` | `true` | Passed to `IsCyclic`; whether the sequence wraps after its maximum. |
+| `StartAt`, `IncrementsBy`, `Min`, `Max` | `long` / `int` | `-1` (unset) | Only applied to the model sequence when greater than `0`; otherwise the provider's own default stands. |
+
+There is no interface to implement — you declare metadata on the enum and its members, and `UseAutoConfigModel` (via `AutoConfigModelCustomizer`) reads it during model building.
+
+## 🧱 Where it fits
+
+None — no other DKNet package calls `NextSeqValue`/`NextSeqValueWithFormat`; you call them from your own code. The `[SqlSequence]`/`[Sequence]` attributes this feature reads are declared in [DKNet.EfCore.Abstractions](../DKNet.EfCore.Abstractions/index.md).
+
+`UseAutoConfigModel` (see [Apply model configurations and entity conventions](configure-model.md)) registers this sequence metadata into the model as part of its own model-building pass; sequence registration does not happen on its own.
+
+**Entry point in your app:** call `dbContext.NextSeqValue<TEnum>()` or `NextSeqValueWithFormat` yourself wherever you need the next value.
 
 ## ⚠️ Gotchas & limits
 

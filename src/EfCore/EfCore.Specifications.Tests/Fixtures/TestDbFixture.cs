@@ -58,14 +58,14 @@ public class TestDbFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Db != null) await Db.DisposeAsync();
 
         if (_sqliteConnection != null) await _sqliteConnection.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // Keep the shared connection open so SQLite in-memory state survives for the fixture lifetime.
         _sqliteConnection = new SqliteConnection($"Data Source=file:specs-{Guid.NewGuid():N}?mode=memory&cache=shared");

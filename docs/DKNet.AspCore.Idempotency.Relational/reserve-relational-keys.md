@@ -24,9 +24,15 @@ The store reads `InFlightReservationTimeout` from the [core retention settings](
 
 ## 🧱 Where it fits
 
-The package overview shows the host registrations and dependencies behind this capability. The core filter and selected store have separate responsibilities.
+| DKNet consumer | Package | What it does with this feature |
+|---|---|---|
+| `IdempotencySqlServerStore` | [MsSqlStore](../DKNet.AspCore.Idempotency.MsSqlStore/persist-responses.md) | Extends `IdempotencyRelationalStore<TContext>` to supply SQL Server's context, migrations, and unique-violation classification. |
+| `IdempotencyPostgresStore` | [NpgsqlStore](../DKNet.AspCore.Idempotency.NpgsqlStore/persist-responses.md) | Extends `IdempotencyRelationalStore<TContext>` to supply PostgreSQL's context, migrations, and unique-violation classification. |
+| Endpoint filter (internal; contract documented in [Implement a custom reservation store](../DKNet.AspCore.Idempotency/implement-store.md)) | DKNet.AspCore.Idempotency | Resolves whichever relational store is registered as `IIdempotencyKeyStore` and calls its reserve/complete methods. |
 
 ![The consumer host selects this package’s components and supplies the runtime dependencies shown in the package architecture.](diagrams/components.svg)
+
+**Entry point in your app:** you never call this base directly — select a provider (`AddIdempotencyWithMsSqlStore` or `AddIdempotencyWithNpgsqlStore`) in `Program.cs`.
 
 ## ⚠️ Gotchas & limits
 

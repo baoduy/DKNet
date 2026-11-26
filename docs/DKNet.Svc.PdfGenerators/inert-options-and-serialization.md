@@ -89,6 +89,10 @@ render, [Convert Markdown to a PDF](convert-markdown-to-pdf.md)'s Markdig pipeli
 [Convert HTML to a PDF](convert-html-to-pdf.md). They exist as a fully testable, round-trippable surface with no
 consumer in `PdfGenerator`.
 
+None — no other DKNet package calls `IPdfGenerator`; you call it from your own code.
+
+**Entry point in your app:** `services.AddPdfGenerator(...)` in `Program.cs` registers `IPdfGenerator` as a singleton; inject it where you build the document.
+
 ## ⚠️ Gotchas & limits
 
 - **Most option surface here is inert.** Earlier revisions of this documentation described `[TOC]` markers and theme switching as working features; they are not wired in source — do not design a document around them.

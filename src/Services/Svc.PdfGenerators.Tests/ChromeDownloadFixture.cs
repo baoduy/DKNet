@@ -18,7 +18,7 @@ public class PdfGeneratorChromeCollection : ICollectionFixture<ChromeDownloadFix
 /// </summary>
 public class ChromeDownloadFixture : IAsyncLifetime
 {
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var warmupPdfPath = Path.Combine(Path.GetTempPath(), $"chrome-warmup-{Guid.NewGuid():N}.pdf");
         try
@@ -31,5 +31,5 @@ public class ChromeDownloadFixture : IAsyncLifetime
         }
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

@@ -42,15 +42,15 @@ public sealed class ApiFixtureCustomScope : WebApplicationFactory<ApiTests.Progr
             }));
     }
 
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
     }
 
-    public Task InitializeAsync()
+    public ValueTask InitializeAsync()
     {
         HttpClient ??= CreateClient();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     #endregion

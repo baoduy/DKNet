@@ -41,6 +41,10 @@ Run with `dotnet run`.
 share. [Browser lifecycle and request safety](browser-lifecycle-and-request-safety.md) covers what happens to
 `<img>`, `<script>`, and other requests the rendered HTML makes.
 
+None — no other DKNet package calls `IPdfGenerator`; you call it from your own code.
+
+**Entry point in your app:** `services.AddPdfGenerator(...)` in `Program.cs` registers `IPdfGenerator` as a singleton; inject it where you build the document.
+
 ## ⚠️ Gotchas & limits
 
 - **Relative asset URLs in HTML do not resolve.** Content is set with `SetContentAsync`, not loaded from a base URL, so images and stylesheets need absolute URLs or inline data (`data:` URIs).
