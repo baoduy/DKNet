@@ -3,7 +3,6 @@ using DKNet.Svc.PdfGenerators.Options;
 using PuppeteerSharp;
 using PuppeteerSharp.Media;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 

@@ -54,9 +54,9 @@ public sealed class MsSqlLoginRetryTests : IAsyncLifetime
         .WithCleanUp(true)
         .Build();
 
-    public Task InitializeAsync() => _container.StartAsync();
+    public async ValueTask InitializeAsync() => await _container.StartAsync();
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     [Fact]
     public async Task OpenAsync_RightAfterStart_EventuallySucceeds()
@@ -96,9 +96,9 @@ public sealed class PostgresAvailabilityTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine").WithCleanUp(true).Build();
 
-    public Task InitializeAsync() => _container.StartAsync();
+    public async ValueTask InitializeAsync() => await _container.StartAsync();
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     [Fact]
     public void GetConnectionString_AfterStart_ReturnsUsableConnectionString() =>
@@ -185,7 +185,7 @@ public sealed class HooksEventsAuditTests : IAsyncLifetime
     private SqliteConnection _connection = null!;
     private AppDbContext _db = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -199,7 +199,7 @@ public sealed class HooksEventsAuditTests : IAsyncLifetime
         await _db.Database.EnsureCreatedAsync();
     }
 
-    public Task DisposeAsync() { _connection.Dispose(); return Task.CompletedTask; }
+    public ValueTask DisposeAsync() { _connection.Dispose(); return ValueTask.CompletedTask; }
 
     [Fact]
     public async Task ChangePrice_OnSave_FiresHookEventAndAuditLog()
@@ -259,9 +259,9 @@ public sealed class NpgsqlIdempotencyTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:16-alpine").WithCleanUp(true).Build();
 
-    public Task InitializeAsync() => _container.StartAsync();
+    public async ValueTask InitializeAsync() => await _container.StartAsync();
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     [Fact]
     public async Task PostOrders_WithNpgsqlStore_ReturnsCachedResponseOnDuplicate()
@@ -330,7 +330,7 @@ public sealed class AzuriteBlobStorageTests : IAsyncLifetime
         .Build();
     private IBlobService _blobs = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
 
@@ -345,7 +345,7 @@ public sealed class AzuriteBlobStorageTests : IAsyncLifetime
         _blobs = services.BuildServiceProvider().GetRequiredService<IBlobService>();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
     [Fact]
     public async Task SaveAsync_ThenCheckExistsAsync_ReturnsTrue()
@@ -376,7 +376,7 @@ public sealed class MinioBlobStorageTests : IAsyncLifetime
         "quay.io/minio/minio@sha256:c5cf013c67de7854d445afed42c07810c402ce5afb441af02877f8f3dc045ec4").Build();
     private IBlobService _blobs = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
 
@@ -394,7 +394,7 @@ public sealed class MinioBlobStorageTests : IAsyncLifetime
         _blobs = services.BuildServiceProvider().GetRequiredService<IBlobService>();
     }
 
-    public async Task DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
 
     [Fact]
     public async Task SaveAsync_ThenCheckExistsAsync_ReturnsTrue()
@@ -425,14 +425,14 @@ public sealed class PdfChromeFixture : IAsyncLifetime
 {
     public IPdfGenerator Generator { get; private set; } = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         Generator = new ServiceCollection().AddPdfGenerator().BuildServiceProvider().GetRequiredService<IPdfGenerator>();
         var warmupPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.pdf");
         await Generator.ConvertHtmlAsync("<html><body>warmup</body></html>", warmupPath);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 [CollectionDefinition("PdfChrome")]

@@ -6,7 +6,6 @@
 using DKNet.EfCore.Extensions.Extensions;
 using Mapster;
 using MapsterMapper;
-using Xunit.Abstractions;
 
 namespace EfCore.Specifications.Tests.Repositories;
 

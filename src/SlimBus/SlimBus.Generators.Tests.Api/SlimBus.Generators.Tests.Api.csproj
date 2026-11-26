@@ -3,7 +3,8 @@
     <PropertyGroup>
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <!-- xUnit1051 (xunit.v3): passing TestContext.Current.CancellationToken would edit every test body; suppressed per DRK-2625 R1. -->
+        <NoWarn>$(NoWarn);CS1591;xUnit1051</NoWarn>
         <!-- Makes the generated sources inspectable under obj/.../generated/ (Step 1 of the task). -->
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     </PropertyGroup>
@@ -23,7 +24,7 @@
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="SlimMessageBus.Host.Memory"/>
         <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.v3.mtp-off"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

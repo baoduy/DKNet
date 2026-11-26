@@ -19,7 +19,7 @@ public class PostgresFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Db != null) await Db.DisposeAsync();
 
@@ -31,7 +31,7 @@ public class PostgresFixture : IAsyncLifetime
         _pg.GetConnectionString()
             .Replace("Database=postgres;", $"Database={dbName};", StringComparison.OrdinalIgnoreCase);
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _pg.StartAsync();
 

@@ -25,7 +25,7 @@ public class HookScopeResolutionTests : IAsyncLifetime
 
     #region Methods
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -45,7 +45,7 @@ public class HookScopeResolutionTests : IAsyncLifetime
         await db.Database.EnsureCreatedAsync();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_provider != null) await _provider.DisposeAsync();
         if (_connection != null) await _connection.DisposeAsync();

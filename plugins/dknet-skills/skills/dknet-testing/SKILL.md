@@ -22,7 +22,7 @@ This skill owns no DKNet package. Route to `dknet-packages` for which DKNet pack
 | `Testcontainers.Azurite` | `dotnet add package Testcontainers.Azurite` | Azure Blob/Queue/Table emulator in a container | Docker | references/consumer-testing.md |
 | `Microsoft.Data.Sqlite` | `dotnet add package Microsoft.Data.Sqlite` | A real relational engine, light enough for an in-memory `DbContext` test | none | Quick start |
 | `Microsoft.AspNetCore.Mvc.Testing` | `dotnet add package Microsoft.AspNetCore.Mvc.Testing` | `WebApplicationFactory<TEntryPoint>` — an in-process HTTP test host | none | How to: HTTP, idempotency |
-| `xunit` + `xunit.runner.visualstudio` | `dotnet add package xunit` | `[Fact]`/`[Theory]`, `IAsyncLifetime`, `ICollectionFixture<T>` | none | throughout |
+| `xunit.v3` + `xunit.runner.visualstudio` | `dotnet add package xunit.v3` | `[Fact]`/`[Theory]`, `IAsyncLifetime`, `ICollectionFixture<T>` | none | throughout |
 | `Shouldly` | `dotnet add package Shouldly` | Fluent assertions (`ShouldBe`, `ShouldContain`, `ShouldThrowAsync<T>`, ...) | none | throughout |
 | `Bogus` | `dotnet add package Bogus` | Seeded, fluent fake-data generation (`Faker<T>`) | none | How to: TestContainers |
 
@@ -79,7 +79,7 @@ public sealed class ProductSpecTests : IAsyncLifetime
     private AppDbContext _db = null!;
     private IRepositorySpec _repo = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -96,7 +96,7 @@ public sealed class ProductSpecTests : IAsyncLifetime
         await _db.SaveChangesAsync();
     }
 
-    public Task DisposeAsync() { _connection.Dispose(); return Task.CompletedTask; }
+    public ValueTask DisposeAsync() { _connection.Dispose(); return ValueTask.CompletedTask; }
 
     [Fact]
     public async Task Query_WithExpensiveProductsSpec_FiltersAndOrders()
@@ -151,9 +151,9 @@ public sealed class MsSqlAvailabilityTests : IAsyncLifetime
         .WithCleanUp(true)
         .Build();
 
-    public Task InitializeAsync() => _container.StartAsync();
+    public async ValueTask InitializeAsync() => await _container.StartAsync();
 
-    public Task DisposeAsync() => _container.DisposeAsync().AsTask();
+    public ValueTask DisposeAsync() => _container.DisposeAsync();
 
     [Fact]
     public void GetConnectionString_AfterStart_ReturnsUsableConnectionString() =>
@@ -183,7 +183,7 @@ public sealed class DynamicPredicateTests : IAsyncLifetime
     private SqliteConnection _connection = null!;
     private AppDbContext _db = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -196,7 +196,7 @@ public sealed class DynamicPredicateTests : IAsyncLifetime
         await _db.SaveChangesAsync();
     }
 
-    public Task DisposeAsync() { _connection.Dispose(); return Task.CompletedTask; }
+    public ValueTask DisposeAsync() { _connection.Dispose(); return ValueTask.CompletedTask; }
 
     [Fact]
     public async Task DynamicAnd_WithPriceGreaterThan_TranslatesToSqlAndFilters()
@@ -247,7 +247,7 @@ public sealed class HooksAndEventsTests : IAsyncLifetime
     private SqliteConnection _connection = null!;
     private AppDbContext _db = null!;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -260,7 +260,7 @@ public sealed class HooksAndEventsTests : IAsyncLifetime
         await _db.Database.EnsureCreatedAsync();
     }
 
-    public Task DisposeAsync() { _connection.Dispose(); return Task.CompletedTask; }
+    public ValueTask DisposeAsync() { _connection.Dispose(); return ValueTask.CompletedTask; }
 
     [Fact]
     public async Task ChangePrice_OnSave_FiresHookAndEvent()

@@ -1,5 +1,4 @@
 using DKNet.Svc.PdfGenerators;
-using Xunit.Abstractions;
 
 namespace Svc.PdfGenerators.Tests;
 

@@ -71,7 +71,7 @@ public sealed class IdempotencyMigrationAppliedBeforeFirstRequestTests : IAsyncL
 
     #region Methods
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new MsSqlBuilder(MssqlImage)
             .WithPassword($"A{Guid.NewGuid():N}a!")
@@ -110,7 +110,7 @@ public sealed class IdempotencyMigrationAppliedBeforeFirstRequestTests : IAsyncL
             .Replace("Database=master", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_container is not null)
         {

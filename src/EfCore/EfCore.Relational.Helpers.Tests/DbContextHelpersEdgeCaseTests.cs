@@ -18,6 +18,9 @@ public class DbContextHelpersEdgeCaseTests(PostgresFixture fixture) : IClassFixt
             new DbContextOptionsBuilder<TestDbContext>()
                 .UseNpgsql(fixture.GetConnectionString()).Options);
 
+        // The fixture database exists only once a test creates it: create it here so this test does not depend on test order.
+        await db.Database.EnsureCreatedAsync();
+
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
         // Act & Assert - All operations should complete within reasonable time
@@ -97,6 +100,9 @@ public class DbContextHelpersEdgeCaseTests(PostgresFixture fixture) : IClassFixt
         await using var db = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>()
                 .UseNpgsql(fixture.GetConnectionString()).Options);
+
+        // The fixture database exists only once a test creates it: create it here so this test does not depend on test order.
+        await db.Database.EnsureCreatedAsync();
 
         // Act - Make multiple concurrent calls
         var tasks = Enumerable.Range(0, 10).Select(async _ => await db.GetDbConnection()).ToArray();

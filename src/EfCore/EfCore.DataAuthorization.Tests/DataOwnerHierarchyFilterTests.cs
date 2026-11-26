@@ -21,9 +21,9 @@ public class DataOwnerHierarchyFilterTests(DataKeyFixture fixture) : IClassFixtu
 {
     #region Methods
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         using var scope = fixture.Provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<DddContext>();

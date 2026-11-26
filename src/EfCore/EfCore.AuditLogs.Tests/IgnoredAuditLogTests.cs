@@ -127,7 +127,7 @@ public class IgnoredAuditLogTests : IAsyncLifetime
         TestIgnoredPublisher.Received.ShouldBeEmpty();
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
 
@@ -140,10 +140,10 @@ public class IgnoredAuditLogTests : IAsyncLifetime
             /* ignore */
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var services = new ServiceCollection();
         services.AddLogging();

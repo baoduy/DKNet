@@ -71,13 +71,13 @@ public sealed class SnapshotCaptureOnceFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await Provider.DisposeAsync();
         if (_connection != null) await _connection.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         // Use a shared connection for SQLite in-memory database
         _connection = new SqliteConnection("DataSource=:memory:");

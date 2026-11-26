@@ -28,13 +28,13 @@ public sealed class IdempotencyMarkAsProcessedConcurrencyTests : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _serviceProvider.DisposeAsync();
         await _container.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new PostgreSqlBuilder("postgres:16-alpine").WithCleanUp(true).Build();
         await _container.StartAsync();
