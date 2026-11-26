@@ -69,7 +69,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     /// <summary>
     ///     Disposes the test application and PostgreSQL container.
     /// </summary>
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         if (_container != null)
         {
@@ -89,7 +89,7 @@ public sealed class ApiFixture : WebApplicationFactory<ApiTests.Program>, IAsync
     /// <summary>
     ///     Initializes the test application with TestContainers.PostgreSql.
     /// </summary>
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new PostgreSqlBuilder("postgres:16-alpine")
             .WithCleanUp(true)

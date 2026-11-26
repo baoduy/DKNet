@@ -6,7 +6,6 @@
 using DKNet.EfCore.Specifications.Dynamics;
 using EfCore.Specifications.Tests.Fixtures;
 using EfCore.Specifications.Tests.TestEntities;
-using Xunit.Abstractions;
 
 namespace EfCore.Specifications.Tests.Dynamics;
 

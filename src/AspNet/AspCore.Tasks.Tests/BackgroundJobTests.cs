@@ -8,7 +8,7 @@ using Shouldly;
 
 // ReSharper disable ClassNeverInstantiated.Local
 
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: Xunit.v3.Parallelization(Mode = Xunit.Sdk.ParallelMode.None)]
 
 namespace AspCore.Tasks.Tests;
 

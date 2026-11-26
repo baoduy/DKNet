@@ -5,7 +5,6 @@
 
 
 using DKNet.EfCore.Specifications.Dynamics;
-using Xunit.Abstractions;
 
 namespace EfCore.Specifications.Tests.Dynamics;
 

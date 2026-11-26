@@ -107,7 +107,7 @@ public sealed class DeleteByIdTestHost : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         Client.Dispose();
         if (_app is not null)
@@ -119,7 +119,7 @@ public sealed class DeleteByIdTestHost : IAsyncLifetime
         if (_connection is not null) await _connection.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();

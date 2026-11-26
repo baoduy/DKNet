@@ -118,7 +118,7 @@ public sealed class IdempotencyMigrationHostedLifecycleTests : IAsyncLifetime
 
     #region Methods
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new PostgreSqlBuilder("postgres:16-alpine").WithCleanUp(true).Build();
         await _container.StartAsync();
@@ -126,7 +126,7 @@ public sealed class IdempotencyMigrationHostedLifecycleTests : IAsyncLifetime
             .Replace("Database=postgres", $"Database={_databaseName}", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_container is not null)
         {

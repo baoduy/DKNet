@@ -34,7 +34,7 @@ public sealed class GadgetExclusionTestHost : IAsyncLifetime, IDisposable
 
     public void Dispose() => _connection?.Dispose();
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -81,7 +81,7 @@ public sealed class GadgetExclusionTestHost : IAsyncLifetime, IDisposable
         Client = app.GetTestClient();
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         // Client stays null when InitializeAsync throws before reaching app.StartAsync() — e.g. today, while
         // CrudMapOptions.Exclude(string[]) is a NotImplementedException stub (DRK-1355 Acceptance-tests stage).

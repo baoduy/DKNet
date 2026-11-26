@@ -137,7 +137,7 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
         logs.Where(e => e.Action == AuditLogAction.Deleted).All(l => l.Changes.Count > 0).ShouldBeTrue();
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
         if (_provider is IDisposable d) d.Dispose();
 
@@ -150,10 +150,10 @@ public class PropertyIgnoredAuditLogTests : IAsyncLifetime
             /* ignore */
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var services = new ServiceCollection();
         services.AddLogging();

@@ -39,15 +39,15 @@ public sealed class ApiFixtureThrowConflict : WebApplicationFactory<ApiTests.Pro
                 c => c.ConflictHandling = IdempotentConflictHandling.ConflictResponse));
     }
 
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
     }
 
-    public Task InitializeAsync()
+    public ValueTask InitializeAsync()
     {
         HttpClient ??= CreateClient();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     #endregion

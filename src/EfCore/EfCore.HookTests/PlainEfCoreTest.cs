@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Xunit.Abstractions;
 
 namespace EfCore.HookTests;
 
@@ -13,12 +12,12 @@ public class PlainEfCoreTest(ITestOutputHelper output) : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await _provider.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _provider = new ServiceCollection()
             .AddLogging(builder => builder.SetMinimumLevel(LogLevel.Warning))

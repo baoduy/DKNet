@@ -20,7 +20,7 @@
         <PackageReference Include="Shouldly"/>
         <PackageReference Include="SlimMessageBus.Host.Memory"/>
         <PackageReference Include="SlimMessageBus.Host.Serialization.SystemTextJson"/>
-        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.v3.mtp-off"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>

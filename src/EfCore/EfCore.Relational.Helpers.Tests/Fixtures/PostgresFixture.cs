@@ -14,7 +14,7 @@ public class PostgresFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_container == null) return;
 
@@ -41,7 +41,7 @@ public class PostgresFixture : IAsyncLifetime
             .Replace("Database=postgres", $"Database=TestDb_{Guid.NewGuid():N}", StringComparison.OrdinalIgnoreCase) ??
         throw new InvalidOperationException("PostgreSQL container is not initialized.");
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _container = new PostgreSqlBuilder("postgres:16-alpine").Build();
 

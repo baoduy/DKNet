@@ -32,7 +32,7 @@ public class SqlServerFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Db != null) await Db.DisposeAsync();
 
@@ -40,7 +40,7 @@ public class SqlServerFixture : IAsyncLifetime
         await _sql.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _sql.StartAsync();
 

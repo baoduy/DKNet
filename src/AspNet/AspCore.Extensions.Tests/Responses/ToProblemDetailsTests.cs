@@ -4,7 +4,6 @@ using DKNet.AspCore.Extensions;
 using DKNet.AspCore.Extensions.Responses;
 using FluentResults;
 using Shouldly;
-using Xunit.Abstractions;
 
 namespace AspCore.Extensions.Tests.Responses;
 

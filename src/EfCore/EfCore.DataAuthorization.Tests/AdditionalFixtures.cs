@@ -20,13 +20,13 @@ public sealed class EmptyOwnerKeyFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_connection != null) await _connection.DisposeAsync();
         await Provider.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -62,13 +62,13 @@ public sealed class EmptyAccessibleKeysFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_connection != null) await _connection.DisposeAsync();
         await Provider.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();
@@ -108,13 +108,13 @@ public sealed class UnrestrictedAccessFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (_connection != null) await _connection.DisposeAsync();
         await Provider.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         await _connection.OpenAsync();

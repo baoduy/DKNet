@@ -34,7 +34,7 @@ public sealed class MerchantPostgresFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Db is not null) await Db.DisposeAsync();
 
@@ -42,7 +42,7 @@ public sealed class MerchantPostgresFixture : IAsyncLifetime
         await _container.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
 

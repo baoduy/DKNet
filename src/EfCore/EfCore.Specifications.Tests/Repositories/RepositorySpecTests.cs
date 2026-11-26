@@ -173,7 +173,7 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>, IAsyncLifetime
     // Shared fixture keeps one DbContext for every [Fact] in this class; xUnit picks execution
     // order from the fully-qualified test name hash, so reset before each test to make them
     // order-independent instead of relying on incidental ordering.
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
     public async Task Entry_ModifyState_ShouldChangeEntityState()
@@ -210,12 +210,12 @@ public class RepositorySpecTests : IClassFixture<TestDbFixture>, IAsyncLifetime
         entry.State.ShouldBe(EntityState.Unchanged);
     }
 
-    public Task InitializeAsync()
+    public ValueTask InitializeAsync()
     {
         if (_context.Database.CurrentTransaction != null) _context.Database.CurrentTransaction.Rollback();
 
         _context.ChangeTracker.Clear();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     [Fact]

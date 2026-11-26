@@ -10,12 +10,12 @@ public class MemoryFixture : IAsyncLifetime
 
     #region Methods
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         if (Db != null) await Db.DisposeAsync();
     }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None);
 
